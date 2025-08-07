@@ -44,7 +44,7 @@ const getApiBaseUrl = (): string => {
     console.log('VITE_API_URL:', url);
     if (!url) {
       console.warn('VITE_API_URL is not defined, falling back to localhost');
-      return 'http://64.226.66.235/api';
+      return 'https://64.226.66.235/api';
     }
     return url.endsWith('/api') ? url : `${url}/api`;
   } else {
