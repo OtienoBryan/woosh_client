@@ -12,7 +12,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://moonsunserver-r22p5va7h-bryan-otienos-projects.vercel.app/api/$1"
+      "destination": "http://64.226.66.235/api/$1"
     },
     {
       "source": "/(.*)",

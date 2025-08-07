@@ -32,7 +32,7 @@ export interface ApiError extends Error {
 // Validate and get API base URL
 const getApiBaseUrl = (): string => {
   // Hardcoded production URL for testing
-  const PRODUCTION_API_URL = 'https://moonsuns-server.vercel.app/api';
+  const PRODUCTION_API_URL = 'https://64.226.66.235/api';
   
   // Check if we're in development mode
   const isDevelopment = import.meta.env.DEV;
@@ -44,7 +44,7 @@ const getApiBaseUrl = (): string => {
     console.log('VITE_API_URL:', url);
     if (!url) {
       console.warn('VITE_API_URL is not defined, falling back to localhost');
-      return 'http://localhost:5000/api';
+      return 'http://64.226.66.235/api';
     }
     return url.endsWith('/api') ? url : `${url}/api`;
   } else {
