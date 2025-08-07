@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { salesService, Country, SalesRep } from '../services/salesService';
 import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity } from 'lucide-react';
@@ -77,7 +77,7 @@ const OverallAttendancePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const [salesRepsModalOpen, setSalesRepsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
-  const [activeSalesRepsForDate, setActiveSalesRepsForDate] = useState<(SalesRep & { sessionStart: string; sessionEnd?: string })[]>([]);
+  const [activeSalesRepsForDate, setActiveSalesRepsForDate] = useState<(SalesRep & { sessionStart: string; sessionEnd?: string; clientsVisited: number })[]>([]);
   const [modalCountryFilter, setModalCountryFilter] = useState<string>('');
   const [clientsModalOpen, setClientsModalOpen] = useState(false);
   const [clientsForDate, setClientsForDate] = useState<Client[]>([]);
@@ -98,12 +98,23 @@ const OverallAttendancePage: React.FC = () => {
       salesService.getAllSalesReps(),
     ])
       .then(([loginRes, journeyRes, clientsRes, countriesRes, salesRepsRes]) => {
-        console.log('OverallAttendancePage: Data fetch successful');
-        console.log('Login history count:', loginRes.data?.length || 0);
-        console.log('Journey plans count:', journeyRes.data?.length || 0);
-        console.log('Clients count:', clientsRes.data?.data?.length || 0);
-        console.log('Countries count:', countriesRes?.length || 0);
-        console.log('Sales reps count:', salesRepsRes?.length || 0);
+                 console.log('OverallAttendancePage: Data fetch successful');
+         console.log('Login history count:', loginRes.data?.length || 0);
+         console.log('Journey plans count:', journeyRes.data?.length || 0);
+         console.log('Clients count:', clientsRes.data?.data?.length || 0);
+         console.log('Countries count:', countriesRes?.length || 0);
+         console.log('Sales reps count:', salesRepsRes?.length || 0);
+         
+         // Debug: Check sample data structures
+         if (loginRes.data?.length > 0) {
+           console.log('Sample login history:', loginRes.data[0]);
+         }
+         if (journeyRes.data?.length > 0) {
+           console.log('Sample journey plan:', journeyRes.data[0]);
+         }
+         if (salesRepsRes?.length > 0) {
+           console.log('Sample sales rep:', salesRepsRes[0]);
+         }
         
         setLoginHistory(loginRes.data || []);
         setJourneyPlans(journeyRes.data || []);
@@ -186,6 +197,20 @@ const OverallAttendancePage: React.FC = () => {
       day: 'numeric' 
     });
   };
+
+  // Debug: Log modal state
+  console.log('Modal state check - salesRepsModalOpen:', salesRepsModalOpen);
+
+  // Memoized filtered sales reps for modal
+  const filteredModalReps = useMemo(() => {
+    if (!salesRepsModalOpen) return [];
+    
+    const filteredReps = modalCountryFilter 
+      ? activeSalesRepsForDate.filter(rep => rep.country === modalCountryFilter)
+      : activeSalesRepsForDate;
+    
+    return filteredReps;
+  }, [modalCountryFilter, activeSalesRepsForDate, salesRepsModalOpen]);
 
   // Helper function to export to CSV
   const exportToCSV = () => {
@@ -427,12 +452,62 @@ const OverallAttendancePage: React.FC = () => {
                                 </div>
                                 <div className="text-xs text-gray-500">visits</div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-gray-900">
-                                  {row.activeSalesReps.toLocaleString()}
-                                </div>
-                                <div className="text-xs text-gray-500">reps</div>
-                              </td>
+                                                             <td className="px-6 py-4 whitespace-nowrap text-center">
+                                 <button
+                                   onClick={() => {
+                                     console.log('Modal button clicked for date:', row.date);
+                                     console.log('Current salesRepsModalOpen state:', salesRepsModalOpen);
+                                     setSelectedDate(row.date);
+                                     
+                                     const repsForDate = loginHistory
+                                        .filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === row.date)
+                                        .map(lh => {
+                                          const rep = salesReps.find(sr => sr.id === lh.userId);
+                                          if (!rep) return null;
+                                          
+                                          // Count clients visited by this rep on this date (only those with checkinTime)
+                                           const clientsVisited = journeyPlans.filter(jp => 
+                                             jp.userId === rep.id && 
+                                             jp.date.slice(0, 10) === row.date &&
+                                             (jp.checkinTime || jp.checkInTime) // Check both possible field names
+                                           ).length;
+                                          
+                                          console.log(`Rep ${rep.name} (ID: ${rep.id}):`, {
+                                             repId: rep.id,
+                                             loginUserId: lh.userId,
+                                             journeyPlansForRep: journeyPlans.filter(jp => jp.userId === rep.id),
+                                             journeyPlansForDate: journeyPlans.filter(jp => jp.date.slice(0, 10) === row.date),
+                                             journeyPlansWithCheckin: journeyPlans.filter(jp => 
+                                               jp.userId === rep.id && 
+                                               jp.date.slice(0, 10) === row.date &&
+                                               (jp.checkinTime || jp.checkInTime)
+                                             ),
+                                             clientsVisited,
+                                             targetDate: row.date,
+                                             sampleJourneyPlan: journeyPlans.find(jp => jp.userId === rep.id),
+                                             allDatesForRep: [...new Set(journeyPlans.filter(jp => jp.userId === rep.id).map(jp => jp.date.slice(0, 10)))]
+                                           });
+                                          
+                                          return {
+                                            ...rep,
+                                            sessionStart: lh.sessionStart,
+                                            sessionEnd: lh.sessionEnd,
+                                            clientsVisited
+                                          };
+                                        })
+                                        .filter(rep => rep !== null) as (SalesRep & { sessionStart: string; sessionEnd?: string; clientsVisited: number })[];
+                                     
+                                     console.log('Setting activeSalesRepsForDate:', repsForDate);
+                                     console.log('Setting salesRepsModalOpen to true');
+                                     setActiveSalesRepsForDate(repsForDate);
+                                     setSalesRepsModalOpen(true);
+                                   }}
+                                   className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors duration-150 cursor-pointer"
+                                 >
+                                   {row.activeSalesReps.toLocaleString()}
+                                 </button>
+                                 <div className="text-xs text-gray-500">reps</div>
+                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${activityColor}`}>
                                   {activityLevel}
@@ -485,12 +560,182 @@ const OverallAttendancePage: React.FC = () => {
                   </div>
                 </div>
               </div>
+                         </div>
+           </>
+         )}
+       </div>
+
+               {/* Sales Reps Modal - Full Page */}
+        {salesRepsModalOpen && (
+          <div className="fixed inset-0 bg-white z-[9999] overflow-hidden">
+                         {/* Header */}
+             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+               <div className="flex items-center justify-between p-6">
+                 <div className="flex items-center space-x-3">
+                   <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                     <Users className="h-6 w-6 text-white" />
+                   </div>
+                   <div>
+                     <h1 className="text-2xl font-bold">
+                       Active Sales Representatives
+                     </h1>
+                     <p className="text-blue-100">
+                       {selectedDate && formatDate(selectedDate)}
+                     </p>
+                   </div>
+                 </div>
+                 <div className="flex items-center space-x-4">
+                   {/* Country Filter */}
+                   <div className="relative">
+                     <select
+                       value={modalCountryFilter}
+                       onChange={(e) => setModalCountryFilter(e.target.value)}
+                       className="bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200"
+                     >
+                       <option value="">All Countries</option>
+                       {countries.map((country) => (
+                         <option key={country.id} value={country.name} className="text-gray-900">
+                           {country.name}
+                         </option>
+                       ))}
+                     </select>
+                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                       <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                       </svg>
+                     </div>
+                   </div>
+                   <button
+                     onClick={() => setSalesRepsModalOpen(false)}
+                     className="text-white hover:text-blue-100 transition-colors duration-150 p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+                   >
+                     <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                   </button>
+                 </div>
+               </div>
+             </div>
+
+                         {/* Content */}
+             <div className="h-full overflow-y-auto bg-gray-50">
+                              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                   {/* Filtered sales reps based on country selection */}
+                  {filteredModalReps.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="bg-white rounded-full p-8 w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                        <Users className="h-16 w-16 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-medium text-gray-900 mb-2">
+                        {modalCountryFilter ? `No Sales Representatives from ${modalCountryFilter}` : 'No Sales Representatives'}
+                      </h3>
+                      <p className="text-gray-500">
+                        {modalCountryFilter ? `No sales representatives found for ${modalCountryFilter} on this date.` : 'No sales representatives found for this date.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Sales Representative
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Country
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Clients Visited
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Session Start
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Session End
+                              </th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Time Spent
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredModalReps.map((rep, index) => (
+                            <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0">
+                                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-full">
+                                      <Users className="h-4 w-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="ml-3">
+                                    <div className="text-sm font-medium text-gray-900">{rep.name}</div>
+                                    <div className="text-sm text-gray-500">{rep.email}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                  {rep.country || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="text-sm font-semibold text-green-600">
+                                  {rep.clientsVisited}
+                                </div>
+                                <div className="text-xs text-gray-500">visits</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="text-sm text-gray-900">
+                                  {rep.sessionStart ? new Date(rep.sessionStart).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : 'N/A'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="text-sm text-gray-900">
+                                  {rep.sessionEnd ? new Date(rep.sessionEnd).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : 'Active'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="text-sm font-semibold text-blue-600">
+                                  {calculateTimeSpent(rep.sessionStart, rep.sessionEnd)}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                                                  </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+              </div>
             </div>
-          </>
+
+                         {/* Footer */}
+             <div className="bg-white border-t border-gray-200 px-6 py-4">
+               <div className="flex justify-between items-center">
+                                   <div className="text-sm text-gray-600">
+                    Showing {filteredModalReps.length} active sales representatives
+                    {modalCountryFilter && ` from ${modalCountryFilter}`}
+                  </div>
+                <button
+                  onClick={() => setSalesRepsModalOpen(false)}
+                  className="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
-      </div>
-    </div>
-  );
+     </div>
+   );
 };
 
 export default OverallAttendancePage; 
