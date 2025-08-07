@@ -64,7 +64,7 @@ export const api = axios.create({
     'Accept': 'application/json'
   },
   timeout: 10000,
-  withCredentials: true
+  withCredentials: false // Disable credentials for cross-origin requests
 });
 
 // Add request interceptor for debugging
