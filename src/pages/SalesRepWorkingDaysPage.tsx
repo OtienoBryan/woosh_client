@@ -65,11 +65,13 @@ const SalesRepWorkingDaysPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya'); // Default to Kenya
   const [selectedRep, setSelectedRep] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('1'); // Default to Active
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [pendingCountry, setPendingCountry] = useState(selectedCountry);
   const [pendingRep, setPendingRep] = useState(selectedRep);
+  const [pendingStatus, setPendingStatus] = useState(selectedStatus);
   const [pendingStartDate, setPendingStartDate] = useState(startDate);
   const [pendingEndDate, setPendingEndDate] = useState(endDate);
 
@@ -124,9 +126,18 @@ const SalesRepWorkingDaysPage: React.FC = () => {
   const rangeStart = new Date(startDate);
   const rangeEnd = new Date(endDate);
 
-  const filteredSalesReps = selectedCountry
-    ? salesReps.filter(rep => rep.country === selectedCountry)
-    : salesReps;
+  const filteredSalesReps = salesReps.filter(rep => {
+    // Filter by country
+    if (selectedCountry && rep.country !== selectedCountry) return false;
+    
+    // Filter by status
+    if (selectedStatus) {
+      const statusValue = parseInt(selectedStatus);
+      if (rep.status !== statusValue) return false;
+    }
+    
+    return true;
+  });
 
   // Calculate stats for each sales rep
   const repStats: RepStats[] = useMemo(() => {
@@ -233,6 +244,7 @@ const SalesRepWorkingDaysPage: React.FC = () => {
   const openFilterModal = () => {
     setPendingCountry(selectedCountry);
     setPendingRep(selectedRep);
+    setPendingStatus(selectedStatus);
     setPendingStartDate(startDate);
     setPendingEndDate(endDate);
     setFilterModalOpen(true);
@@ -241,14 +253,16 @@ const SalesRepWorkingDaysPage: React.FC = () => {
   const applyFilters = () => {
     setSelectedCountry(pendingCountry);
     setSelectedRep(pendingRep);
+    setSelectedStatus(pendingStatus);
     setStartDate(pendingStartDate);
     setEndDate(pendingEndDate);
     setFilterModalOpen(false);
   };
 
   const clearFilters = () => {
-    setPendingCountry('');
+    setPendingCountry('Kenya'); // Reset to Kenya instead of empty
     setPendingRep('');
+    setPendingStatus('1'); // Reset to Active instead of empty
     setPendingStartDate(() => {
       const d = new Date(year, month, 1);
       return d.toISOString().slice(0, 10);
@@ -447,20 +461,28 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                       Showing {filteredRepStats.length} sales representatives
                     </p>
                   </div>
-                  <div className="mt-4 sm:mt-0 flex items-center space-x-2">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-xs text-gray-600">Present</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                      <span className="text-xs text-gray-600">Leave</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                      <span className="text-xs text-gray-600">Absent</span>
-                    </div>
-                  </div>
+                                     <div className="mt-4 sm:mt-0 flex items-center space-x-2">
+                     <div className="flex items-center space-x-1">
+                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                       <span className="text-xs text-gray-600">Present</span>
+                     </div>
+                     <div className="flex items-center space-x-1">
+                       <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                       <span className="text-xs text-gray-600">Leave</span>
+                     </div>
+                     <div className="flex items-center space-x-1">
+                       <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                       <span className="text-xs text-gray-600">Absent</span>
+                     </div>
+                     <div className="flex items-center space-x-1">
+                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                       <span className="text-xs text-gray-600">Active</span>
+                     </div>
+                     <div className="flex items-center space-x-1">
+                       <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                       <span className="text-xs text-gray-600">Inactive</span>
+                     </div>
+                   </div>
                 </div>
               </div>
               
@@ -475,29 +497,32 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Sales Representative
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Country
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Days Present
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Days Absent
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Leave Days
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Attendance %
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Performance
-                          </th>
-                        </tr>
+                                                 <tr>
+                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Sales Representative
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Country
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Status
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Days Present
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Days Absent
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Leave Days
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Attendance %
+                           </th>
+                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                             Performance
+                           </th>
+                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredRepStats.map((stat, index) => {
@@ -533,17 +558,26 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                  {stat.rep.country || 'N/A'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-green-600">
-                                  {stat.present}
-                                </div>
-                                <div className="text-xs text-gray-500">days</div>
-                              </td>
+                                                             <td className="px-6 py-4 whitespace-nowrap text-center">
+                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                   {stat.rep.country || 'N/A'}
+                                 </span>
+                               </td>
+                               <td className="px-6 py-4 whitespace-nowrap text-center">
+                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                   stat.rep.status === 1 
+                                     ? 'bg-green-100 text-green-800' 
+                                     : 'bg-red-100 text-red-800'
+                                 }`}>
+                                   {stat.rep.status === 1 ? 'Active' : 'Inactive'}
+                                 </span>
+                               </td>
+                               <td className="px-6 py-4 whitespace-nowrap text-center">
+                                 <div className="text-sm font-semibold text-green-600">
+                                   {stat.present}
+                                 </div>
+                                 <div className="text-xs text-gray-500">days</div>
+                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <div className="text-sm font-semibold text-red-600">
                                   {stat.absent}
@@ -637,40 +671,56 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </button>
             </div>
             
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="countryFilter" className="block text-sm font-medium text-gray-700 mb-2">
-                  Country
-                </label>
-                <select
-                  id="countryFilter"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  value={pendingCountry}
-                  onChange={e => setPendingCountry(e.target.value)}
-                >
-                  <option value="">All Countries</option>
-                  {countries.map(c => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label htmlFor="repFilter" className="block text-sm font-medium text-gray-700 mb-2">
-                  Sales Representative
-                </label>
-                <select
-                  id="repFilter"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  value={pendingRep}
-                  onChange={e => setPendingRep(e.target.value)}
-                >
-                  <option value="">All Sales Reps</option>
-                  {filteredSalesReps.map(rep => (
-                    <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
-                  ))}
-                </select>
-              </div>
+                         <div className="space-y-6">
+               <div>
+                 <label htmlFor="countryFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                   Country
+                 </label>
+                 <select
+                   id="countryFilter"
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                   value={pendingCountry}
+                   onChange={e => setPendingCountry(e.target.value)}
+                 >
+                   <option value="">All Countries</option>
+                   {countries.map(c => (
+                     <option key={c.id} value={c.name}>{c.name}</option>
+                   ))}
+                 </select>
+               </div>
+               
+               <div>
+                 <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                   Status
+                 </label>
+                 <select
+                   id="statusFilter"
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                   value={pendingStatus}
+                   onChange={e => setPendingStatus(e.target.value)}
+                 >
+                   <option value="">All Statuses</option>
+                   <option value="1">Active</option>
+                   <option value="0">Inactive</option>
+                 </select>
+               </div>
+               
+               <div>
+                 <label htmlFor="repFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                   Sales Representative
+                 </label>
+                 <select
+                   id="repFilter"
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                   value={pendingRep}
+                   onChange={e => setPendingRep(e.target.value)}
+                 >
+                   <option value="">All Sales Reps</option>
+                   {filteredSalesReps.map(rep => (
+                     <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
+                   ))}
+                 </select>
+               </div>
               
               <div>
                 <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
