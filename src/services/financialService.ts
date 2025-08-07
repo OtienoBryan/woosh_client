@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import { 
   ChartOfAccount, 
   Supplier, 
@@ -12,7 +12,9 @@ import {
   CreateJournalEntryForm,
   ApiResponse,
   PaginatedResponse,
-  GeneralLedgerEntry
+  GeneralLedgerEntry,
+  DeliveryNote,
+  DeliveryNoteItem
 } from '../types/financial';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://64.226.66.235:5000/api';
@@ -118,10 +120,7 @@ export const storesService = {
 // Customers Service
 export const customersService = {
   getAll: async (): Promise<ApiResponse<Customer[]>> => {
-    // Request all clients by setting a very high limit
     const response = await axios.get(`${API_BASE_URL}/clients?limit=10000`);
-    // The clients API returns { data: [...], page, limit, total, totalPages }
-    // We need to transform it to match the expected ApiResponse format
     return {
       success: true,
       data: response.data.data || response.data
@@ -182,7 +181,7 @@ export const productsService = {
   }
 };
 
-// Add this: Stock Take Items Service
+// Stock Take Items Service
 export const stockTakeService = {
   getItems: async (stock_take_id: number) => {
     const response = await axios.get(`${API_BASE_URL}/financial/stock-take/${stock_take_id}/items`);
@@ -557,7 +556,7 @@ export const inventoryTransactionsService = {
 }; 
 
 export const inventoryAsOfService = {
-  getAll: async (params: { date: string, store_id?: number|string }) => {
+  getAll: async (params: { date: string, store_id?: number|string }): Promise<ApiResponse<any[]>> => {
     const query = new URLSearchParams();
     query.append('date', params.date);
     if (params.store_id) query.append('store_id', String(params.store_id));
@@ -617,4 +616,70 @@ export const categoriesService = {
   }
 };
 
- 
+// Delivery Notes Service
+export const deliveryNotesService = {
+  getAll: async (): Promise<ApiResponse<DeliveryNote[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/delivery-notes`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<ApiResponse<DeliveryNote>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/delivery-notes/${id}`);
+    return response.data;
+  },
+
+  create: async (deliveryNote: Partial<DeliveryNote>): Promise<ApiResponse<DeliveryNote>> => {
+    const response = await axios.post(`${API_BASE_URL}/financial/delivery-notes`, deliveryNote);
+    return response.data;
+  },
+
+  update: async (id: number, deliveryNote: Partial<DeliveryNote>): Promise<ApiResponse<void>> => {
+    const response = await axios.put(`${API_BASE_URL}/financial/delivery-notes/${id}`, deliveryNote);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    const response = await axios.delete(`${API_BASE_URL}/financial/delivery-notes/${id}`);
+    return response.data;
+  },
+
+  assignRider: async (id: number, riderId: number): Promise<ApiResponse<void>> => {
+    const response = await axios.patch(`${API_BASE_URL}/financial/delivery-notes/${id}/assign-rider`, { 
+      rider_id: riderId 
+    });
+    return response.data;
+  },
+
+  markAsDelivered: async (id: number): Promise<ApiResponse<void>> => {
+    const response = await axios.patch(`${API_BASE_URL}/financial/delivery-notes/${id}/mark-delivered`);
+    return response.data;
+  }
+};
+
+// Delivery Note Items Service
+export const deliveryNoteItemsService = {
+  getByDeliveryNoteId: async (deliveryNoteId: number): Promise<ApiResponse<DeliveryNoteItem[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/delivery-notes/${deliveryNoteId}/items`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<ApiResponse<DeliveryNoteItem>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/delivery-note-items/${id}`);
+    return response.data;
+  },
+
+  create: async (item: Partial<DeliveryNoteItem>): Promise<ApiResponse<DeliveryNoteItem>> => {
+    const response = await axios.post(`${API_BASE_URL}/financial/delivery-note-items`, item);
+    return response.data;
+  },
+
+  update: async (id: number, item: Partial<DeliveryNoteItem>): Promise<ApiResponse<void>> => {
+    const response = await axios.put(`${API_BASE_URL}/financial/delivery-note-items/${id}`, item);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    const response = await axios.delete(`${API_BASE_URL}/financial/delivery-note-items/${id}`);
+    return response.data;
+  }
+};

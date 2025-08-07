@@ -31,27 +31,18 @@ export interface ApiError extends Error {
 
 // Validate and get API base URL
 const getApiBaseUrl = (): string => {
-  // Hardcoded production URL for testing
-  const PRODUCTION_API_URL = 'http://64.226.66.235:5000/api';
+  // Get API URL from environment variable
+  const url = import.meta.env.VITE_API_URL;
+  console.log('Environment variables:', import.meta.env);
+  console.log('VITE_API_URL:', url);
   
-  // Check if we're in development mode
-  const isDevelopment = import.meta.env.DEV;
-  
-  if (isDevelopment) {
-    // In development, use environment variable or fallback to localhost
-    const url = import.meta.env.VITE_API_URL;
-    console.log('Environment variables:', import.meta.env);
-    console.log('VITE_API_URL:', url);
-    if (!url) {
-      console.warn('VITE_API_URL is not defined, falling back to production server');
-      return PRODUCTION_API_URL;
-    }
-    return url.endsWith('/api') ? url : `${url}/api`;
-  } else {
-    // In production, use the hardcoded production URL
-    console.log('Using production API URL:', PRODUCTION_API_URL);
-    return PRODUCTION_API_URL;
+  if (!url) {
+    console.warn('VITE_API_URL is not defined in .env file, falling back to localhost:5000');
+    return 'http://localhost:5000/api';
   }
+  
+  // Ensure the URL ends with /api
+  return url.endsWith('/api') ? url : `${url}/api`;
 };
 
 const API_BASE_URL = getApiBaseUrl();

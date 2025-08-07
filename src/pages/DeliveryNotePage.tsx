@@ -271,7 +271,7 @@ const DeliveryNotePage: React.FC = () => {
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 capitalize">{deliveryNote.status}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{getProgressStatus(deliveryNote.my_status)}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{deliveryNote.rider_name ? `${deliveryNote.rider_name} (${deliveryNote.rider_contact})` : '-'}</td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-right">{number_format(deliveryNote.total_amount)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-right">{number_format(deliveryNote.total_amount || 0)}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{deliveryNote.notes || '-'}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm">
                       <Link

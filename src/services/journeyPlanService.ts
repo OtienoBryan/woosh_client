@@ -18,7 +18,7 @@ export interface JourneyPlan {
   updatedAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://64.226.66.235:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 //const API_URL = 'http://64.226.66.235'; // Add your backend URL here
 
 const journeyPlanService = {
