@@ -6,7 +6,7 @@ export const API_CONFIG = {
     
     // In production (Vercel), use the configured API URL
     if (import.meta.env.PROD) {
-      return url || 'http://64.226.66.235/api';
+      return url || '';
     }
     
     // In development, require the environment variable
