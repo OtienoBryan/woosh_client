@@ -1,20 +1,25 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
-import { PieChart, Pie as RePie, Cell, Tooltip as PieTooltip, Legend as PieLegend } from 'recharts';
-import axios from 'axios';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { salesOrdersService } from '../services/financialService';
-import { Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip as ChartTooltip,
-  Legend as ChartLegend
-} from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
-ChartJS.register(ArcElement, ChartTooltip, ChartLegend, ChartDataLabels);
-import { BarChart as ReBarChart, Bar as ReBar, XAxis as ReXAxis, YAxis as ReYAxis, Tooltip as ReTooltip, ResponsiveContainer as ReResponsiveContainer, CartesianGrid as ReCartesianGrid, Legend as ReLegend } from 'recharts';
+import { API_CONFIG } from '../config/api';
+import { 
+  TrendingUpIcon, 
+  UsersIcon, 
+  ShoppingCartIcon, 
+  DollarSignIcon,
+  BarChart3Icon,
+  PieChartIcon,
+  TargetIcon,
+  AwardIcon,
+  CalendarIcon,
+  MapPinIcon,
+  FileTextIcon,
+  SettingsIcon,
+  EyeIcon,
+  UserCheckIcon
+} from 'lucide-react';
 
 const monthNames = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -22,35 +27,128 @@ const monthNames = [
 ];
 
 const COLORS = [
-  '#22c55e', '#eab308', '#ef4444', '#3b82f6', '#a21caf', '#f59e42', '#0ea5e9', '#f43f5e', '#16a34a', '#facc15', '#6366f1', '#f87171',
+  '#22c55e', '#eab308', '#ef4444', '#3b82f6', '#a21caf', '#f59e42', 
+  '#0ea5e9', '#f43f5e', '#16a34a', '#facc15', '#6366f1', '#f87171'
 ];
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  change?: {
+    value: number;
+    positive: boolean;
+  };
+  prefix?: string;
+  suffix?: string;
+  bgColor?: string;
+  textColor?: string;
+  onClick?: () => void;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon,
+  change,
+  prefix = '',
+  suffix = '',
+  bgColor = 'bg-gradient-to-r from-blue-600 to-blue-700',
+  textColor = 'text-white',
+  onClick
+}) => {
+  return (
+    <div
+      className={`${bgColor} overflow-hidden shadow-lg rounded-xl cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className={`text-sm font-medium ${textColor} opacity-90`}>
+              {title}
+            </p>
+            <p className={`text-2xl font-bold ${textColor} mt-1`}>
+              {prefix}{value}{suffix}
+            </p>
+            {change && (
+              <div className="flex items-center mt-2">
+                <TrendingUpIcon 
+                  className={`h-4 w-4 ${change.positive ? 'text-green-300' : 'text-red-300'}`} 
+                />
+                <span className={`text-sm font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
+                  {change.positive ? '+' : ''}{change.value}%
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex-shrink-0">
+            <div className={`p-3 rounded-lg ${textColor} bg-white bg-opacity-20`}>
+              {icon}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SalesDashboardPage: React.FC = () => {
   const [monthlyData, setMonthlyData] = useState<{ month: string; amount: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rechartsPieData, setRechartsPieData] = useState<{ type: string; value: number }[]>([]);
-  const navigate = useNavigate();
-
-  // Managers state for pie chart
   const [managers, setManagers] = useState<any[]>([]);
   const [repData, setRepData] = useState<any[]>([]);
   const [mpLoading, setMpLoading] = useState(true);
   const [mpError, setMpError] = useState<string | null>(null);
-
-  // Product performance state
   const [productPerf, setProductPerf] = useState<any[]>([]);
   const [productPerfLoading, setProductPerfLoading] = useState(true);
   const [productPerfError, setProductPerfError] = useState<string | null>(null);
-
-  // Top 10 sales reps by overall performance
   const [topReps, setTopReps] = useState<{ name: string; overall: number }[]>([]);
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    totalOrders: 0,
+    activeReps: 0,
+    avgPerformance: 0
+  });
+  
+  const navigate = useNavigate();
+
+  // Custom fetch function to avoid axios
+  const fetchData = async (endpoint: string, params?: any) => {
+    const url = new URL(API_CONFIG.getUrl(endpoint), window.location.origin);
+    if (params) {
+      Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+    }
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  };
 
   useEffect(() => {
-    axios.get('/api/sales/performance')
-      .then(res => {
-        const reps = res.data.data || [];
-        // Calculate overall % as in SharedPerformancePage
+    const loadDashboardData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch sales performance data
+        const salesRes = await fetchData('/sales/performance');
+        const reps = salesRes.data || [];
+        
+        // Calculate top reps
         const repPerf = reps.map((rep: any) => {
           const allTypes = ['distributors', 'key_accounts', 'retail'];
           let outletPctSum = 0, vapesPctSum = 0, pouchesPctSum = 0;
@@ -69,24 +167,28 @@ const SalesDashboardPage: React.FC = () => {
         });
         repPerf.sort((a: { overall: number }, b: { overall: number }) => b.overall - a.overall);
         setTopReps(repPerf.slice(0, 10));
-      });
-  }, []);
+        
+        // Calculate stats
+        const avgPerformance = repPerf.length > 0 ? 
+          repPerf.reduce((sum: number, rep: any) => sum + rep.overall, 0) / repPerf.length : 0;
+        setStats(prev => ({ ...prev, activeReps: reps.length, avgPerformance: Number(avgPerformance.toFixed(1)) }));
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await salesOrdersService.getAll();
-        const orders = res.data || [];
+        // Fetch sales orders for monthly data
+        const ordersRes = await salesOrdersService.getAll();
+        const orders = ordersRes.data || [];
+        
         // Group by month
         const monthMap: { [key: string]: number } = {};
+        let totalSales = 0;
         orders.forEach((order: any) => {
           if (!order.order_date || !order.total_amount) return;
           const date = new Date(order.order_date);
           const key = `${date.getFullYear()}-${date.getMonth()}`;
-          monthMap[key] = (monthMap[key] || 0) + Number(order.total_amount);
+          const amount = Number(order.total_amount);
+          monthMap[key] = (monthMap[key] || 0) + amount;
+          totalSales += amount;
         });
+        
         // Convert to array and sort by date
         const data = Object.entries(monthMap)
           .map(([key, amount]) => {
@@ -103,51 +205,34 @@ const SalesDashboardPage: React.FC = () => {
             return monthNames.indexOf(aMonth) - monthNames.indexOf(bMonth);
           });
         setMonthlyData(data);
-      } catch (err: any) {
-        setError('Failed to fetch sales data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+        setStats(prev => ({ ...prev, totalSales, totalOrders: orders.length }));
 
-    // Fetch pie chart data for current month
-    const fetchPieData = async () => {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-      // Fetch vapes
-      const vapesRes = await axios.get('/api/financial/reports/product-performance', {
-        params: { startDate: start, endDate: end, productType: 'vape' }
-      });
-      // Fetch pouches
-      const pouchesRes = await axios.get('/api/financial/reports/product-performance', {
-        params: { startDate: start, endDate: end, productType: 'pouch' }
-      });
-      const vapesTotal = vapesRes.data.success ? vapesRes.data.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-      const pouchesTotal = pouchesRes.data.success ? pouchesRes.data.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-      setRechartsPieData([
-        { type: 'Vapes', value: vapesTotal },
-        { type: 'Pouches', value: pouchesTotal },
-      ]);
-    };
-    fetchPieData();
-
-    // Fetch product performance for dashboard (grouped by vapes and pouches)
-    const fetchProductPerf = async () => {
-      setProductPerfLoading(true);
-      setProductPerfError(null);
-      try {
+        // Fetch pie chart data for current month
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+        
         const [vapesRes, pouchesRes] = await Promise.all([
-          axios.get('/api/financial/reports/product-performance', { params: { productType: 'vape' } }),
-          axios.get('/api/financial/reports/product-performance', { params: { productType: 'pouch' } }),
+          fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'vape' }),
+          fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'pouch' })
         ]);
-        if (vapesRes.data.success && pouchesRes.data.success) {
-          // Filter vapes: category_id 1 or 3
-          const vapes = vapesRes.data.data.filter((p: any) => p.category_id === 1 || p.category_id === 3);
-          // Filter pouches: category_id 4 or 5
-          const pouches = pouchesRes.data.data.filter((p: any) => p.category_id === 4 || p.category_id === 5);
-          // Get all unique product names
+        
+        const vapesTotal = vapesRes.success ? vapesRes.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
+        const pouchesTotal = pouchesRes.success ? pouchesRes.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
+        setRechartsPieData([
+          { type: 'Vapes', value: vapesTotal },
+          { type: 'Pouches', value: pouchesTotal },
+        ]);
+
+        // Fetch product performance
+        const [vapesPerfRes, pouchesPerfRes] = await Promise.all([
+          fetchData('/financial/reports/product-performance', { productType: 'vape' }),
+          fetchData('/financial/reports/product-performance', { productType: 'pouch' })
+        ]);
+        
+        if (vapesPerfRes.success && pouchesPerfRes.success) {
+          const vapes = vapesPerfRes.data.filter((p: any) => p.category_id === 1 || p.category_id === 3);
+          const pouches = pouchesPerfRes.data.filter((p: any) => p.category_id === 4 || p.category_id === 5);
           const allNames = Array.from(new Set([...vapes.map((p: any) => p.product_name), ...pouches.map((p: any) => p.product_name)]));
           const merged = allNames.map((name: string) => {
             const v = vapes.find((p: any) => p.product_name === name) || {};
@@ -161,48 +246,41 @@ const SalesDashboardPage: React.FC = () => {
             };
           });
           setProductPerf(merged);
-        } else {
-          setProductPerfError('Failed to fetch product performance data');
         }
-      } catch {
-        setProductPerfError('An error occurred while fetching product performance');
+
+        // Fetch managers data
+        const [mgrRes, repRes] = await Promise.all([
+          fetchData('/managers'),
+          fetchData('/sales/performance')
+        ]);
+        setManagers(mgrRes || []);
+        setRepData(repRes.data || []);
+        
+      } catch (err: any) {
+        setError('Failed to fetch dashboard data');
+        console.error('Dashboard data fetch error:', err);
       } finally {
+        setLoading(false);
+        setMpLoading(false);
         setProductPerfLoading(false);
       }
     };
-    fetchProductPerf();
 
-    // Fetch managers and performance data
-    const fetchManagersPerf = async () => {
-      setMpLoading(true);
-      setMpError(null);
-      try {
-        const [mgrRes, repRes] = await Promise.all([
-          axios.get('/api/managers'),
-          axios.get('/api/sales/performance'),
-        ]);
-        setManagers(mgrRes.data || []);
-        setRepData(repRes.data.data || []);
-      } catch (err: any) {
-        setMpError('Failed to fetch managers performance');
-      } finally {
-        setMpLoading(false);
-      }
-    };
-    fetchManagersPerf();
+    loadDashboardData();
   }, []);
 
-  // Helper to get all reps for a manager (by region)
-  function getRepsForManager(manager: any) {
+  // Helper functions
+  const getRepsForManager = (manager: any) => {
     return repData.filter((rep: any) => rep.region === manager.region);
-  }
-  // Helper to sum up and get overall % for a manager
-  function getManagerOverallPct(manager: any) {
+  };
+
+  const getManagerOverallPct = (manager: any) => {
     const reps = getRepsForManager(manager);
     let typeKey: 'retail' | 'key_accounts' | 'distributors';
     if (manager.managerTypeId === 1) typeKey = 'retail';
     else if (manager.managerTypeId === 2) typeKey = 'key_accounts';
     else typeKey = 'distributors';
+    
     const total = reps.reduce(
       (acc: any, rep: any) => {
         const perf = rep[typeKey];
@@ -216,241 +294,265 @@ const SalesDashboardPage: React.FC = () => {
       },
       { vapes_target: 0, pouches_target: 0, vapes_sales: 0, pouches_sales: 0, total_outlets: 0, outlets_with_orders: 0 }
     );
+    
     const outlet_pct = total.total_outlets > 0 ? (total.outlets_with_orders / total.total_outlets) * 100 : 0;
     const vapesPct = total.vapes_target > 0 ? (total.vapes_sales / total.vapes_target) * 100 : 0;
     const pouchesPct = total.pouches_target > 0 ? (total.pouches_sales / total.pouches_target) * 100 : 0;
     const overallPct = ((outlet_pct + vapesPct + pouchesPct) / 3);
     return overallPct;
-  }
+  };
+
+  const navigationItems = [
+    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/products', label: 'Products', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { to: '/managers', label: 'Managers', icon: <UserCheckIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/clients-list', label: 'Clients', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
+    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/dashboard/reports/sales-report', label: 'Sales Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { to: '/dashboard/reports/product-performance', label: 'Product Performance', icon: <PieChartIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+    { to: '/master-sales', label: 'Master Sales', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/sales-rep-master-report', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/my-visibility', label: 'Visibility Report', icon: <EyeIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/settings', label: 'My Account', icon: <SettingsIcon className="h-4 w-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
+  ];
 
   return (
-    <div className="max-w-8xl mx-auto py-4 px-4">
-      {/* Topbar with menus - below the header */}
-      <div className="bg-white shadow flex items-center px-6 py-3 mb-1 rounded-lg">
-        <nav className="flex gap-6">
-          <Link
-            to="/sales-reps"
-            className="inline-block bg-blue-100 text-blue-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-blue-200 transition"
-          >
-            Sales Reps
-          </Link>
-          <Link
-            to="/sales-rep-leaves"
-            className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-green-200 transition"
-          >
-            Sales Rep Leaves
-          </Link>
-          <Link
-            to="/products"
-            className="inline-block bg-indigo-100 text-indigo-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-indigo-200 transition"
-          >
-            Products
-          </Link>
-          <Link
-            to="/managers"
-            className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-green-200 transition"
-          >
-            Managers
-          </Link>
-          <Link
-            to="/clients-list"
-            className="inline-block bg-purple-100 text-purple-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-purple-200 transition"
-          >
-            Clients
-          </Link>
-          <Link
-            to="/notices"
-            className="inline-block bg-yellow-100 text-yellow-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-yellow-200 transition"
-          >
-            Notices
-          </Link>
-          <Link
-            to="/tasks"
-            className="inline-block bg-indigo-100 text-indigo-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-indigo-200 transition"
-          >
-            Tasks
-          </Link>
-          <Link
-            to="/dashboard/reports/sales-report"
-            className="inline-block bg-orange-100 text-orange-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-orange-200 transition"
-          >
-            Sales Report
-          </Link>
-          <Link
-            to="/dashboard/reports/product-performance"
-            className="inline-block bg-pink-100 text-pink-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-pink-200 transition"
-          >
-            Product Performance
-          </Link>
-                        <Link
-                to="/master-sales"
-                className="inline-block bg-red-100 text-red-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-red-200 transition"
-              >
-                Master Sales
-              </Link>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Dashboard</h1>
+        </div>
+
+        {/* Navigation Menu */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Navigation</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+            {navigationItems.map((item, index) => (
               <Link
-                to="/sales-rep-master-report"
-                className="inline-block bg-blue-100 text-blue-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-blue-200 transition"
+                key={index}
+                to={item.to}
+                className={`${item.color} flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md`}
               >
-                Sales Rep Report
+                {item.icon}
+                <span className="mt-2 text-center">{item.label}</span>
               </Link>
-          <Link
-            to="/my-visibility"
-            className="inline-block bg-cyan-100 text-cyan-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-cyan-200 transition"
-          >
-            Visibility Report
-          </Link>
-          <Link
-            to="/settings"
-            className="inline-block bg-gray-100 text-gray-700 font-semibold px-4 py-1 rounded-full text-sm shadow-sm mr-2 cursor-pointer hover:bg-gray-200 transition"
-          >
-            My Account
-          </Link>
-          {/* Add more menu items here as needed */}
-        </nav>
-      </div>
-     
-        {/* Add sales-specific stats, charts, and quick links here */}
-        <div className="mt-0 lg:flex lg:space-x-6">
-          {/* Bar Graph Card - Left Side */}
-          <div className="bg-white rounded shadow p-6 w-full lg:w-1/2 mb-6 lg:mb-0">
-            <h2
-              className="text-lg font-semibold mb-4 cursor-pointer text-blue-700 hover:underline"
-              onClick={() => navigate('/dashboard/reports/sales-report')}
-              title="View full sales report"
-            >
-              Monthly Sales (Bar Graph)
-            </h2>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Total Sales"
+            value={stats.totalSales.toLocaleString()}
+            prefix="$"
+            icon={<DollarSignIcon className="h-6 w-6" />}
+            bgColor="bg-gradient-to-r from-green-600 to-green-700"
+            onClick={() => navigate('/dashboard/reports/sales-report')}
+          />
+          <StatCard
+            title="Total Orders"
+            value={stats.totalOrders}
+            icon={<ShoppingCartIcon className="h-6 w-6" />}
+            bgColor="bg-gradient-to-r from-blue-600 to-blue-700"
+            onClick={() => navigate('/dashboard/reports/sales-report')}
+          />
+          <StatCard
+            title="Active Sales Reps"
+            value={stats.activeReps}
+            icon={<UsersIcon className="h-6 w-6" />}
+            bgColor="bg-gradient-to-r from-purple-600 to-purple-700"
+            onClick={() => navigate('/sales-reps')}
+          />
+          <StatCard
+            title="Avg Performance"
+            value={stats.avgPerformance}
+            suffix="%"
+            icon={<TrendingUpIcon className="h-6 w-6" />}
+            bgColor="bg-gradient-to-r from-orange-600 to-orange-700"
+            onClick={() => navigate('/shared-performance')}
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Monthly Sales Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Monthly Sales Trend</h2>
+              <button
+                onClick={() => navigate('/dashboard/reports/sales-report')}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                View Details →
+              </button>
+            </div>
             {loading ? (
-              <div>Loading chart...</div>
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
             ) : error ? (
-              <div className="text-red-500">{error}</div>
+              <div className="text-red-500 text-center h-64 flex items-center justify-center">{error}</div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="amount" fill="#7CB9E8" name="Total Sales" />
-                </BarChart>
+                <LineChart data={monthlyData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                  />
+                </LineChart>
               </ResponsiveContainer>
             )}
           </div>
-          {/* Product Performance Card (Grouped Bar Chart) */}
-          <div className="bg-white rounded shadow p-6 w-full lg:w-1/2 flex flex-col items-center justify-center">
-            <h2
-              className="text-lg font-semibold mb-4 cursor-pointer text-green-700 hover:underline"
-              onClick={() => navigate('/dashboard/reports/product-performance')}
-              title="View full sales report"
-            >
-              Product Performance
-            </h2>
-            {productPerfLoading ? (
-              <div>Loading chart...</div>
-            ) : productPerfError ? (
-              <div className="text-red-500">{productPerfError}</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={340}>
-                <BarChart data={productPerf} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="product_name" angle={-30} textAnchor="end" interval={0} height={80} />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar yAxisId="left" dataKey="vapes_sales_value" fill="#7CB9E8" name="Vapes Sales Value" />
-                  <Bar yAxisId="left" dataKey="pouches_sales_value" fill="#fbbf24" name="Pouches Sales Value" />
-                  <Bar yAxisId="right" dataKey="vapes_quantity" fill="#34D399" name="Vapes Quantity" />
-                  <Bar yAxisId="right" dataKey="pouches_quantity" fill="#f472b6" name="Pouches Quantity" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-        <div className="mt-6 lg:flex lg:space-x-6">
-          {/* Bar Graph Card - Left Side */}
-          <div className="bg-white rounded shadow p-6 w-full lg:w-1/2 mb-6 lg:mb-0">
-            <h2
-              className="text-lg font-semibold mb-4 cursor-pointer text-blue-700 hover:underline"
-              onClick={() => navigate('/managers-performance')}
-              title="View full sales report"
-            >
-              Managers Performance
-            </h2>
-            {/* Managers Performance Pie Chart (react-chartjs-2) */}
-            {mpLoading ? (
-              <div>Loading managers performance...</div>
-            ) : mpError ? (
-              <div className="text-red-600 mb-4">{mpError}</div>
-            ) : managers && managers.length > 0 ? (
-              <div className="w-full max-w-xl mx-auto">
-                <Pie
-                  data={{
-                    labels: managers.map((m: any) => m.name),
-                    datasets: [
-                      {
-                        label: 'Overall %',
-                        data: managers.map((m: any) => getManagerOverallPct(m) || 0),
-                        backgroundColor: managers.map((_: any, i: number) => {
-                          const palette = [
-                            '#22c55e', '#eab308', '#ef4444', '#3b82f6', '#a21caf', '#f59e42', '#0ea5e9', '#f43f5e', '#16a34a', '#facc15', '#6366f1', '#f87171',
-                          ];
-                          return palette[i % palette.length];
-                        }),
-                        borderColor: '#fff',
-                        borderWidth: 2,
-                      },
-                    ],
-                  }}
-                  options={{
-                    plugins: {
-                      legend: { position: 'bottom' },
-                      tooltip: { callbacks: { label: (ctx: any) => `${ctx.label}: ${ctx.parsed.toFixed(1)}%` } },
-                      datalabels: {
-                        color: '#222',
-                        font: { weight: 'bold' },
-                        formatter: (value: number) => `${value.toFixed(1)}%`,
-                      },
-                    }
-                  }}
-                />
-              </div>
-            ) : null}
-          </div>
-          {/* Pie Chart - Right Side */}
-          <div 
-          className="bg-white rounded shadow p-6 w-full lg:w-1/2 flex flex-col items-center justify-center">
-             
-             <h2
-              className="text-lg font-semibold mb-2 cursor-pointer text-green-700 hover:underline"
-              onClick={() => navigate('/shared-performance')}
-              title="View full sales report"
-            >
-              Sales Rep Performance
-            </h2>
-             
-            {/* Top 10 Sales Reps Bar Chart */}
-            <div className="w-full mt-2">
-              <h3 className="text-md font-semibold mb-2 text-blue-700">Top 10 Sales Reps (Overall %)</h3>
-              <ReResponsiveContainer width="100%" height={350}>
-                <ReBarChart
-                  data={topReps}
-                  margin={{ top: 2, right: 24, left: 0, bottom: 0 }}
-                >
-                  <ReCartesianGrid strokeDasharray="3 3" />
-                  <ReXAxis dataKey="name" type="category" interval={0} angle={-30} textAnchor="end" height={100} />
-                  <ReYAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                  <ReTooltip formatter={v => `${v}%`} />
-                  <ReLegend />
-                  <ReBar dataKey="overall" fill="#7CB9E8" name="Overall %" />
-                </ReBarChart>
-              </ReResponsiveContainer>
+
+          {/* Product Performance Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Product Performance</h2>
+              <button
+                onClick={() => navigate('/dashboard/reports/product-performance')}
+                className="text-green-600 hover:text-green-800 text-sm font-medium"
+              >
+                View Details →
+              </button>
             </div>
+            {productPerfLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            ) : productPerfError ? (
+              <div className="text-red-500 text-center h-64 flex items-center justify-center">{productPerfError}</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={productPerf} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="product_name" angle={-30} textAnchor="end" interval={0} height={80} stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="vapes_sales_value" fill="#3b82f6" name="Vapes Sales" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pouches_sales_value" fill="#10b981" name="Pouches Sales" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
-       
+
+        {/* Performance Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Managers Performance */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Managers Performance</h2>
+              <button
+                onClick={() => navigate('/managers-performance')}
+                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+              >
+                View Details →
+              </button>
+            </div>
+            {mpLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              </div>
+            ) : mpError ? (
+              <div className="text-red-500 text-center h-64 flex items-center justify-center">{mpError}</div>
+            ) : managers && managers.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={managers.map((m: any) => ({
+                      name: m.name,
+                      value: getManagerOverallPct(m) || 0
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {managers.map((_: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any) => [`${value.toFixed(1)}%`, 'Performance']}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-500 text-center h-64 flex items-center justify-center">No managers data available</div>
+            )}
+          </div>
+
+          {/* Top Sales Reps */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Top 10 Sales Reps</h2>
+              <button
+                onClick={() => navigate('/shared-performance')}
+                className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+              >
+                View Details →
+              </button>
+            </div>
+            {topReps.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topReps} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" type="category" interval={0} angle={-30} textAnchor="end" height={100} stroke="#6b7280" />
+                  <YAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} stroke="#6b7280" />
+                  <Tooltip 
+                    formatter={(value: any) => [`${value}%`, 'Overall Performance']}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar dataKey="overall" fill="#f59e0b" name="Overall %" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-500 text-center h-64 flex items-center justify-center">No sales reps data available</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

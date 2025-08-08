@@ -269,7 +269,7 @@ const SalesReportPage: React.FC = () => {
       </div>
 
       {/* Monthly Sales Trend Line Chart */}
-      <div className="max-w-7xl mx-auto mt-8 mb-8 bg-white rounded-lg shadow p-6">
+      <div className="max-w-7xl mx-auto mt-8 mb-8 bg-white rounded-lg shadow p-6 hidden">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Sales Trend</h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={monthlySalesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
