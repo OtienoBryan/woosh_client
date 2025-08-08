@@ -38,7 +38,7 @@ const getApiBaseUrl = (): string => {
   
   if (!url) {
     console.warn('VITE_API_URL is not defined in .env file, falling back to localhost:5000');
-    return 'http://localhost:5000/api';
+    return import.meta.env.VITE_API_URL;
   }
   
   // Ensure the URL ends with /api
@@ -49,7 +49,7 @@ const API_BASE_URL = getApiBaseUrl();
 console.log('Using API base URL:', API_BASE_URL);
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
