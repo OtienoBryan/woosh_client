@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +24,7 @@ const LoginPage: React.FC = () => {
       console.log('Login attempt with username:', username);
       console.log('API base URL:', import.meta.env.VITE_API_URL);
       
-      const response = await api.post('/auth/login', { username, password });
+      const response = await api.post(`${API_BASE_URL}/auth/login`, { username, password });
       console.log('Login response received:', { 
         status: response.status,
         hasToken: !!response.data.token,
