@@ -619,24 +619,24 @@ const SalesRepsPage: React.FC = () => {
         >
           Sales Rep Working Days
         </Link>
-        <Link
+        {/* <Link
           to="/sales-rep-performance"
           className="bg-purple-100 text-purple-700 font-semibold px-4 py-2 rounded shadow hover:bg-purple-200"
         >
           Sales Rep Performance
-        </Link>
+        </Link> */}
         <Link
           to="/shared-performance"
           className="bg-pink-100 text-pink-700 font-semibold px-4 py-2 rounded shadow hover:bg-pink-200"
         >
-          Shared Performance
+          Sales Rep Performance
         </Link>
-        <Link
+        {/* <Link
           to="/managers-performance"
           className="bg-green-100 text-green-700 font-semibold px-4 py-2 rounded shadow hover:bg-green-200"
         >
           Managers Performance
-        </Link>
+        </Link> */}
         <button
           onClick={openFilterModal}
           className="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow hover:bg-gray-200"
@@ -767,10 +767,13 @@ const SalesRepsPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {rep.status === 1 ? (
-                          <span className="text-green-600 font-semibold">Active</span>
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                        ) : rep.status === 0 ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
                         ) : (
-                          <span className="text-red-600 font-semibold">Inactive</span>
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Unknown</span>
                         )}
+                        <span className="text-xs text-gray-400 ml-1">({rep.status ?? 'undefined'})</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

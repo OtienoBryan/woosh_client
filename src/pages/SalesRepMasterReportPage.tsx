@@ -7,6 +7,8 @@ interface SalesRepData {
   name: string;
   total_journeys: number;
   completion_rate: number;
+  status?: number; // 1 for active, 0 for inactive
+  country?: string;
 }
 
 const SalesRepMasterReportPage: React.FC = () => {
@@ -16,9 +18,17 @@ const SalesRepMasterReportPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0]; // Current date
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0]; // Current date
+  });
+  const [selectedStatus, setSelectedStatus] = useState<'1' | '0' | ''>('1'); // Default to Active
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya'); // Default to Kenya
+  const [countries, setCountries] = useState<{id: number; name: string}[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showJourneyDetailsModal, setShowJourneyDetailsModal] = useState(false);
   const [selectedSalesRep, setSelectedSalesRep] = useState<SalesRepData | null>(null);
@@ -30,30 +40,33 @@ const SalesRepMasterReportPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
-  const months = [
-    { value: '', label: 'All Months' },
-    { value: '1', label: 'January' },
-    { value: '2', label: 'February' },
-    { value: '3', label: 'March' },
-    { value: '4', label: 'April' },
-    { value: '5', label: 'May' },
-    { value: '6', label: 'June' },
-    { value: '7', label: 'July' },
-    { value: '8', label: 'August' },
-    { value: '9', label: 'September' },
-    { value: '10', label: 'October' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'December' }
-  ];
+
 
   useEffect(() => {
     fetchSalesRepData();
-  }, [selectedYear, selectedMonth, selectedDate]);
+  }, [startDate, endDate, selectedStatus, selectedCountry]);
 
   useEffect(() => {
     filterData();
     setCurrentPage(1);
-  }, [salesReps, searchQuery]);
+  }, [salesReps, searchQuery, selectedStatus, selectedCountry]);
+
+  // Fetch countries on component mount
+  useEffect(() => {
+    fetchCountries();
+  }, []);
+
+  const fetchCountries = async () => {
+    try {
+      const response = await fetch('/api/sales/countries');
+      if (response.ok) {
+        const data = await response.json();
+        setCountries(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch countries:', err);
+    }
+  };
 
   const fetchSalesRepData = async () => {
     try {
@@ -61,9 +74,10 @@ const SalesRepMasterReportPage: React.FC = () => {
       setError(null);
       
       const params = new URLSearchParams({
-        year: selectedYear.toString(),
-        ...(selectedMonth && { month: selectedMonth }),
-        date: selectedDate
+        start_date: startDate,
+        end_date: endDate,
+        ...(selectedStatus && { status: selectedStatus }),
+        ...(selectedCountry && { country: selectedCountry })
       });
 
       const response = await fetch(`/api/sales/rep/master-report?${params}`);
@@ -87,7 +101,8 @@ const SalesRepMasterReportPage: React.FC = () => {
       
       const params = new URLSearchParams({
         salesRepId: salesRepId.toString(),
-        date: selectedDate
+        start_date: startDate,
+        end_date: endDate
       });
 
       const response = await fetch(`/api/sales/rep/journey-details?${params}`);
@@ -113,20 +128,56 @@ const SalesRepMasterReportPage: React.FC = () => {
     await fetchJourneyDetails(salesRep.id);
   };
 
+  const calculateTimeSpent = (checkInTime: string, checkOutTime: string): string => {
+    if (!checkInTime || !checkOutTime) return 'N/A';
+    
+    try {
+      const checkIn = new Date(checkInTime);
+      const checkOut = new Date(checkOutTime);
+      
+      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+        return 'N/A';
+      }
+      
+      const diffMs = checkOut.getTime() - checkIn.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (diffHours > 0) {
+        return `${diffHours}h ${diffMinutes}m`;
+      } else {
+        return `${diffMinutes}m`;
+      }
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
   const handleViewReports = (journey: any) => {
-    navigate(`/sales-rep-reports/${selectedSalesRep!.id}/${journey.client_id}?date=${selectedDate}`);
+    navigate(`/sales-rep-reports/${selectedSalesRep!.id}/${journey.client_id}?start_date=${startDate}&end_date=${endDate}`);
   };
 
   const filterData = () => {
-    if (!searchQuery.trim()) {
-      setFilteredData(salesReps);
-      return;
+    let filtered = salesReps;
+
+    // Apply status filter
+    if (selectedStatus !== '') {
+      filtered = filtered.filter(rep => String(rep.status ?? 1) === selectedStatus);
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = salesReps.filter(rep =>
-      rep.name.toLowerCase().includes(query)
-    );
+    // Apply country filter
+    if (selectedCountry) {
+      filtered = filtered.filter(rep => rep.country === selectedCountry);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(rep =>
+        rep.name.toLowerCase().includes(query)
+      );
+    }
+
     setFilteredData(filtered);
   };
 
@@ -136,12 +187,14 @@ const SalesRepMasterReportPage: React.FC = () => {
     try {
       setExporting(true);
       
-      const headers = ['Sales Rep Name', 'Total Journeys', 'Completion Rate (%)'];
+      const headers = ['Sales Rep Name', 'Country', 'Total Journeys', 'Completion Rate (%)', 'Status'];
       
       const csvData = filteredData.map(rep => [
         rep.name,
+        rep.country || '',
         rep.total_journeys,
-        Number(rep.completion_rate).toFixed(1)
+        Number(rep.completion_rate).toFixed(1),
+        rep.status === 1 ? 'Active' : 'Inactive'
       ]);
 
       const csvContent = [headers, ...csvData]
@@ -155,13 +208,8 @@ const SalesRepMasterReportPage: React.FC = () => {
       
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
-      const filterInfo = [];
-      if (selectedYear !== new Date().getFullYear()) filterInfo.push(`Year-${selectedYear}`);
-      if (selectedMonth) filterInfo.push(`Month-${months.find(m => m.value === selectedMonth)?.label}`);
-      if (selectedDate !== new Date().toISOString().split('T')[0]) filterInfo.push(`Date-${selectedDate}`);
-      
-      const filterSuffix = filterInfo.length > 0 ? `-${filterInfo.join('-')}` : '';
-      a.download = `sales-rep-master-report-${selectedYear}-${dateStr}${filterSuffix}.csv`;
+      const filterSuffix = `-${startDate}-to-${endDate}`;
+      a.download = `sales-rep-master-report-${dateStr}${filterSuffix}.csv`;
       
       a.click();
       window.URL.revokeObjectURL(url);
@@ -294,11 +342,12 @@ const SalesRepMasterReportPage: React.FC = () => {
             <Filter className="h-4 w-4" />
             Filters
             {(() => {
-              const activeFilters = [
-                selectedYear !== new Date().getFullYear(),
-                selectedMonth,
-                selectedDate !== new Date().toISOString().split('T')[0]
-              ].filter(Boolean).length;
+              const now = new Date();
+              const currentDate = now.toISOString().split('T')[0];
+              const dateFiltersActive = (startDate !== currentDate || endDate !== currentDate);
+              const statusFilterActive = selectedStatus !== '1'; // Active is default, so show filter if not active
+              const countryFilterActive = selectedCountry !== 'Kenya'; // Kenya is default, so show filter if not Kenya
+              const activeFilters = [dateFiltersActive, statusFilterActive, countryFilterActive].filter(Boolean).length;
               return activeFilters > 0 ? ` (${activeFilters})` : '';
             })()}
           </button>
@@ -316,11 +365,17 @@ const SalesRepMasterReportPage: React.FC = () => {
                     <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                       Sales Rep Name
                     </th>
+                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Country
+                    </th>
                     <th className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
                       Total Journeys
                     </th>
                     <th className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
                       Completion Rate
+                    </th>
+                    <th className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">
+                      Status
                     </th>
                     <th className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">
                       Actions
@@ -330,7 +385,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {currentData.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={6} className="px-3 py-4 text-center text-sm text-gray-500">
                         No sales rep data found
                       </td>
                     </tr>
@@ -340,6 +395,9 @@ const SalesRepMasterReportPage: React.FC = () => {
                         <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
                           {rep.name}
                         </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                          {rep.country || <span className="text-gray-400">Not specified</span>}
+                        </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-900">
                           {rep.total_journeys}
                         </td>
@@ -347,6 +405,15 @@ const SalesRepMasterReportPage: React.FC = () => {
                           <span className={`font-medium ${Number(rep.completion_rate) >= 80 ? 'text-green-600' : Number(rep.completion_rate) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
                             {Number(rep.completion_rate).toFixed(1)}%
                           </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
+                          {rep.status === 1 ? (
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                          ) : rep.status === 0 ? (
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
+                          ) : (
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Unknown</span>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
                           <button
@@ -367,11 +434,17 @@ const SalesRepMasterReportPage: React.FC = () => {
                       <td className="px-3 py-4 text-sm font-semibold text-gray-900">
                         Total
                       </td>
+                      <td className="px-3 py-4 text-sm text-gray-500">
+                        -
+                      </td>
                       <td className="px-3 py-4 text-sm font-semibold text-right text-gray-900">
                         {filteredData.reduce((sum, rep) => sum + rep.total_journeys, 0)}
                       </td>
                       <td className="px-3 py-4 text-sm font-semibold text-right text-gray-900">
                         {filteredData.length > 0 ? (filteredData.reduce((sum, rep) => sum + Number(rep.completion_rate), 0) / filteredData.length).toFixed(1) : 0}%
+                      </td>
+                      <td className="px-3 py-4 text-sm text-gray-500">
+                        -
                       </td>
                       <td className="px-3 py-4 text-sm text-gray-500">
                         -
@@ -463,54 +536,81 @@ const SalesRepMasterReportPage: React.FC = () => {
             </button>
             <h2 className="text-lg font-bold mb-4">Filter Options</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Year */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Status Filter */}
               <div>
-                <h3 className="text-md font-semibold mb-3">Year</h3>
+                <h3 className="text-md font-semibold mb-3">Sales Rep Status</h3>
                 <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value as '1' | '0' | '')}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                 >
-                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                    <option key={year} value={year}>{year}</option>
+                  <option value="1">Active</option>
+                  <option value="0">Inactive</option>
+                  <option value="">All</option>
+                </select>
+              </div>
+              
+              {/* Country Filter */}
+              <div>
+                <h3 className="text-md font-semibold mb-3">Country</h3>
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                >
+                  <option value="">All Countries</option>
+                  {countries.map(country => (
+                    <option key={country.id} value={country.name}>{country.name}</option>
                   ))}
                 </select>
               </div>
-
-              {/* Month */}
+              
+              {/* Start Date */}
               <div>
-                <h3 className="text-md font-semibold mb-3">Month</h3>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                >
-                  {months.map(month => (
-                    <option key={month.value} value={month.value}>{month.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Date */}
-              <div>
-                <h3 className="text-md font-semibold mb-3">Date</h3>
+                <h3 className="text-md font-semibold mb-3">Start Date</h3>
                 <input
                   type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                  placeholder="Select Date"
+                  placeholder="Select Start Date"
                 />
               </div>
+
+              {/* End Date */}
+              <div>
+                <h3 className="text-md font-semibold mb-3">End Date</h3>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  placeholder="Select End Date"
+                />
+              </div>
+            </div>
+            
+            {/* Date Range Info */}
+            <div className="mt-4 p-3 bg-blue-50 rounded-md">
+              <p className="text-sm text-blue-700">
+                <strong>Selected Range:</strong> {startDate} to {endDate}
+                <span className="ml-2 text-blue-600">
+                  ({Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days)
+                </span>
+              </p>
             </div>
 
             <div className="flex justify-between mt-6 gap-2">
               <button
                 onClick={() => {
-                  setSelectedYear(new Date().getFullYear());
-                  setSelectedMonth('');
-                  setSelectedDate(new Date().toISOString().split('T')[0]);
+                  const now = new Date();
+                  const currentDate = now.toISOString().split('T')[0];
+                  setStartDate(currentDate);
+                  setEndDate(currentDate);
+                  setSelectedStatus('1'); // Reset to Active
+                  setSelectedCountry('Kenya'); // Reset to Kenya
                 }}
                 className="px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
               >
@@ -545,7 +645,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 Journey Details - {selectedSalesRep.name}
               </h2>
               <p className="text-sm text-gray-600">
-                Date: {selectedDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}%
+                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}%
               </p>
             </div>
 
@@ -573,6 +673,9 @@ const SalesRepMasterReportPage: React.FC = () => {
                         Check Out Time
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Time Spent
+                      </th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Status
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -591,6 +694,11 @@ const SalesRepMasterReportPage: React.FC = () => {
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
                           {journey.checkOutTime ? new Date(journey.checkOutTime).toLocaleTimeString() : 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                          <span className="font-medium text-blue-600">
+                            {calculateTimeSpent(journey.checkInTime, journey.checkOutTime)}
+                          </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
