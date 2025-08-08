@@ -3,17 +3,9 @@ export const API_CONFIG = {
   // Get API URL from environment variable with proper validation
   getBaseUrl: (): string => {
     const url = import.meta.env.VITE_API_URL;
-    
-    // In production (Vercel), use the configured API URL
-    if (import.meta.env.PROD) {
-      return url || '';
-    }
-    
-    // In development, require the environment variable
     if (!url) {
       throw new Error('VITE_API_URL environment variable is required but not defined');
     }
-    
     return url.endsWith('/api') ? url : `${url}/api`;
   },
   
@@ -39,7 +31,6 @@ if (import.meta.env.DEV) {
   console.log('API Configuration:', {
     baseUrl: API_BASE_URL,
     socketUrl: SOCKET_URL,
-    envUrl: import.meta.env.VITE_API_URL,
-    isProduction: import.meta.env.PROD
+    envUrl: import.meta.env.VITE_API_URL
   });
 }
