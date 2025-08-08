@@ -33,17 +33,17 @@ const MyVisibilityPage: React.FC = () => {
     fetchReports();
   }, []);
 
-  const fetchReports = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await myVisibilityReportService.getAll();
-      setReports(response.data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch my visibility reports');
-    }
-    setLoading(false);
-  };
+    const fetchReports = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await myVisibilityReportService.getAll();
+        setReports(response.data);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch my visibility reports');
+      }
+      setLoading(false);
+    };
 
   // Get unique outlets and countries for filters
   const outlets = [...new Set(reports.map(report => report.outlet).filter(Boolean))];
@@ -140,15 +140,15 @@ const MyVisibilityPage: React.FC = () => {
             </div>
             
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => navigate('/feedback-reports')}
+        <button
+          onClick={() => navigate('/feedback-reports')}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Feedback Reports
-              </button>
-              <button
-                onClick={() => navigate('/availability-reports')}
+        </button>
+        <button
+          onClick={() => navigate('/availability-reports')}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -317,8 +317,8 @@ const MyVisibilityPage: React.FC = () => {
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
-              </button>
-            </div>
+        </button>
+      </div>
           </div>
 
           {/* Filter Summary */}
@@ -367,14 +367,14 @@ const MyVisibilityPage: React.FC = () => {
         </div>
 
         {/* Reports Table */}
-        {loading ? (
+      {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading visibility reports...</p>
             </div>
           </div>
-        ) : error ? (
+      ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -400,10 +400,10 @@ const MyVisibilityPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Image
                     </th>
@@ -424,10 +424,10 @@ const MyVisibilityPage: React.FC = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                  </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
                   {filteredReports.map((report) => (
                     <tr key={report.id} className="hover:bg-gray-50 transition-colors duration-150">
                       {/* Image Column */}
@@ -483,8 +483,8 @@ const MyVisibilityPage: React.FC = () => {
                           </div>
                         ) : (
                           <span className="text-sm text-gray-500">N/A</span>
-                        )}
-                      </td>
+                      )}
+                    </td>
 
                       {/* Comment Column */}
                       <td className="px-6 py-4">
@@ -516,10 +516,10 @@ const MyVisibilityPage: React.FC = () => {
                           View Image
                         </button>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                </tr>
+              ))}
+            </tbody>
+          </table>
             </div>
           </div>
         )}
@@ -542,8 +542,8 @@ const MyVisibilityPage: React.FC = () => {
                 <span>• Use filters to narrow down results</span>
               </div>
             </div>
-          </div>
-        )}
+        </div>
+      )}
       </div>
     </div>
   );
