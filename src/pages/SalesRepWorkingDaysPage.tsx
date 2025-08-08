@@ -142,43 +142,43 @@ const SalesRepWorkingDaysPage: React.FC = () => {
   // Calculate stats for each sales rep
   const repStats: RepStats[] = useMemo(() => {
     return filteredSalesReps.map(rep => {
-      // Days present: unique loginAt dates in range (excluding Sundays)
-      const presentDays = new Set(
-        loginHistory
-          .filter(lh => lh.userId === rep.id &&
-            lh.sessionStart &&
-            new Date(lh.sessionStart) >= rangeStart && new Date(lh.sessionStart) <= rangeEnd &&
-            new Date(lh.sessionStart).getDay() !== 0)
-          .map(lh => lh.sessionStart.slice(0, 10))
-      );
+    // Days present: unique loginAt dates in range (excluding Sundays)
+    const presentDays = new Set(
+      loginHistory
+        .filter(lh => lh.userId === rep.id &&
+          lh.sessionStart &&
+          new Date(lh.sessionStart) >= rangeStart && new Date(lh.sessionStart) <= rangeEnd &&
+          new Date(lh.sessionStart).getDay() !== 0)
+        .map(lh => lh.sessionStart.slice(0, 10))
+    );
       
-      // Leave days: sum of working days in range covered by approved leaves
-      const repLeaves = leaves.filter(lv => String(lv.userId) === String(rep.id) && (lv.status === 1 || lv.status === '1'));
-      let leaveDays = 0;
-      repLeaves.forEach(lv => {
-        const leaveStart = new Date(lv.startDate) < rangeStart ? rangeStart : new Date(lv.startDate);
-        const leaveEnd = new Date(lv.endDate) > rangeEnd ? rangeEnd : new Date(lv.endDate);
-        for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
-          if (d.getDay() !== 0 && d >= rangeStart && d <= rangeEnd) {
-            leaveDays++;
-          }
+    // Leave days: sum of working days in range covered by approved leaves
+    const repLeaves = leaves.filter(lv => String(lv.userId) === String(rep.id) && (lv.status === 1 || lv.status === '1'));
+    let leaveDays = 0;
+    repLeaves.forEach(lv => {
+      const leaveStart = new Date(lv.startDate) < rangeStart ? rangeStart : new Date(lv.startDate);
+      const leaveEnd = new Date(lv.endDate) > rangeEnd ? rangeEnd : new Date(lv.endDate);
+      for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
+        if (d.getDay() !== 0 && d >= rangeStart && d <= rangeEnd) {
+          leaveDays++;
         }
-      });
-      
-      // Days absent: total working days - present - leave
-      const daysAbsent = numWorkingDays - presentDays.size - leaveDays;
-      const denominator = numWorkingDays - leaveDays;
-      const attendance = denominator > 0 ? ((presentDays.size / denominator) * 100).toFixed(1) : 'N/A';
-      
-      return {
-        rep,
-        present: presentDays.size,
-        leave: leaveDays,
-        absent: daysAbsent < 0 ? 0 : daysAbsent,
-        attendance,
-        totalWorkingDays: numWorkingDays
-      };
+      }
     });
+      
+    // Days absent: total working days - present - leave
+    const daysAbsent = numWorkingDays - presentDays.size - leaveDays;
+    const denominator = numWorkingDays - leaveDays;
+    const attendance = denominator > 0 ? ((presentDays.size / denominator) * 100).toFixed(1) : 'N/A';
+      
+    return {
+      rep,
+      present: presentDays.size,
+      leave: leaveDays,
+      absent: daysAbsent < 0 ? 0 : daysAbsent,
+      attendance,
+        totalWorkingDays: numWorkingDays
+    };
+  });
   }, [filteredSalesReps, loginHistory, leaves, numWorkingDays, rangeStart, rangeEnd]);
 
   const sortedRepStats = [...repStats].sort((a, b) => {
@@ -306,35 +306,35 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Link
-                to="/sales-rep-attendance"
+        <Link
+          to="/sales-rep-attendance"
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-              >
+        >
                 <Activity className="h-4 w-4 mr-2" />
                 Attendance View
-              </Link>
-              <button
-                onClick={exportToCSV}
+        </Link>
+        <button
+          onClick={exportToCSV}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-              >
+        >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
-              </button>
-              <button
-                onClick={openFilterModal}
+        </button>
+        <button
+          onClick={openFilterModal}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-              >
+        >
                 <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </button>
-            </div>
+          Filter
+        </button>
+      </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
+      {loading ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
@@ -342,7 +342,7 @@ const SalesRepWorkingDaysPage: React.FC = () => {
             <p className="mt-6 text-lg font-medium text-gray-700">Loading working days data...</p>
             <p className="mt-2 text-sm text-gray-500">Please wait while we fetch the latest information</p>
           </div>
-        ) : error ? (
+      ) : error ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
               <div className="text-red-600 text-2xl">⚠️</div>
@@ -493,8 +493,8 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
                     <p className="text-gray-500">No sales representatives found for the selected filters.</p>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
+      ) : (
+        <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                                                  <tr>
@@ -522,8 +522,8 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                              Performance
                            </th>
-                         </tr>
-                      </thead>
+              </tr>
+            </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredRepStats.map((stat, index) => {
                           const attendance = parseFloat(stat.attendance);
@@ -543,7 +543,7 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                             attendance >= 75 ? 'text-blue-600' :
                             attendance >= 60 ? 'text-yellow-600' : 'text-red-600';
 
-                          return (
+                return (
                             <tr key={stat.rep.id} className="hover:bg-gray-50 transition-colors duration-150">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
@@ -603,13 +603,13 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                                   {performanceLevel}
                                 </span>
                               </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
               </div>
             </div>
 
@@ -672,22 +672,22 @@ const SalesRepWorkingDaysPage: React.FC = () => {
             </div>
             
                          <div className="space-y-6">
-               <div>
+              <div>
                  <label htmlFor="countryFilter" className="block text-sm font-medium text-gray-700 mb-2">
                    Country
                  </label>
-                 <select
-                   id="countryFilter"
+                <select
+                  id="countryFilter"
                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                   value={pendingCountry}
-                   onChange={e => setPendingCountry(e.target.value)}
-                 >
-                   <option value="">All Countries</option>
-                   {countries.map(c => (
-                     <option key={c.id} value={c.name}>{c.name}</option>
-                   ))}
-                 </select>
-               </div>
+                  value={pendingCountry}
+                  onChange={e => setPendingCountry(e.target.value)}
+                >
+                  <option value="">All Countries</option>
+                  {countries.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
                
                <div>
                  <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
@@ -705,22 +705,22 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                  </select>
                </div>
                
-               <div>
+              <div>
                  <label htmlFor="repFilter" className="block text-sm font-medium text-gray-700 mb-2">
                    Sales Representative
                  </label>
-                 <select
-                   id="repFilter"
+                <select
+                  id="repFilter"
                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                   value={pendingRep}
-                   onChange={e => setPendingRep(e.target.value)}
-                 >
-                   <option value="">All Sales Reps</option>
-                   {filteredSalesReps.map(rep => (
-                     <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
-                   ))}
-                 </select>
-               </div>
+                  value={pendingRep}
+                  onChange={e => setPendingRep(e.target.value)}
+                >
+                  <option value="">All Sales Reps</option>
+                  {filteredSalesReps.map(rep => (
+                    <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
+                  ))}
+                </select>
+              </div>
               
               <div>
                 <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">

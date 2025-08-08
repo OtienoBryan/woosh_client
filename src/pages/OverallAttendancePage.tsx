@@ -280,7 +280,7 @@ const OverallAttendancePage: React.FC = () => {
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg">
                   <Activity className="h-6 w-6 text-white" />
                 </div>
-                <div>
+            <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                     Overall Attendance
                   </h1>
@@ -860,8 +860,8 @@ const OverallAttendancePage: React.FC = () => {
                     Apply Filters
                   </button>
                 </div>
-              </div>
-            </div>
+        </div>
+      </div>
           </div>
         )}
     </div>

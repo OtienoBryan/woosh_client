@@ -126,46 +126,46 @@ const SalesRepAttendancePage: React.FC = () => {
   // Build attendance records with enhanced data
   const attendanceRecords: AttendanceRecord[] = useMemo(() => {
     return days.map(dateStr => {
-      const dateObj = new Date(dateStr);
+    const dateObj = new Date(dateStr);
       const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
       const isWeekend = dateObj.getDay() === 0;
       
-      // Check for leave
-      const onLeave = leaves.some(lv => dateObj >= new Date(lv.startDate) && dateObj <= new Date(lv.endDate));
-      // Find login(s) for the day
-      const logins = loginHistory.filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === dateStr);
+    // Check for leave
+    const onLeave = leaves.some(lv => dateObj >= new Date(lv.startDate) && dateObj <= new Date(lv.endDate));
+    // Find login(s) for the day
+    const logins = loginHistory.filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === dateStr);
       
-      let status = 'Absent';
-      let loginTime = '';
-      let logoutTime = '';
-      let workingHours = '';
+    let status = 'Absent';
+    let loginTime = '';
+    let logoutTime = '';
+    let workingHours = '';
       
       if (isWeekend && onLeave) {
-        status = 'Weekend (Leave)';
+      status = 'Weekend (Leave)';
       } else if (isWeekend) {
-        status = 'Weekend';
-      } else if (onLeave) {
-        status = 'Leave';
-      } else if (logins.length > 0) {
-        status = 'Present';
-        // Earliest login, latest logout
-        loginTime = logins.map(lh => lh.sessionStart).sort()[0].slice(11, 16);
-        if (logins.some(lh => lh.sessionEnd)) {
-          logoutTime = logins.map(lh => lh.sessionEnd || '').sort().reverse()[0].slice(11, 16);
-          // Calculate working hours if both present
-          if (loginTime && logoutTime) {
-            const inDate = new Date(`${dateStr}T${loginTime}:00`);
-            const outDate = new Date(`${dateStr}T${logoutTime}:00`);
-            const diffMs = outDate.getTime() - inDate.getTime();
-            if (diffMs > 0) {
-              const totalMinutes = Math.floor(diffMs / (1000 * 60));
-              const hours = Math.floor(totalMinutes / 60);
-              const minutes = totalMinutes % 60;
-              workingHours = `${hours}h ${minutes}m`;
-            }
+      status = 'Weekend';
+    } else if (onLeave) {
+      status = 'Leave';
+    } else if (logins.length > 0) {
+      status = 'Present';
+      // Earliest login, latest logout
+      loginTime = logins.map(lh => lh.sessionStart).sort()[0].slice(11, 16);
+      if (logins.some(lh => lh.sessionEnd)) {
+        logoutTime = logins.map(lh => lh.sessionEnd || '').sort().reverse()[0].slice(11, 16);
+        // Calculate working hours if both present
+        if (loginTime && logoutTime) {
+          const inDate = new Date(`${dateStr}T${loginTime}:00`);
+          const outDate = new Date(`${dateStr}T${logoutTime}:00`);
+          const diffMs = outDate.getTime() - inDate.getTime();
+          if (diffMs > 0) {
+            const totalMinutes = Math.floor(diffMs / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            workingHours = `${hours}h ${minutes}m`;
           }
         }
       }
+    }
       
       return { 
         date: dateStr, 
@@ -181,12 +181,12 @@ const SalesRepAttendancePage: React.FC = () => {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const totalPresent = attendanceRecords.filter(r => r.status === 'Present').length;
-    const totalAbsent = attendanceRecords.filter(r => r.status === 'Absent').length;
-    const totalLeave = attendanceRecords.filter(r => r.status === 'Leave' || r.status === 'Weekend (Leave)').length;
+  const totalPresent = attendanceRecords.filter(r => r.status === 'Present').length;
+  const totalAbsent = attendanceRecords.filter(r => r.status === 'Absent').length;
+  const totalLeave = attendanceRecords.filter(r => r.status === 'Leave' || r.status === 'Weekend (Leave)').length;
     const totalWeekend = attendanceRecords.filter(r => r.status === 'Weekend').length;
     const totalWorking = attendanceRecords.filter(r => !r.isWeekend).length;
-    const attendancePct = totalWorking - totalLeave > 0 ? ((totalPresent / (totalWorking - totalLeave)) * 100).toFixed(1) : 'N/A';
+  const attendancePct = totalWorking - totalLeave > 0 ? ((totalPresent / (totalWorking - totalLeave)) * 100).toFixed(1) : 'N/A';
     
     // Calculate average working hours for present days
     const presentDays = attendanceRecords.filter(r => r.status === 'Present' && r.workingHours);
@@ -327,32 +327,32 @@ const SalesRepAttendancePage: React.FC = () => {
                     <label htmlFor="repSelect" className="block text-sm font-medium text-gray-700 mb-2">
                       Sales Representative
                     </label>
-                    <select
-                      id="repSelect"
+        <select
+          id="repSelect"
                       className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                      value={selectedRep}
-                      onChange={e => setSelectedRep(e.target.value)}
-                    >
-                      <option value="">Select Sales Rep</option>
+          value={selectedRep}
+          onChange={e => setSelectedRep(e.target.value)}
+        >
+          <option value="">Select Sales Rep</option>
                       {salesReps
                         .filter(rep => rep.status === 1) // Only show active sales reps
                         .map(rep => (
-                          <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
-                        ))}
-                    </select>
+            <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
+          ))}
+        </select>
                   </div>
                   <div>
                     <label htmlFor="monthSelect" className="block text-sm font-medium text-gray-700 mb-2">
                       Month
                     </label>
-                    <input
-                      id="monthSelect"
-                      type="month"
+        <input
+          id="monthSelect"
+          type="month"
                       className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                      value={month}
-                      onChange={e => setMonth(e.target.value)}
-                    />
-                  </div>
+          value={month}
+          onChange={e => setMonth(e.target.value)}
+        />
+      </div>
                 </div>
                 {selectedRepDetails && (
                   <div className="flex items-center space-x-3">
@@ -363,8 +363,8 @@ const SalesRepAttendancePage: React.FC = () => {
                       <p className="text-sm font-medium text-gray-900">{selectedRepDetails.name}</p>
                       <p className="text-xs text-gray-500">{selectedRepDetails.email}</p>
                     </div>
-                  </div>
-                )}
+            </div>
+          )}
               </div>
             </div>
 
@@ -509,7 +509,7 @@ const SalesRepAttendancePage: React.FC = () => {
                   </div>
                   
                   <div className="overflow-hidden">
-                    <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
@@ -531,8 +531,8 @@ const SalesRepAttendancePage: React.FC = () => {
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Working Hours
                             </th>
-                          </tr>
-                        </thead>
+                </tr>
+              </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {attendanceRecords.map((rec, index) => {
                             const statusColor = rec.status === 'Present' ? 'bg-green-100 text-green-800' :
@@ -566,12 +566,12 @@ const SalesRepAttendancePage: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                   <div className="text-sm font-semibold text-gray-900">{rec.workingHours || '-'}</div>
                                 </td>
-                              </tr>
+                  </tr>
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </div>
+              </tbody>
+            </table>
+          </div>
                   </div>
                 </div>
 

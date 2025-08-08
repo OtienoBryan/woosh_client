@@ -3,11 +3,14 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import { Link } from 'react-router-dom';
 import { XIcon } from 'lucide-react';
+import { salesService } from '../services/salesService';
 
 interface RepPerf {
   id: number;
   name: string;
   route_name?: string;
+  status?: number; // 1 for active, 0 for inactive
+  country?: string;
   distributors: PerfData;
   key_accounts: PerfData;
   retail: PerfData;
@@ -48,13 +51,50 @@ const SharedPerformancePage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [managers, setManagers] = useState<Manager[]>([]);
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<'1' | '0' | ''>('1'); // Default to active
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya'); // Default to Kenya
+  const [countries, setCountries] = useState<{id: number; name: string}[]>([]);
+  const [salesReps, setSalesReps] = useState<{id: number; status: number; country?: string}[]>([]);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const fetchData = (s = startDate, e = endDate) => {
     setLoading(true);
-    axios.get('/api/sales/performance', { params: { start_date: s, end_date: e } })
-      .then(res => setData(res.data.data || []))
-      .catch(err => setError(err.message || 'Failed to fetch performance'))
+    // Fetch performance data, sales rep data, and countries in parallel
+    Promise.all([
+      axios.get('/api/sales/performance', { params: { start_date: s, end_date: e } }),
+      salesService.getAllSalesReps(),
+      salesService.getCountries()
+    ])
+      .then(([performanceRes, salesRepsData, countriesData]) => {
+        const performanceData = performanceRes.data.data || [];
+        
+        // Create maps for quick lookup
+        const statusMap = new Map();
+        const countryMap = new Map();
+        salesRepsData.forEach((rep: any) => {
+          statusMap.set(rep.id, rep.status);
+          countryMap.set(rep.id, rep.country);
+        });
+        
+        // Merge status and country information into performance data
+        const mergedData = performanceData.map((rep: RepPerf) => ({
+          ...rep,
+          status: statusMap.get(rep.id) || 0, // Default to inactive if not found
+          country: countryMap.get(rep.id) || '' // Default to empty if not found
+        }));
+        
+        setData(mergedData);
+        setSalesReps(salesRepsData.map((rep: any) => ({ 
+          id: rep.id, 
+          status: rep.status,
+          country: rep.country 
+        })));
+        setCountries(countriesData);
+      })
+      .catch(err => {
+        console.error('Error fetching data:', err);
+        setError(err.message || 'Failed to fetch data');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -86,6 +126,11 @@ const SharedPerformancePage: React.FC = () => {
     <div className="max-w-8xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold mb-6">
         Shared Performance
+        {selectedCountry && selectedCountry !== '' && (
+          <span className="ml-2 text-lg font-normal text-blue-600">
+            - {selectedCountry}
+          </span>
+        )}
         {selectedManager && (
           <span className="ml-2 text-lg font-normal text-gray-700">
             - {selectedManager.name} ({selectedManager.region})
@@ -154,6 +199,31 @@ const SharedPerformancePage: React.FC = () => {
                   ))}
                 </select>
               </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sales Rep Status</label>
+                <select
+                  value={selectedStatus}
+                  onChange={e => setSelectedStatus(e.target.value as '1' | '0' | '')}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
+                >
+                  <option value="1">Active</option>
+                  <option value="0">Inactive</option>
+                  <option value="">All</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+                <select
+                  value={selectedCountry}
+                  onChange={e => setSelectedCountry(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
+                >
+                  <option value="">All Countries</option>
+                  {countries.map(country => (
+                    <option key={country.id} value={country.name}>{country.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="flex justify-end mt-6 gap-2">
               <button
@@ -210,6 +280,21 @@ const SharedPerformancePage: React.FC = () => {
                     );
                   })
                   .filter(rep => {
+                    // Filter by status
+                    if (selectedStatus !== '') {
+                      // Only show reps whose status exactly matches the selected status
+                      return String(rep.status) === selectedStatus;
+                    }
+                    return true;
+                  })
+                  .filter(rep => {
+                    // Filter by country
+                    if (selectedCountry !== '') {
+                      return rep.country === selectedCountry;
+                    }
+                    return true;
+                  })
+                  .filter(rep => {
                     if (!selectedManager) return true;
                     // region match
                     // rep.region may be undefined, so fallback to ''
@@ -252,6 +337,18 @@ const SharedPerformancePage: React.FC = () => {
                                 {rep.route_name && (
                                   <span className="ml-2 text-sm text-gray-500">({rep.route_name})</span>
                                 )}
+                                {rep.country && (
+                                  <span className="ml-2 text-xs text-blue-600 font-medium">{rep.country}</span>
+                                )}
+                                <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  rep.status === 1 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : rep.status === 0
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {rep.status === 1 ? 'Active' : rep.status === 0 ? 'Inactive' : 'Unknown'}
+                                </span>
                               </>
                             )}
                           </td>
