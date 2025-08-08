@@ -46,6 +46,7 @@ const CustomerOrdersPage: React.FC = () => {
       quantity: number;
       unit_price: number;
       total_price: number;
+      tax_type?: '16%' | 'zero_rated' | 'exempted';
     }>
   });
   const [submitting, setSubmitting] = useState(false);
@@ -250,7 +251,8 @@ const CustomerOrdersPage: React.FC = () => {
         product_name: item.product?.product_name,
         quantity: item.quantity,
         unit_price: item.unit_price,
-        total_price: item.total_price
+        total_price: item.total_price,
+        tax_type: (item as any).tax_type || '16%'
       })) || []
     });
     setIsEditing(true);
@@ -306,7 +308,8 @@ const CustomerOrdersPage: React.FC = () => {
       product_name: '',
       quantity: 1,
       unit_price: 0,
-      total_price: 0
+      total_price: 0,
+      tax_type: '16%'
     };
     const newIndex = editForm.items.length;
     setEditForm({
@@ -345,8 +348,13 @@ const CustomerOrdersPage: React.FC = () => {
     newItems[index] = { ...newItems[index], [field]: value };
     
     // Recalculate total price
-    if (field === 'quantity' || field === 'unit_price') {
-      newItems[index].total_price = newItems[index].quantity * newItems[index].unit_price;
+    if (field === 'quantity' || field === 'unit_price' || field === 'tax_type') {
+      const quantity = Number(newItems[index].quantity) || 0;
+      const unitPriceGross = Number(newItems[index].unit_price) || 0;
+      const taxType = (newItems[index].tax_type || '16%') as '16%' | 'zero_rated' | 'exempted';
+      const taxRate = taxType === '16%' ? 0.16 : 0;
+      const totalGross = quantity * unitPriceGross; // price is tax-inclusive
+      newItems[index].total_price = Number(totalGross.toFixed(2));
     }
     
     setEditForm({
@@ -364,14 +372,15 @@ const CustomerOrdersPage: React.FC = () => {
       const currentItem = newItems[index];
       const quantity = currentItem ? currentItem.quantity : 1;
       const unitPrice = product.selling_price || 0;
-      const totalPrice = quantity * unitPrice;
+      const totalPrice = quantity * unitPrice; // selling_price assumed tax-inclusive
       
       newItems[index] = {
         ...newItems[index],
         product_id: product.id,
         product_name: product.product_name,
         unit_price: unitPrice,
-        total_price: totalPrice
+        total_price: Number(totalPrice.toFixed(2)),
+        tax_type: currentItem?.tax_type || '16%'
       };
       
       console.log('Updated items:', newItems);
@@ -928,6 +937,12 @@ const CustomerOrdersPage: React.FC = () => {
                 {/* Form or Content */}
                 {isEditing ? (
                   <form onSubmit={handleEditSubmit} className="space-y-8">
+                    {/* Lock banner when items cannot be edited */}
+                    {selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed')) && (
+                      <div className="mb-3 p-3 rounded border border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
+                        Product items are locked for approved orders. You can still update status, expected delivery date, and notes.
+                      </div>
+                    )}
                     {/* Order Info */}
                 <div className="p-6 bg-gray-50 rounded-lg mb-6">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Order Information</h4>
@@ -1069,7 +1084,7 @@ const CustomerOrdersPage: React.FC = () => {
                 <div className="p-6 bg-green-50 rounded-lg mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-medium text-gray-900">Order Items</h4>
-                    {isEditing && (
+                    {isEditing && !(selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) && (
                       <button
                         type="button"
                         onClick={addItem}
@@ -1105,13 +1120,14 @@ const CustomerOrdersPage: React.FC = () => {
                                 <tr>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price (Incl. Tax)</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {editForm.items.map((item, index) => (
+                          {editForm.items.map((item, index) => (
                                   <tr key={index}>
                                     <td className="px-4 py-2">
                                       <div className="relative">
@@ -1119,12 +1135,17 @@ const CustomerOrdersPage: React.FC = () => {
                                           type="text"
                                           value={item.product_name || ''}
                                           placeholder="Search or type product name..."
-                                          onChange={(e) => {
-                                            setProductSearch(e.target.value);
-                                            setShowProductDropdown(true);
-                                            setEditingItemIndex(index);
-                                          }}
-                                          onFocus={(e) => showDropdown(index, e)}
+                                    onChange={(e) => {
+                                      if (selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) return;
+                                      setProductSearch(e.target.value);
+                                      setShowProductDropdown(true);
+                                      setEditingItemIndex(index);
+                                    }}
+                                    onFocus={(e) => {
+                                      if (selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) return;
+                                      showDropdown(index, e);
+                                    }}
+                                    disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
                                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                       </div>
@@ -1134,7 +1155,11 @@ const CustomerOrdersPage: React.FC = () => {
                                         type="number"
                                         min="1"
                                         value={item.quantity}
-                                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                  onChange={(e) => {
+                                    if (selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) return;
+                                    updateItem(index, 'quantity', parseInt(e.target.value) || 1);
+                                  }}
+                                  disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
                                         className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                       />
                                     </td>
@@ -1144,32 +1169,81 @@ const CustomerOrdersPage: React.FC = () => {
                                         min="0"
                                         step="0.01"
                                         value={item.unit_price}
-                                        onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => {
+                                    if (selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) return;
+                                    updateItem(index, 'unit_price', parseFloat(e.target.value) || 0);
+                                  }}
+                                  disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
                                         className="w-24 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                       />
+                                    </td>
+                                    <td className="px-4 py-2">
+                                  <select
+                                    value={item.tax_type || '16%'}
+                                    onChange={(e) => {
+                                      if (selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) return;
+                                      updateItem(index, 'tax_type', e.target.value);
+                                    }}
+                                    disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
+                                    className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                        <option value="16%">16%</option>
+                                        <option value="zero_rated">Zero Rated</option>
+                                        <option value="exempted">Exempted</option>
+                                      </select>
                                     </td>
                                     <td className="px-4 py-2 text-sm text-gray-900">
                                       {formatCurrency(item.total_price)}
                                     </td>
                                     <td className="px-4 py-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => removeItem(index)}
-                                        className="text-red-600 hover:text-red-800"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
+                                {!(selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeItem(index)}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
                                     </td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
-                          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                            <span className="text-lg font-medium text-gray-900">Total:</span>
-                            <span className="text-lg font-bold text-gray-900">
-                              {formatCurrency(editForm.items.reduce((sum, item) => sum + item.total_price, 0))}
-                            </span>
+                          <div className="flex justify-end items-center pt-4 border-t border-gray-200">
+                            <div className="text-right space-y-1">
+                              <div className="text-sm text-gray-600">
+                                Subtotal: {
+                                  (() => {
+                                    let net = 0;
+                                    for (const it of editForm.items) {
+                                      const gross = Number(it.total_price) || 0;
+                                      const rate = (it.tax_type === '16%') ? 0.16 : 0; // zero_rated/exempted => 0
+                                      net += rate > 0 ? +(gross / (1 + rate)).toFixed(2) : +gross.toFixed(2);
+                                    }
+                                    return formatCurrency(+net.toFixed(2));
+                                  })()
+                                }
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                Tax: {
+                                  (() => {
+                                    let tax = 0;
+                                    for (const it of editForm.items) {
+                                      const gross = Number(it.total_price) || 0;
+                                      const rate = (it.tax_type === '16%') ? 0.16 : 0;
+                                      const net = rate > 0 ? +(gross / (1 + rate)).toFixed(2) : +gross.toFixed(2);
+                                      tax += +(gross - net).toFixed(2);
+                                    }
+                                    return formatCurrency(+tax.toFixed(2));
+                                  })()
+                                }
+                              </div>
+                              <div className="text-lg font-bold text-gray-900">
+                                Total: {formatCurrency(editForm.items.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0))}
+                              </div>
+                            </div>
                           </div>
                         </>
                       )}
