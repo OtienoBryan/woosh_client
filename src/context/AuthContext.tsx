@@ -40,8 +40,7 @@ export const AuthProvider: React.FC<{
 
   const login = async (username: string, password: string) => {
     try {
-       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      //const response = await fetch('http://64.226.66.235:5000/api/auth/login', {
+       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
