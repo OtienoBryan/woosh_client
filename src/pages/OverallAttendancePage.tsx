@@ -134,35 +134,49 @@ const OverallAttendancePage: React.FC = () => {
   // Build attendance rows
   useEffect(() => {
     const dateMap: Record<string, { salesReps: Set<number>; clients: Set<number> }> = {};
+    
+    // Get active sales reps (status = 1)
+    const activeSalesRepIds = new Set(
+      salesReps.filter(rep => rep.status === 1).map(rep => rep.id)
+    );
+    
+    console.log('Active sales reps count:', activeSalesRepIds.size);
+    console.log('Total sales reps count:', salesReps.length);
+    
     loginHistory.forEach(lh => {
       if (!lh.sessionStart) return;
+      // Only count if the user is an active sales rep
+      if (!activeSalesRepIds.has(lh.userId)) return;
+      
       const date = lh.sessionStart.slice(0, 10);
       if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set() };
       dateMap[date].salesReps.add(lh.userId);
     });
+    
     journeyPlans.forEach(jp => {
       const date = jp.date.slice(0, 10);
       if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set() };
       dateMap[date].clients.add(jp.clientId);
     });
-         const rows: AttendanceRow[] = Object.entries(dateMap)
-       .sort((a, b) => b[0].localeCompare(a[0]))
-       .map(([date, { salesReps, clients }]) => ({
-         date,
-         clientsVisited: clients.size,
-         activeSalesReps: salesReps.size,
-       }));
+    
+    const rows: AttendanceRow[] = Object.entries(dateMap)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, { salesReps, clients }]) => ({
+        date,
+        clientsVisited: clients.size,
+        activeSalesReps: salesReps.size,
+      }));
      console.log('Generated attendance rows:', rows.length);
      console.log('Sample attendance row:', rows[0]);
-     setAttendanceRows(rows);
-  }, [loginHistory, journeyPlans]);
+    setAttendanceRows(rows);
+  }, [loginHistory, journeyPlans, salesReps]);
 
   // Filter rows
   const filteredRows = attendanceRows.filter(row => {
     if (startDate && row.date < startDate) return false;
     if (endDate && row.date > endDate) return false;
     if (selectedCountry) {
-      const repIds = salesReps.filter(rep => rep.country === selectedCountry).map(rep => rep.id);
+      const repIds = salesReps.filter(rep => rep.country === selectedCountry && rep.status === 1).map(rep => rep.id);
       const loginReps = loginHistory.filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === row.date).map(lh => lh.userId);
       if (!loginReps.some(id => repIds.includes(id))) return false;
     }
@@ -212,6 +226,31 @@ const OverallAttendancePage: React.FC = () => {
     return filteredReps;
   }, [modalCountryFilter, activeSalesRepsForDate, salesRepsModalOpen]);
 
+  // Helper functions for filter modal
+  const openFilterModal = () => {
+    setPendingCountry(selectedCountry);
+    setPendingStartDate(startDate);
+    setPendingEndDate(endDate);
+    setFilterModalOpen(true);
+  };
+
+  const applyFilters = () => {
+    setSelectedCountry(pendingCountry);
+    setStartDate(pendingStartDate);
+    setEndDate(pendingEndDate);
+    setFilterModalOpen(false);
+  };
+
+  const clearFilters = () => {
+    setPendingCountry('');
+    setPendingStartDate(defaultStart);
+    setPendingEndDate(defaultEnd);
+    setSelectedCountry('');
+    setStartDate(defaultStart);
+    setEndDate(defaultEnd);
+    setFilterModalOpen(false);
+  };
+
   // Helper function to export to CSV
   const exportToCSV = () => {
     const headers = ['Date', 'Clients Visited', 'Active Sales Reps'];
@@ -230,7 +269,7 @@ const OverallAttendancePage: React.FC = () => {
     link.click();
   };
 
-    return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="bg-white shadow-lg border-b border-gray-200">
@@ -260,7 +299,7 @@ const OverallAttendancePage: React.FC = () => {
                 Export CSV
               </button>
               <button
-                onClick={() => setFilterModalOpen(true)}
+                onClick={openFilterModal}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
                 <Filter className="h-4 w-4 mr-2" />
@@ -325,9 +364,9 @@ const OverallAttendancePage: React.FC = () => {
                       </div>
                     </div>
                     <div className="ml-4 flex-1">
-                      <p className="text-sm font-medium text-gray-600">Sales Representatives</p>
-                      <p className="text-2xl font-bold text-gray-900">{salesReps.length}</p>
-                      <p className="text-xs text-gray-500 mt-1">Total team members</p>
+                      <p className="text-sm font-medium text-gray-600">Active Sales Representatives</p>
+                      <p className="text-2xl font-bold text-gray-900">{salesReps.filter(rep => rep.status === 1).length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Active team members</p>
                     </div>
                   </div>
                 </div>
@@ -397,8 +436,8 @@ const OverallAttendancePage: React.FC = () => {
               
               <div className="overflow-hidden">
                 {filteredRows.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 text-6xl mb-4">📊</div>
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">📊</div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
                     <p className="text-gray-500">No attendance data found for the selected date range.</p>
                   </div>
@@ -463,7 +502,7 @@ const OverallAttendancePage: React.FC = () => {
                                         .filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === row.date)
                                         .map(lh => {
                                           const rep = salesReps.find(sr => sr.id === lh.userId);
-                                          if (!rep) return null;
+                                          if (!rep || rep.status !== 1) return null; // Only include active sales reps
                                           
                                           // Count clients visited by this rep on this date (only those with checkinTime)
                                            const clientsVisited = journeyPlans.filter(jp => 
@@ -730,12 +769,103 @@ const OverallAttendancePage: React.FC = () => {
                 >
                   Close
                 </button>
+        </div>
+      </div>
+          </div>
+        )}
+
+        {/* Filter Modal */}
+        {filterModalOpen && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Filter Options</h3>
+                  <button
+                    onClick={() => setFilterModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Country Filter */}
+                  <div>
+                    <label htmlFor="countryFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                      Country
+                    </label>
+                    <select
+                      id="countryFilter"
+                      value={pendingCountry}
+                      onChange={(e) => setPendingCountry(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">All Countries</option>
+                      {countries.map(country => (
+                        <option key={country.id} value={country.name}>{country.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        id="startDate"
+                        value={pendingStartDate}
+                        onChange={(e) => setPendingStartDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        id="endDate"
+                        value={pendingEndDate}
+                        onChange={(e) => setPendingEndDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={clearFilters}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    onClick={() => setFilterModalOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={applyFilters}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
-     </div>
-   );
+    </div>
+  );
 };
 
 export default OverallAttendancePage; 

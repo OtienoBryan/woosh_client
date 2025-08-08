@@ -357,7 +357,7 @@ const SalesRepsPage: React.FC = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedSalesRepId, setSelectedSalesRepId] = useState<number | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya'); // Default to Kenya
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [routes, setRoutes] = useState<SalesRoute[]>([]);
@@ -435,12 +435,12 @@ const SalesRepsPage: React.FC = () => {
 
   // 9. When clearing, reset all pending and real filter states
   const clearFilters = () => {
-    setPendingCountry('');
+    setPendingCountry('Kenya'); // Reset to Kenya instead of empty
     setPendingRegion('');
     setPendingRoute('');
     setPendingManager('');
     setPendingStatus('1');
-    setSelectedCountry('');
+    setSelectedCountry('Kenya'); // Reset to Kenya instead of empty
     setSelectedRegion('');
     setSelectedRoute('');
     setSelectedManager('');

@@ -75,7 +75,8 @@ const SalesRepAttendancePage: React.FC = () => {
     salesService.getAllSalesReps()
       .then((repsRes) => {
         console.log('SalesRepAttendancePage: Sales reps fetch successful');
-        console.log('Sales reps count:', repsRes?.length || 0);
+        console.log('Total sales reps count:', repsRes?.length || 0);
+        console.log('Active sales reps count:', repsRes?.filter(rep => rep.status === 1).length || 0);
         setSalesReps(repsRes || []);
         setLoading(false);
       })
@@ -333,9 +334,11 @@ const SalesRepAttendancePage: React.FC = () => {
                       onChange={e => setSelectedRep(e.target.value)}
                     >
                       <option value="">Select Sales Rep</option>
-                      {salesReps.map(rep => (
-                        <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
-                      ))}
+                      {salesReps
+                        .filter(rep => rep.status === 1) // Only show active sales reps
+                        .map(rep => (
+                          <option key={rep.id} value={String(rep.id)}>{rep.name}</option>
+                        ))}
                     </select>
                   </div>
                   <div>
@@ -368,8 +371,8 @@ const SalesRepAttendancePage: React.FC = () => {
             {!selectedRep ? (
               <div className="text-center py-16">
                 <div className="text-gray-400 text-6xl mb-4">👤</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Sales Representative</h3>
-                <p className="text-gray-500">Choose a sales rep from the dropdown above to view their attendance details.</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Select an Active Sales Representative</h3>
+                <p className="text-gray-500">Choose an active sales rep from the dropdown above to view their attendance details.</p>
               </div>
             ) : loading ? (
               <div className="text-center py-16">
