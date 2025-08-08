@@ -29,27 +29,10 @@ export interface ApiError extends Error {
   [key: string]: any;
 }
 
-// Validate and get API base URL
-const getApiBaseUrl = (): string => {
-  // Get API URL from environment variable
-  const url = import.meta.env.VITE_API_URL;
-  console.log('Environment variables:', import.meta.env);
-  console.log('VITE_API_URL:', url);
-  
-  if (!url) {
-    console.warn('VITE_API_URL is not defined in .env file, falling back to localhost:5000');
-    return import.meta.env.VITE_API_URL;
-  }
-  
-  // Ensure the URL ends with /api
-  return url.endsWith('/api') ? url : `${url}/api`;
-};
-
-const API_BASE_URL = getApiBaseUrl();
-console.log('Using API base URL:', API_BASE_URL);
+import { API_BASE_URL } from '../config/api';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'

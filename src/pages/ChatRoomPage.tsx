@@ -5,8 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Pencil, Trash2, Plus, ChevronLeft, Check, X } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { API_BASE_URL, SOCKET_URL } from '../config/api';
 
 interface ChatRoom {
   id: number;
@@ -51,7 +50,7 @@ const ChatRoomPage: React.FC = () => {
   // Fetch chat rooms for user
   const fetchRooms = async () => {
     const token = localStorage.getItem('token');
-    const res = await axios.get(`${API_URL}/chat/my-rooms`, {
+          const res = await axios.get(`${API_BASE_URL}/chat/my-rooms`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     setRooms(res.data);
@@ -60,7 +59,7 @@ const ChatRoomPage: React.FC = () => {
   // Fetch messages for a room
   const fetchMessages = async (roomId: number) => {
     const token = localStorage.getItem('token');
-    const res = await axios.get(`${API_URL}/chat/rooms/${roomId}/messages`, {
+          const res = await axios.get(`${API_BASE_URL}/chat/rooms/${roomId}/messages`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     setMessages(res.data);
@@ -69,7 +68,7 @@ const ChatRoomPage: React.FC = () => {
   // Fetch all staff for group creation
   const fetchStaff = async () => {
     try {
-      const res = await axios.get(`${API_URL}/staff`, { withCredentials: true });
+      const res = await axios.get(`${API_BASE_URL}/staff`, { withCredentials: true });
       setAllStaff(res.data);
       setStaffError(null);
     } catch (err: any) {
