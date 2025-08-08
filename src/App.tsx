@@ -1,8 +1,6 @@
-import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
-import Overview from './components/Dashboard/Overview';
 import ClientDetailsPage from './pages/ClientDetailsPage';
 import UnscheduledRequests from './pages/UnscheduledRequests';
 import PhotoListPage from './pages/PhotoListPage';
@@ -138,12 +136,43 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
+// Role-based dashboard redirect component
+const RoleBasedDashboardRedirect = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect users to their appropriate dashboard based on role
+  if (user.role === 'sales') {
+    return <Navigate to="/sales-dashboard" replace />;
+  } else if (user.role === 'hr') {
+    return <Navigate to="/hr-dashboard" replace />;
+  } else if (user.role === 'stock') {
+    return <Navigate to="/inventory-staff-dashboard" replace />;
+  } else {
+    // Admin and other roles can access FinancialDashboard
+    return <FinancialDashboardPage />;
+  }
+};
+
 // Redirect authenticated users away from login
 const LoginRoute = () => {
   const { user } = useAuth();
 
   if (user) {
-    return <Navigate to="/" replace />;
+    // Redirect users to their appropriate dashboard based on role
+    if (user.role === 'sales') {
+      return <Navigate to="/sales-dashboard" replace />;
+    } else if (user.role === 'hr') {
+      return <Navigate to="/hr-dashboard" replace />;
+    } else if (user.role === 'stock') {
+      return <Navigate to="/inventory-staff-dashboard" replace />;
+    } else {
+      // Admin and other roles go to FinancialDashboard
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <LoginPage />;
@@ -169,9 +198,9 @@ const App = () => {
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardWrapper />}>
-            <Route path="/" element={<FinancialDashboardPage />} />
-            <Route path="/dashboard" element={<FinancialDashboardPage />} />
-            <Route path="/financial" element={<FinancialDashboardPage />} />
+            <Route path="/" element={<RoleBasedDashboardRedirect />} />
+            <Route path="/dashboard" element={<RoleBasedDashboardRedirect />} />
+            <Route path="/financial" element={<RoleBasedDashboardRedirect />} />
             <Route path="/dashboard/unscheduled" element={<UnscheduledRequests />} />
             <Route path="/dashboard/pending" element={<PendingRequests />} />
             <Route path="/dashboard/in-transit" element={<InTransitRequests />} />
@@ -238,7 +267,7 @@ const App = () => {
             <Route 
               path="/inventory-staff-dashboard" 
               element={
-                <RoleBasedRoute allowedRoles={['stock', 'admin']} fallbackPath="/">
+                <RoleBasedRoute allowedRoles={['stock']} fallbackPath="/">
                   <InventoryStaffDashboardPage />
                 </RoleBasedRoute>
               } 
@@ -275,50 +304,214 @@ const App = () => {
                 </RoleBasedRoute>
               } 
             />
-            <Route path="/payables" element={<PayablesPage />} />
-            <Route path="/pending-payments" element={<PendingPaymentsPage />} />
-            <Route path="/receivables" element={<ReceivablesPage />} />
-            <Route path="/receivables/customer/:customerId" element={<ReceivablesCustomerPage />} />
-            <Route path="/reports" element={<FinancialReportsIndexPage />} />
-            <Route path="/reports/profit-loss" element={<ProfitLossReportPage />} />
-            <Route path="/reports/balance-sheet" element={<BalanceSheetReportPage />} />
-            <Route path="/reports/cash-flow" element={<CashFlowReportPage />} />
-            <Route path="/reports/general-ledger" element={<GeneralLedgerReportPage />} />
-            <Route path="/create-invoice" element={<CreateInvoicePage />} />
-            <Route path="/credit-notes" element={<CreditNotesPage />} />
-            <Route path="/credit-notes/:id" element={<CreditNotesPage />} />
-            <Route path="/create-credit-note" element={<CreateCreditNotePage />} />
-            <Route path="/clients/:clientId/credit-notes" element={<ClientCreditNotePage />} />
-            <Route path="/add-expense" element={<AddExpensePage />} />
-            <Route path="/assets/add" element={<AddAssetPage />} />
-            <Route path="/assets/depreciation" element={<AssetDepreciationPage />} />
-            <Route path="/depreciation/manage" element={<DepreciationManagementPage />} />
-            <Route path="/equity/manage" element={<AddEquityPage />} />
-            <Route path="/equity/entries" element={<EquityEntryPage />} />
-            <Route path="/cash-equivalents" element={<CashAndEquivalentsPage />} />
-            <Route path="/cash-account-details/:accountId" element={<CashAccountDetailsPage />} />
-            <Route path="/all-orders" element={<AllOrdersPage />} />
-            <Route path="/sales-orders/:id" element={<SalesOrderDetailsPage />} />
-            <Route path="/journal-entries" element={<JournalEntriesPage />} />
-            <Route path="/payroll-management" element={<PayrollManagementPage />} />
-            <Route path="/inventory-transactions" element={<InventoryTransactionsPage />} />
-            <Route path="/inventory-as-of" element={<InventoryAsOfPage />} />
-            <Route path="/stock-transfer" element={<StockTransferPage />} />
-            <Route path="/stock-transfer-history" element={<StockTransferHistoryPage />} />
-            <Route path="/stock-take" element={<StockTakePage />} />
-            <Route path="/stock-take-history" element={<StockTakeHistoryPage />} />
-            <Route path="/clients-with-balances" element={<ClientsWithBalancesPage />} />
-            <Route path="/customers/:id/ledger" element={<CustomerLedgerPage />} />
-            <Route path="/customers/:id/payments" element={<CustomerPaymentsPage />} />
-            <Route path="/unconfirmed-payments" element={<UnconfirmedPaymentsPage />} />
+            <Route path="/payables" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <PayablesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/pending-payments" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <PendingPaymentsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/receivables" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ReceivablesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/receivables/customer/:customerId" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ReceivablesCustomerPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <FinancialReportsIndexPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/profit-loss" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ProfitLossReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/balance-sheet" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <BalanceSheetReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/cash-flow" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CashFlowReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/general-ledger" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <GeneralLedgerReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/create-invoice" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CreateInvoicePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/credit-notes" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CreditNotesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/credit-notes/:id" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CreditNotesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/create-credit-note" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CreateCreditNotePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/clients/:clientId/credit-notes" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ClientCreditNotePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/add-expense" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <AddExpensePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/assets/add" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <AddAssetPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/assets/depreciation" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <AssetDepreciationPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/depreciation/manage" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <DepreciationManagementPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/equity/manage" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <AddEquityPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/equity/entries" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <EquityEntryPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/cash-equivalents" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CashAndEquivalentsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/cash-account-details/:accountId" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CashAccountDetailsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/all-orders" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <AllOrdersPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/sales-orders/:id" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <SalesOrderDetailsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/journal-entries" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <JournalEntriesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/payroll-management" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <PayrollManagementPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/inventory-transactions" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <InventoryTransactionsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/inventory-as-of" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <InventoryAsOfPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/stock-transfer" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <StockTransferPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/stock-transfer-history" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <StockTransferHistoryPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/stock-take" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <StockTakePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/stock-take-history" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <StockTakeHistoryPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/clients-with-balances" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ClientsWithBalancesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/customers/:id/ledger" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CustomerLedgerPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/customers/:id/payments" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CustomerPaymentsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/unconfirmed-payments" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <UnconfirmedPaymentsPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/clients" element={<ClientsList />} />
             <Route path="/clients-list" element={<ClientsListPage />} />
             <Route path="/clients-map" element={<ClientsMapPage />} />
-            <Route path="/suppliers" element={<SuppliersPage />} />
-            <Route path="/suppliers/:supplierId/invoices" element={<SupplierInvoicesPage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/sales-dashboard" element={<SalesDashboardPage />} />
+            <Route path="/suppliers" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <SuppliersPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/suppliers/:supplierId/invoices" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <SupplierInvoicesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/products" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ProductsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/categories" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CategoriesPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/sales-dashboard" element={
+              <RoleBasedRoute allowedRoles={['sales']} fallbackPath="/">
+                <SalesDashboardPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/master-sales" element={<MasterSalesPage />} />
             <Route path="/sales-rep-master-report" element={<SalesRepMasterReportPage />} />
             <Route path="/sales-rep-reports/:salesRepId/:clientId" element={<SalesRepReportsPage />} />
@@ -326,14 +519,26 @@ const App = () => {
             <Route path="/sales-reps" element={<SalesRepsPage />} />
             <Route path="/sales-reps/:id" element={<SalesRepDetailsPage />} />
             <Route path="/managers" element={<ManagersPage />} />
-            <Route path="/hr-dashboard" element={<HrDashboardPage />} />
+            <Route path="/hr-dashboard" element={
+              <RoleBasedRoute allowedRoles={['hr']} fallbackPath="/">
+                <HrDashboardPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/visibility-report" element={<VisibilityReportPage />} />
             <Route path="/my-visibility" element={<MyVisibilityPage />} />
             <Route path="/feedback-reports" element={<FeedbackReportPage />} />
             <Route path="/availability-reports" element={<AvailabilityReportPage />} />
             <Route path="/client-activity" element={<ClientActivityPage />} />
-            <Route path="/assets" element={<AssetsPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/assets" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <AssetsPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/expenses" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ExpensesPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/client-profile/:id" element={<ClientProfilePage />} />
             <Route path="/dashboard/clients/:id" element={<ClientDetailsPage />} />
             <Route path="/upload-document" element={<UploadDocumentPage />} />
@@ -348,7 +553,7 @@ const App = () => {
         </Route>
         
         {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<RoleBasedDashboardRedirect />} />
       </Routes>
     </>
   );
