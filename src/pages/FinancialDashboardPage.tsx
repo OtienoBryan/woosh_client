@@ -215,7 +215,7 @@ const FinancialDashboardPage = () => {
                 <BellIcon className="w-5 h-5" />
               </button>
               <button 
-                onClick={() => navigate('/settings')}
+              onClick={() => navigate('/settings')}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors bg-white border border-gray-200"
               >
                 <SettingsIcon className="w-5 h-5" />
@@ -261,7 +261,7 @@ const FinancialDashboardPage = () => {
             onClick={() => navigate('/payables')}
             change={{ value: 3.1, positive: false }}
           />
-        </div>
+      </div>
 
         {/* Navigation Menu */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -277,7 +277,7 @@ const FinancialDashboardPage = () => {
               </Link>
             ))}
           </div>
-        </div>
+            </div>
 
         
 
@@ -343,15 +343,15 @@ const FinancialDashboardPage = () => {
                   <span className="text-sm font-medium text-center text-purple-700">Equity Entries</span>
                 </button>
                 
-                <button 
+                  <button 
                   onClick={() => navigate('/add-journal-entry')}
                   className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300"
                 >
                   <div className="p-2 rounded-lg mb-2 bg-amber-200 group-hover:bg-amber-300">
                     <FileTextIcon className="w-5 h-5 text-amber-600" />
-                  </div>
+                    </div>
                   <span className="text-sm font-medium text-center text-amber-700">Journal Entry</span>
-                </button>
+                  </button>
               </div>
             </div>
           </div>
@@ -467,7 +467,7 @@ const FinancialDashboardPage = () => {
               </div>
             </button>
 
-            <button
+              <button
               onClick={() => navigate('/cash-equivalents')}
               className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md hover:border-blue-300 transition-all duration-200"
             >
@@ -475,10 +475,10 @@ const FinancialDashboardPage = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Cash & Equivalents</h3>
               <p className="text-sm text-gray-600 mb-3">View all cash accounts</p>
               <div className="flex items-center justify-center text-sm text-gray-500 group-hover:text-gray-700">
-                <span>View details</span>
+                  <span>View details</span>
                 <ChevronRightIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
+                </div>
+              </button>
           </div>
         </div>
 
@@ -612,23 +612,23 @@ const FinancialDashboardPage = () => {
               </div>
             </button>
 
-            <button
+              <button
               onClick={() => navigate('/products')}
               className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-teal-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
+              >
+                <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-teal-100 rounded-xl group-hover:bg-teal-200 transition-colors">
                   <BoxIcon className="w-6 h-6 text-teal-600" />
-                </div>
+                  </div>
                 <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
+                </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Products</h3>
               <p className="text-sm text-gray-600 mb-4">View and manage all products</p>
               <div className="flex items-center text-sm text-teal-600 font-medium">
-                <span>Access now</span>
+                  <span>Access now</span>
                 <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
+                </div>
+              </button>
           </div>
         </div>
       </div>

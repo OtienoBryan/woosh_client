@@ -28,7 +28,7 @@ const CustomerOrdersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  // const [statusFilter, setStatusFilter] = useState('all');
   const [myStatusFilter, setMyStatusFilter] = useState('0');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -153,6 +153,74 @@ const CustomerOrdersPage: React.FC = () => {
     
     return matchesSearch && matchesMyStatus && matchesDateRange;
   });
+
+  // Pagination state for orders list
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / limit));
+  const startIdx = (page - 1) * limit;
+  const pageRows = filteredOrders.slice(startIdx, startIdx + limit);
+
+  // Counts per my_status for badges
+  const statusCounts = orders.reduce((acc: Record<string, number>, o: any) => {
+    const key = (o.my_status != null ? String(o.my_status) : '0');
+    acc[key] = (acc[key] || 0) + 1;
+    acc['all'] = (acc['all'] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const getFilterClasses = (value: string, selected: boolean) => {
+    // Explicit color classes per status
+    const byVal: Record<string, {selected: string; unselected: string; pillSel: string; pillUnsel: string}> = {
+      all: {
+        selected: 'bg-gray-700 text-white border-gray-700',
+        unselected: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
+        pillSel: 'bg-white text-gray-800',
+        pillUnsel: 'bg-gray-200 text-gray-700'
+      },
+      '0': {
+        selected: 'bg-gray-700 text-white border-gray-700',
+        unselected: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
+        pillSel: 'bg-white text-gray-800',
+        pillUnsel: 'bg-gray-200 text-gray-700'
+      },
+      '1': {
+        selected: 'bg-blue-600 text-white border-blue-600',
+        unselected: 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50',
+        pillSel: 'bg-white text-blue-700',
+        pillUnsel: 'bg-blue-100 text-blue-800'
+      },
+      '2': {
+        selected: 'bg-amber-600 text-white border-amber-600',
+        unselected: 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50',
+        pillSel: 'bg-white text-amber-700',
+        pillUnsel: 'bg-amber-100 text-amber-800'
+      },
+      '3': {
+        selected: 'bg-green-600 text-white border-green-600',
+        unselected: 'bg-white text-green-700 border-green-300 hover:bg-green-50',
+        pillSel: 'bg-white text-green-700',
+        pillUnsel: 'bg-green-100 text-green-800'
+      },
+      '4': {
+        selected: 'bg-red-600 text-white border-red-600',
+        unselected: 'bg-white text-red-700 border-red-300 hover:bg-red-50',
+        pillSel: 'bg-white text-red-700',
+        pillUnsel: 'bg-red-100 text-red-800'
+      },
+      '5': {
+        selected: 'bg-rose-600 text-white border-rose-600',
+        unselected: 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50',
+        pillSel: 'bg-white text-rose-700',
+        pillUnsel: 'bg-rose-100 text-rose-800'
+      }
+    };
+    const conf = byVal[value] || byVal['all'];
+    return {
+      btn: selected ? conf.selected : conf.unselected,
+      pill: selected ? conf.pillSel : conf.pillUnsel
+    };
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -309,7 +377,7 @@ const CustomerOrdersPage: React.FC = () => {
       quantity: 1,
       unit_price: 0,
       total_price: 0,
-      tax_type: '16%'
+      tax_type: '16%' as '16%'
     };
     const newIndex = editForm.items.length;
     setEditForm({
@@ -562,9 +630,9 @@ const CustomerOrdersPage: React.FC = () => {
                         Search: "{searchTerm}"
                       </span>
                     )}
-                    {myStatusFilter !== '0' && (
+                    {myStatusFilter !== 'all' && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Status: {getMyStatusText(parseInt(myStatusFilter))}
+                        Status: {myStatusFilter === 'all' ? 'All Orders' : getMyStatusText(parseInt(myStatusFilter))}
                       </span>
                     )}
                     {startDate && (
@@ -598,21 +666,29 @@ const CustomerOrdersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Status Filter */}
-            <div className="md:w-48">
-              <select
-                value={myStatusFilter}
-                onChange={(e) => setMyStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Orders</option>
-                <option value="0">New Orders</option>
-                <option value="1">Approved</option>
-                <option value="2">In Transit</option>
-                <option value="3">Complete</option>
-                <option value="4">Cancelled</option>
-                <option value="5">Declined</option>
-              </select>
+            {/* Status Filter - Segmented Buttons */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {[
+                { value: 'all', label: 'All' },
+                { value: '0', label: 'New' },
+                { value: '1', label: 'Approved' },
+                { value: '2', label: 'In Transit' },
+                { value: '3', label: 'Complete' },
+                { value: '4', label: 'Cancelled' },
+                { value: '5', label: 'Declined' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setMyStatusFilter(opt.value)}
+                  className={`px-3 py-1.5 text-sm rounded border flex items-center gap-2 ${getFilterClasses(opt.value, myStatusFilter === opt.value).btn}`}
+                >
+                  {opt.label}
+                  <span className={`inline-flex items-center justify-center min-w-[1.5rem] h-5 px-2 rounded-full text-xs ${getFilterClasses(opt.value, myStatusFilter === opt.value).pill}`}>
+                    {statusCounts[opt.value] || 0}
+                  </span>
+                </button>
+              ))}
             </div>
 
             {/* Date Range Filter */}
@@ -645,7 +721,7 @@ const CustomerOrdersPage: React.FC = () => {
             <button
               onClick={() => {
                 setSearchTerm('');
-                setMyStatusFilter('0');
+                setMyStatusFilter('all');
                 setStartDate('');
                 setEndDate('');
               }}
@@ -716,7 +792,7 @@ const CustomerOrdersPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredOrders.map((order) => (
+                  {pageRows.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -871,6 +947,35 @@ const CustomerOrdersPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              <div className="flex items-center justify-between p-3 border-t border-gray-200">
+                <div className="text-sm text-gray-600">Page {page} of {totalPages} • {filteredOrders.length} orders</div>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                    value={limit}
+                    onChange={(e) => { setPage(1); setLimit(parseInt(e.target.value) || 25); }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <button
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -990,12 +1095,9 @@ const CustomerOrdersPage: React.FC = () => {
                           onChange={(e) => setEditForm({...editForm, status: e.target.value})}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                                          <option value="draft">Draft</option>
-                <option value="confirmed">Confirmed ✓</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="in_payment">In Payment</option>
-                <option value="paid">Paid</option>
+                          <option value="new">New Order</option>
+                          <option value="cancelled">Cancel</option>
+                          <option value="declined">Decline</option>
                         </select>
                       ) : (
                         <input
