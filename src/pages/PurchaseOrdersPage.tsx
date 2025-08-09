@@ -202,6 +202,15 @@ const PurchaseOrdersPage: React.FC = () => {
                       >
                         View Details
                       </Link>
+                      {po.status === 'received' && po.invoice_number && (
+                        <Link
+                          to={`/supplier-invoice/${po.id}`}
+                          className="text-purple-600 hover:text-purple-900 text-sm font-medium"
+                          title={`Supplier Invoice ${po.invoice_number}`}
+                        >
+                          View Supplier Invoice
+                        </Link>
+                      )}
                       {(po.status === 'sent' || po.status === 'partially_received') && (
                         <Link
                           to={`/receive-items/${po.id}`}

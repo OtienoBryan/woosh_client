@@ -6,10 +6,7 @@ import {
   X, 
   Package, 
   DollarSign, 
-  ShoppingCart,
-  Calendar,
-  FileText,
-  Building
+  FileText
 } from 'lucide-react';
 import { 
   suppliersService, 
@@ -19,15 +16,17 @@ import {
 import { 
   Supplier, 
   Product, 
-  CreatePurchaseOrderForm 
+  CreatePurchaseOrderForm,
+  TaxType
 } from '../types/financial';
 
 interface PurchaseOrderItem {
   product_id: number;
   product?: Product;
   quantity: number;
-  unit_price: number;
-  total_price: number;
+  unit_price: number; // tax-inclusive unit price entered by the user
+  total_price: number; // quantity * unit_price (gross)
+  tax_type: TaxType;   // '16%' | 'zero_rated' | 'exempted'
 }
 
 const PurchaseOrderPage: React.FC = () => {
@@ -71,12 +70,18 @@ const PurchaseOrderPage: React.FC = () => {
     }
   };
 
+  const getTaxRate = (taxType: TaxType): number => {
+    if (taxType === '16%') return 0.16;
+    return 0; // zero_rated and exempted
+  };
+
   const addItem = () => {
     const newItem: PurchaseOrderItem = {
       product_id: 0,
       quantity: 1,
       unit_price: 0,
-      total_price: 0
+      total_price: 0,
+      tax_type: '16%'
     };
     setItems([...items, newItem]);
   };
@@ -89,7 +94,7 @@ const PurchaseOrderPage: React.FC = () => {
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
-    // Calculate total price
+    // Recalculate total price when quantity or unit_price changes (gross total)
     if (field === 'quantity' || field === 'unit_price') {
       const quantity = field === 'quantity' ? value : updatedItems[index].quantity;
       const unitPrice = field === 'unit_price' ? value : updatedItems[index].unit_price;
@@ -106,16 +111,29 @@ const PurchaseOrderPage: React.FC = () => {
   };
 
   const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + item.total_price, 0);
+    // Sum of net (tax-exclusive) line totals based on each line's tax type
+    return items.reduce((sum, item) => {
+      const rate = getTaxRate(item.tax_type);
+      const lineGross = item.total_price;
+      const lineNet = rate > 0 ? lineGross / (1 + rate) : lineGross;
+      return sum + lineNet;
+    }, 0);
   };
 
   const calculateTax = () => {
-    // Assuming 10% tax rate - you can make this configurable
-    return calculateSubtotal() * 0.1;
+    // Sum of tax amounts per line based on each line's tax type
+    return items.reduce((sum, item) => {
+      const rate = getTaxRate(item.tax_type);
+      if (rate === 0) return sum;
+      const lineGross = item.total_price;
+      const lineNet = lineGross / (1 + rate);
+      return sum + (lineGross - lineNet);
+    }, 0);
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    // Total equals the sum of entered (tax-inclusive) line totals
+    return items.reduce((sum, item) => sum + item.total_price, 0);
   };
 
   const validateForm = () => {
@@ -164,11 +182,15 @@ const PurchaseOrderPage: React.FC = () => {
         order_date: orderDate,
         expected_delivery_date: expectedDeliveryDate || undefined,
         notes: notes || undefined,
-        items: items.map(item => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price
-        }))
+        items: items.map(item => {
+          return {
+            product_id: item.product_id,
+            quantity: item.quantity,
+            // Post tax-inclusive unit price as entered
+            unit_price: Number(item.unit_price.toFixed(2)),
+            tax_type: item.tax_type
+          };
+        })
       };
 
       const response = await purchaseOrdersService.create(purchaseOrderData);
@@ -343,7 +365,7 @@ const PurchaseOrderPage: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                       {/* Product Selection */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -382,7 +404,7 @@ const PurchaseOrderPage: React.FC = () => {
                       {/* Unit Price */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Unit Price <span className="text-red-500">*</span>
+                          Unit Price (incl. tax) <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-2 text-gray-500">$</span>
@@ -396,6 +418,22 @@ const PurchaseOrderPage: React.FC = () => {
                             required
                           />
                         </div>
+                      </div>
+
+                      {/* Tax Type */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Tax Type
+                        </label>
+                        <select
+                          value={item.tax_type}
+                          onChange={(e) => updateItem(index, 'tax_type', e.target.value as TaxType)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value={'16%'}>16%</option>
+                          <option value={'zero_rated'}>Zero rated</option>
+                          <option value={'exempted'}>Exempted</option>
+                        </select>
                       </div>
 
                       {/* Total Price */}
@@ -458,10 +496,10 @@ const PurchaseOrderPage: React.FC = () => {
                   <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tax (10%):</span>
+                  <span className="text-gray-600">Tax:</span>
                   <span className="font-medium">${calculateTax().toFixed(2)}</span>
                 </div>
-                <div className="border-t pt-3">
+                <div className="border-top pt-3">
                   <div className="flex justify-between">
                     <span className="text-lg font-semibold text-gray-900">Total:</span>
                     <span className="text-lg font-semibold text-gray-900">${calculateTotal().toFixed(2)}</span>

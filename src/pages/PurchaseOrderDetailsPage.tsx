@@ -326,7 +326,7 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                 PO Number: {purchaseOrder.po_number}
               </p>
             </div>
-            <div className="flex space-x-3">
+              <div className="flex space-x-3">
               <Link to="/purchase-orders" className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Back to Purchase Orders
               </Link>
@@ -339,6 +339,15 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                 >
                   {submitting ? 'Cancelling...' : 'Cancel Purchase Order'}
               </button>
+              )}
+              {purchaseOrder.status === 'received' && purchaseOrder.invoice_number && (
+                <Link
+                to={`/supplier-invoice/${purchaseOrder.id}`}
+                className="text-purple-600 hover:text-purple-900 text-sm font-medium"
+                title={`Supplier Invoice ${purchaseOrder.invoice_number}`}
+              >
+                View Supplier Invoice
+              </Link>
               )}
               {purchaseOrder.status === 'sent' && (
                 <button

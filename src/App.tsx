@@ -63,6 +63,7 @@ import UnconfirmedPaymentsPage from './pages/UnconfirmedPaymentsPage';
 import ReceivablesCustomerPage from './pages/ReceivablesCustomerPage';
 import SuppliersPage from './pages/SuppliersPage';
 import SupplierInvoicesPage from './pages/SupplierInvoicesPage';
+import SupplierInvoicePage from './pages/SupplierInvoicePage';
 import ProductsPage from './pages/ProductsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import SalesDashboardPage from './pages/SalesDashboardPage';
@@ -261,6 +262,7 @@ const App = () => {
             } />
             <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
             <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailsPage />} />
+            <Route path="/supplier-invoice/:id" element={<SupplierInvoicePage />} />
             <Route path="/receive-items/:purchaseOrderId" element={<ReceiveItemsPage />} />
             <Route path="/store-inventory" element={<StoreInventoryPage />} />
             <Route path="/opening-quantities" element={<OpeningQuantitiesPage />} />

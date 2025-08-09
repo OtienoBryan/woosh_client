@@ -284,6 +284,7 @@ export interface User {
       product_id: number;
       quantity: number;
       unit_price: number;
+      tax_type?: TaxType;
     }[];
   }
   

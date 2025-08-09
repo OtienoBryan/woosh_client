@@ -102,7 +102,7 @@ const AssetsPage: React.FC = () => {
           style={{ minWidth: 0 }}
         >
           <Plus className="w-5 h-5 text-blue-600" />
-          <span className="font-semibold text-blue-700">Asset Depreciation</span>
+          <span className="font-semibold text-blue-700">Asset Depreciation Report</span>
         </Link>
       </div>
       <div className="mb-4 flex justify-end">
