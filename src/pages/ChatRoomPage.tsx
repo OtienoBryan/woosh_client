@@ -110,6 +110,22 @@ const ChatRoomPage: React.FC = () => {
 
   useEffect(() => { fetchRooms(); fetchStaff(); }, []);
 
+  // Mark chat last visited for dashboard badge
+  useEffect(() => {
+    // When page mounts or user interacts, update last visited timestamp
+    const markVisited = () => {
+      localStorage.setItem('chat_last_visited_ts', String(Date.now()));
+    };
+    markVisited();
+    const onVisibility = () => { if (!document.hidden) markVisited(); };
+    window.addEventListener('focus', markVisited);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', markVisited);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
   // Send message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

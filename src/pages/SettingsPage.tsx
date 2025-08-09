@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BellIcon, UserIcon, LockIcon, GlobeIcon, PaletteIcon } from 'lucide-react';
+import { UserIcon, LockIcon, PaletteIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import { API_CONFIG } from '../config/api';
 
 const SettingsPage: React.FC = () => {
   const { user, setUser } = useAuth();
@@ -12,6 +12,7 @@ const SettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -27,9 +28,17 @@ const SettingsPage: React.FC = () => {
   const [avatarSuccess, setAvatarSuccess] = useState('');
   const [avatarError, setAvatarError] = useState('');
 
+  const [theme, setTheme] = useState<string>(localStorage.getItem('appTheme') || 'system');
+  const [prefSuccess, setPrefSuccess] = useState('');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   };
+
+  useEffect(() => {
+    setForm({ name: user?.username || '', email: user?.email || '' });
+    setAvatarUrl(user?.avatar_url || '');
+  }, [user]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,10 +46,18 @@ const SettingsPage: React.FC = () => {
     setSuccess('');
     setError('');
     try {
-      await axios.put(`/api/users/${user.id}`, form);
+      const res = await fetch(API_CONFIG.getUrl(`/users/${user?.id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error('Failed to update profile');
       setSuccess('Profile updated successfully!');
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to update profile');
+      setError(err.message || 'Failed to update profile');
     }
     setSaving(false);
   };
@@ -60,22 +77,36 @@ const SettingsPage: React.FC = () => {
       return;
     }
     try {
-      await axios.put(`/api/users/${user.id}/password`, {
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
+      const res = await fetch(API_CONFIG.getUrl(`/users/${user?.id}/password`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
       });
+      if (!res.ok) throw new Error('Failed to change password');
       setPasswordSuccess('Password changed successfully!');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {
-      setPasswordError(err.response?.data?.error || err.message || 'Failed to change password');
+      setPasswordError(err.message || 'Failed to change password');
     }
     setPasswordSaving(false);
   };
 
   const fetchUser = async () => {
     if (!user) return;
-    const res = await axios.get(`/api/users/${user.id}`);
-    if (setUser) setUser(res.data);
+    try {
+      const res = await fetch(API_CONFIG.getUrl(`/users/${user.id}`), {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (setUser) setUser(data);
+    } catch {}
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,64 +117,87 @@ const SettingsPage: React.FC = () => {
     const formData = new FormData();
     formData.append('avatar', e.target.files[0]);
     try {
-      const res = await axios.post(`/api/users/${user.id}/avatar`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const res = await fetch(API_CONFIG.getUrl(`/staff/staff/${user?.id}/avatar`), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
       });
-      setAvatarUrl(res.data.url);
+      if (!res.ok) throw new Error('Failed to upload avatar');
+      const data = await res.json();
+      setAvatarUrl(data.url);
       setAvatarSuccess('Profile picture updated!');
-      console.log('Avatar upload response:', res.data);
+      try {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          parsed.avatar_url = data.url;
+          localStorage.setItem('user', JSON.stringify(parsed));
+        }
+      } catch {}
       await fetchUser();
     } catch (err: any) {
-      setAvatarError(err.response?.data?.error || err.message || 'Failed to upload avatar');
+      setAvatarError(err.message || 'Failed to upload avatar');
     }
     setAvatarUploading(false);
   };
 
   const imgRef = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    if (user) {
-      console.log('user.avatar_url:', user.avatar_url);
-    }
-  }, [user]);
+  const handleSavePreferences = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('appTheme', theme);
+    setPrefSuccess('Preferences saved');
+    setTimeout(() => setPrefSuccess(''), 2000);
+  };
 
-  useEffect(() => {
-    if (imgRef.current) {
-      console.log('Avatar <img> src:', imgRef.current.src);
-    }
-  }, [user?.avatar_url, avatarUrl]);
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600">Manage your account and application preferences</p>
+        </div>
 
-  return <div className="px-4 sm:px-6 lg:px-8">
-      <div className="pb-5 border-b border-gray-200">
-        <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Settings
-        </h3>
-        <p className="mt-2 max-w-4xl text-sm text-gray-500">
-          Manage your account and application preferences
-        </p>
-      </div>
-      <div className="mt-8">
-        <div className="space-y-6">
-          {/* Profile Settings */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-              <div className="flex items-center">
-                <UserIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Profile Settings
-                </h3>
-              </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          {[
+            { key: 'profile', label: 'Profile' },
+            { key: 'security', label: 'Security' },
+            { key: 'preferences', label: 'Preferences' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Profile */}
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+              <UserIcon className="h-5 w-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
             </div>
-            <form onSubmit={handleSave} className="px-4 py-5 sm:p-6">
+            <form onSubmit={handleSave} className="p-6">
               <div className="flex flex-col items-center mb-6">
                 <div className="relative">
                   <img
                     ref={imgRef}
-                    src={user.avatar_url || avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name)}&background=2563eb&color=fff&size=128`}
+                    src={user?.avatar_url || avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name)}&background=2563eb&color=fff&size=128`}
                     alt="Profile"
                     className="w-24 h-24 rounded-full object-cover border-2 border-blue-200"
                   />
-                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-1 cursor-pointer hover:bg-blue-700 transition">
+                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full px-2 py-1 cursor-pointer hover:bg-blue-700 transition text-xs">
                     <input
                       type="file"
                       accept="image/*"
@@ -151,47 +205,43 @@ const SettingsPage: React.FC = () => {
                       onChange={handleAvatarChange}
                       disabled={avatarUploading}
                     />
-                    <span className="text-xs">Edit</span>
+                    Edit
                   </label>
                 </div>
                 {avatarUploading && <span className="text-blue-600 text-sm mt-2">Uploading...</span>}
                 {avatarSuccess && <span className="text-green-600 text-sm mt-2">{avatarSuccess}</span>}
                 {avatarError && <span className="text-red-600 text-sm mt-2">{avatarError}</span>}
               </div>
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Name</label>
                   <input
                     type="text"
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="Your name"
-                    readOnly
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
                   <input
                     type="email"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="you@example.com"
-                    readOnly
                   />
                 </div>
               </div>
-              <div className="mt-6 flex items-center gap-4" hidden>
+
+              <div className="mt-6 flex items-center gap-4">
                 <button
                   type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 hidden"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                   disabled={saving}
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
@@ -201,17 +251,16 @@ const SettingsPage: React.FC = () => {
               </div>
             </form>
           </div>
-          {/* Security Settings */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-              <div className="flex items-center">
-                <LockIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Security
-                </h3>
-              </div>
+        )}
+
+        {/* Security */}
+        {activeTab === 'security' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+              <LockIcon className="h-5 w-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-900">Security</h2>
             </div>
-            <div className="px-4 py-5 sm:p-6">
+            <div className="p-6">
               <form onSubmit={handlePasswordSave} className="space-y-4 max-w-md">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Current Password</label>
@@ -220,7 +269,7 @@ const SettingsPage: React.FC = () => {
                     name="currentPassword"
                     value={passwordForm.currentPassword}
                     onChange={handlePasswordChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     required
                   />
                 </div>
@@ -231,7 +280,7 @@ const SettingsPage: React.FC = () => {
                     name="newPassword"
                     value={passwordForm.newPassword}
                     onChange={handlePasswordChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     required
                   />
                 </div>
@@ -242,14 +291,14 @@ const SettingsPage: React.FC = () => {
                     name="confirmPassword"
                     value={passwordForm.confirmPassword}
                     onChange={handlePasswordChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     required
                   />
                 </div>
                 <div className="flex items-center gap-4 mt-4">
                   <button
                     type="submit"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                     disabled={passwordSaving}
                   >
                     {passwordSaving ? 'Saving...' : 'Change Password'}
@@ -258,61 +307,44 @@ const SettingsPage: React.FC = () => {
                   {passwordError && <span className="text-red-600 text-sm">{passwordError}</span>}
                 </div>
               </form>
-               
             </div>
           </div>
-          {/* Notifications */}
-          <div className="bg-white shadow rounded-lg hidden">
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-              <div className="flex items-center">
-                <BellIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Notifications
-                </h3>
-              </div>
+        )}
+
+        {/* Preferences */}
+        {activeTab === 'preferences' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+              <PaletteIcon className="h-5 w-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-900">Preferences</h2>
             </div>
-            <div className="px-4 py-5 sm:p-6">
-              <div className="space-y-4">
-                {['Email notifications', 'Push notifications', 'SMS notifications'].map(item => <div key={item} className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input type="checkbox" className="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded" />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label className="font-medium text-gray-700">
-                        {item}
-                      </label>
-                    </div>
-                  </div>)}
+            <form onSubmit={handleSavePreferences} className="p-6 max-w-md space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Theme</label>
+                <select
+                  value={theme}
+                  onChange={e => setTheme(e.target.value)}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">System</option>
+                </select>
               </div>
-            </div>
+              <div className="flex items-center gap-4">
+                <button
+                  type="submit"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Save Preferences
+                </button>
+                {prefSuccess && <span className="text-green-600 text-sm">{prefSuccess}</span>}
+              </div>
+            </form>
           </div>
-          {/* Display Settings */}
-          <div className="bg-white shadow rounded-lg hidden">
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-              <div className="flex items-center">
-                <PaletteIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Display
-                </h3>
-              </div>
-            </div>
-            <div className="px-4 py-5 sm:p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Theme
-                  </label>
-                  <select className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-md">
-                    <option>Light</option>
-                    <option>Dark</option>
-                    <option>System</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
 export default SettingsPage;

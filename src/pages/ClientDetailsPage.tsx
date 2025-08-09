@@ -116,12 +116,14 @@ const ClientDetailsPage: React.FC = () => {
   const formatDate = (d: string) => (d ? new Date(d).toLocaleDateString() : '');
 
   const totals = useMemo(() => {
-    const totalInvoiced = invoices.reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
+    const totalInvoicedViaInvoices = invoices.reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
+    const totalInvoicedViaHistory = history.reduce((s, e) => s + Number(e.debit || 0), 0);
+    const totalInvoiced = totalInvoicedViaInvoices > 0 ? totalInvoicedViaInvoices : totalInvoicedViaHistory;
     const totalPaid = payments.filter((p: any) => p.status === 'confirmed').reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
     const outstanding = Math.max(0, totalInvoiced - totalPaid);
     const currentBalance = client && (client as any).balance != null ? Number((client as any).balance) : outstanding;
     return { totalInvoiced, totalPaid, outstanding, currentBalance };
-  }, [invoices, payments, client]);
+  }, [invoices, payments, history, client]);
 
   if (loading) {
     return (
@@ -186,7 +188,7 @@ const ClientDetailsPage: React.FC = () => {
           </div>
           <button onClick={() => navigate(`/customers/${client.id}/ledger`)} className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-black text-sm">View Ledger</button>
           <button onClick={() => navigate(`/customers/${client.id}/payments`)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Payments</button>
-          <button onClick={() => navigate(`/dashboard/clients/${client.id}/credit-note`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center">
+          <button onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center">
             <FileText className="w-4 h-4 mr-2" /> Credit Note
           </button>
         </div>
@@ -278,7 +280,7 @@ const ClientDetailsPage: React.FC = () => {
               <div className="flex flex-col gap-2">
                 <button onClick={() => setIsPaymentModalOpen(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Record Payment</button>
                 <button onClick={() => navigate(`/customers/${client.id}/ledger`)} className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-black text-sm">View Ledger</button>
-                <button onClick={() => navigate(`/dashboard/clients/${client.id}/credit-note`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"><FileText className="w-4 h-4 mr-2"/>Create Credit Note</button>
+                <button onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"><FileText className="w-4 h-4 mr-2"/>Create Credit Note</button>
               </div>
             </div>
           </div>

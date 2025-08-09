@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useMemo, useState } from 'react';
+import { API_CONFIG } from '../config/api';
 
 interface Expense {
   id: number;
@@ -12,17 +12,16 @@ interface Expense {
   entry_date: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const ExpensesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  // Get unique account names for dropdown
-  const accountNames = Array.from(new Set(expenses.map(exp => exp.account_name))).sort();
   const [accountNameFilter, setAccountNameFilter] = useState('All');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -32,12 +31,13 @@ const ExpensesPage: React.FC = () => {
         const params = new URLSearchParams();
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
-        const res = await axios.get(`${API_BASE_URL}/financial/expenses?${params.toString()}`);
-        if (res.data.success) {
-          setExpenses(res.data.data);
-        } else {
-          setError(res.data.error || 'Failed to fetch expenses');
-        }
+        const url = API_CONFIG.getUrl(`/financial/expenses`) + (params.toString() ? `?${params.toString()}` : '');
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+        setExpenses(data.data || []);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch expenses');
       } finally {
@@ -56,17 +56,28 @@ const ExpensesPage: React.FC = () => {
     });
   };
 
-  // Filter expenses by account name
-  const filteredExpenses = expenses.filter(exp =>
-    accountNameFilter === 'All' || exp.account_name === accountNameFilter
-  );
-  const totalDebit = filteredExpenses.reduce((sum, exp) => sum + (Number(exp.debit_amount) || 0), 0);
+  // Derived filters and pagination
+  const accountNames = useMemo(() => Array.from(new Set(expenses.map(exp => exp.account_name))).sort(), [expenses]);
+  const filteredExpenses = useMemo(() => {
+    const byAccount = accountNameFilter === 'All' ? expenses : expenses.filter(exp => exp.account_name === accountNameFilter);
+    const q = search.trim().toLowerCase();
+    if (!q) return byAccount;
+    return byAccount.filter(exp =>
+      exp.account_name.toLowerCase().includes(q) ||
+      exp.account_code.toLowerCase().includes(q) ||
+      (exp.description || '').toLowerCase().includes(q)
+    );
+  }, [expenses, accountNameFilter, search]);
+  const totalDebit = useMemo(() => filteredExpenses.reduce((sum, exp) => sum + (Number(exp.debit_amount) || 0), 0), [filteredExpenses]);
+  const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / limit));
+  const startIdx = (page - 1) * limit;
+  const pageRows = filteredExpenses.slice(startIdx, startIdx + limit);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">All Expenses</h1>
-      <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div className="flex gap-2 items-end">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
+        <div className="flex gap-2 items-end flex-wrap">
           <div>
             <label className="block text-sm text-gray-700 mb-1">Start Date</label>
             <input
@@ -85,19 +96,11 @@ const ExpensesPage: React.FC = () => {
               className="border border-gray-300 rounded px-3 py-2"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => { setStartDate(''); setEndDate(''); }}
-            className="ml-2 px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300"
-            disabled={!startDate && !endDate}
-          >
-            Clear Filter
-          </button>
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Account Name</label>
+            <label className="block text-sm text-gray-700 mb-1">Account</label>
             <select
               value={accountNameFilter}
-              onChange={e => setAccountNameFilter(e.target.value)}
+              onChange={e => { setPage(1); setAccountNameFilter(e.target.value); }}
               className="border border-gray-300 rounded px-3 py-2"
             >
               <option value="All">All</option>
@@ -106,14 +109,28 @@ const ExpensesPage: React.FC = () => {
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Search</label>
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setPage(1); setSearch(e.target.value); }}
+              placeholder="Search description, code or name"
+              className="border border-gray-300 rounded px-3 py-2"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => { setStartDate(''); setEndDate(''); setAccountNameFilter('All'); setSearch(''); setPage(1); }}
+            className="ml-2 px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300"
+            disabled={!startDate && !endDate && accountNameFilter==='All' && !search}
+          >
+            Clear Filter
+          </button>
         </div>
-        <div className="bg-red-100 border border-red-300 rounded-lg p-4 inline-block shadow">
-          <div className="text-gray-700 text-sm font-medium mb-1">Total Expenses</div>
-          <div className="text-2xl font-bold text-red-800">{
-            isNaN(totalDebit)
-              ? 'Ksh 0.00'
-              : new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 2 }).format(totalDebit)
-          }</div>
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm min-w-[240px] text-right">
+          <div className="text-gray-600 text-sm">Total Expenses</div>
+          <div className="text-2xl font-bold text-red-700">{new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 2 }).format(isNaN(totalDebit) ? 0 : totalDebit)}</div>
         </div>
       </div>
       {loading ? (
@@ -121,37 +138,51 @@ const ExpensesPage: React.FC = () => {
       ) : error ? (
         <div className="text-red-600">{error}</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border rounded-lg shadow">
-            <thead>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 border-b text-left">ID</th>
-                <th className="px-4 py-2 border-b text-left">Account Code</th>
-                <th className="px-4 py-2 border-b text-left">Account Name</th>
-                <th className="px-4 py-2 border-b text-left">Debit Amount</th>
-                <th className="px-4 py-2 border-b text-left">Description</th>
-                <th className="px-4 py-2 border-b text-left">Date</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">ID</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Account Code</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Account Name</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredExpenses.length === 0 ? (
+            <tbody className="divide-y divide-gray-100">
+              {pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 text-center text-gray-500">No expenses found.</td>
                 </tr>
               ) : (
-                filteredExpenses.map(expense => (
-                  <tr key={expense.id}>
-                    <td className="px-4 py-2 border-b">{expense.id}</td>
-                    <td className="px-4 py-2 border-b">{expense.account_code}</td>
-                    <td className="px-4 py-2 border-b">{expense.account_name}</td>
-                    <td className="px-4 py-2 border-b">{expense.debit_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="px-4 py-2 border-b">{expense.description || '-'}</td>
-                    <td className="px-4 py-2 border-b">{formatDate(expense.entry_date)}</td>
+                pageRows.map(expense => (
+                  <tr key={expense.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2">{expense.id}</td>
+                    <td className="px-4 py-2">{expense.account_code}</td>
+                    <td className="px-4 py-2">{expense.account_name}</td>
+                    <td className="px-4 py-2 text-right">{Number(expense.debit_amount || 0).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}</td>
+                    <td className="px-4 py-2">{expense.description || '-'}</td>
+                    <td className="px-4 py-2">{formatDate(expense.entry_date)}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+          {/* Pagination */}
+          <div className="flex items-center justify-between p-3 border-t border-gray-200">
+            <div className="text-sm text-gray-600">Page {page} of {totalPages} • {filteredExpenses.length} expenses</div>
+            <div className="flex items-center gap-2">
+              <select className="border border-gray-300 rounded px-2 py-1 text-sm" value={limit} onChange={e => { setPage(1); setLimit(parseInt(e.target.value) || 25); }}>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <button className="px-3 py-1 border rounded disabled:opacity-50" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Prev</button>
+              <button className="px-3 py-1 border rounded disabled:opacity-50" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

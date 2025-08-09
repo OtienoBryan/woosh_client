@@ -111,6 +111,8 @@ const StatCard: React.FC<StatCardProps> = ({
 
 const FinancialDashboardPage = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
+  const [hasNewChat, setHasNewChat] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -128,6 +130,35 @@ const FinancialDashboardPage = () => {
       })
       .catch(() => setError('Failed to load dashboard stats'))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    // Fetch count of new (my_status = 0) orders for badge on Customer Orders card
+    const fetchNewOrders = async () => {
+      try {
+        const url = API_CONFIG.getUrl('/financial/sales-orders-all');
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        const data = await res.json();
+        if (res.ok && data && data.success && Array.isArray(data.data)) {
+          const count = data.data.filter((o: any) => String(o.my_status || '0') === '0').length;
+          setNewOrdersCount(count);
+        }
+      } catch {}
+    };
+    const fetchChatLatest = async () => {
+      try {
+        const url = API_CONFIG.getUrl('/chat/latest');
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        const data = await res.json();
+        if (res.ok && data && data.success) {
+          const lastMessage = data.last_message_at ? new Date(data.last_message_at).getTime() : 0;
+          const lastVisited = Number(localStorage.getItem('chat_last_visited_ts') || 0);
+          setHasNewChat(lastMessage > lastVisited);
+        }
+      } catch {}
+    };
+    fetchNewOrders();
+    fetchChatLatest();
   }, []);
 
   const formatCurrency = (amount: number): string => {
@@ -270,10 +301,18 @@ const FinancialDashboardPage = () => {
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md`}
+                className={`${item.color} relative flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md`}
               >
                 {item.icon}
                 <span className="mt-2 text-center">{item.label}</span>
+                {item.to === '/financial/customer-orders' && (
+                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-red-600 text-white shadow">
+                    {newOrdersCount}
+                  </span>
+                )}
+                {item.to === '/chat-room' && hasNewChat && (
+                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-3 w-3 rounded-full bg-emerald-500 shadow ring-2 ring-white" />
+                )}
               </Link>
             ))}
           </div>
