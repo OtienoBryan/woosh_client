@@ -15,6 +15,15 @@ type LedgerEntry = {
   running_balance: number;
 };
 
+type Aging = {
+  current: number;
+  days_1_30: number;
+  days_31_60: number;
+  days_61_90: number;
+  days_90_plus: number;
+  total_payable: number;
+};
+
 const formatCurrency = (n: number) => (n || 0).toLocaleString(undefined, { style: 'currency', currency: 'KES' });
 const formatDate = (d: string) => new Date(d).toLocaleDateString();
 
@@ -32,6 +41,7 @@ const SupplierLedgerPage: React.FC = () => {
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const tableRef = useRef<HTMLDivElement>(null);
+  const [aging, setAging] = useState<Aging>({ current: 0, days_1_30: 0, days_31_60: 0, days_61_90: 0, days_90_plus: 0, total_payable: 0 });
 
   useEffect(() => {
     const load = async () => {
@@ -51,7 +61,27 @@ const SupplierLedgerPage: React.FC = () => {
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
         setSupplier(data.data.supplier);
-        setEntries(data.data.entries || []);
+        const fetchedEntries: LedgerEntry[] = data.data.entries || [];
+        setEntries(fetchedEntries);
+        if (data.data.aging) {
+          setAging(data.data.aging);
+        } else {
+          // Fallback client-side aging from fetched entries
+          const today = new Date();
+          const buckets: Aging = { current: 0, days_1_30: 0, days_31_60: 0, days_61_90: 0, days_90_plus: 0, total_payable: 0 };
+          for (const e of fetchedEntries) {
+            const dt = new Date(e.date);
+            const diffDays = Math.floor((+today - +dt) / (1000 * 60 * 60 * 24));
+            const value = Number(e.credit || 0) - Number(e.debit || 0);
+            if (diffDays <= 0) buckets.current += value;
+            else if (diffDays <= 30) buckets.days_1_30 += value;
+            else if (diffDays <= 60) buckets.days_31_60 += value;
+            else if (diffDays <= 90) buckets.days_61_90 += value;
+            else buckets.days_90_plus += value;
+            buckets.total_payable += value;
+          }
+          setAging(buckets);
+        }
         if (data.data.pagination) {
           setTotal(data.data.pagination.total);
           setTotalPages(data.data.pagination.total_pages);
@@ -207,7 +237,7 @@ const SupplierLedgerPage: React.FC = () => {
           <>
             <div ref={tableRef}>
             {/* Supplier Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <p className="text-sm text-gray-500">Company</p>
                 <p className="text-lg font-semibold text-gray-900">{supplier.company_name}</p>
@@ -223,7 +253,7 @@ const SupplierLedgerPage: React.FC = () => {
                 <p className="text-sm text-gray-700">PIN: {supplier.tax_id || '-'}</p>
                 <p className="text-sm text-gray-700 break-words">{supplier.address || '-'}</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -238,6 +268,37 @@ const SupplierLedgerPage: React.FC = () => {
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <p className="text-sm text-gray-500">Balance</p>
                 <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.balance)}</p>
+              </div>
+            </div>
+
+            {/* Aging Balance */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">Aging Balance</h2>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="p-3 border border-gray-200 rounded">
+                  <p className="text-xs text-gray-500">Current</p>
+                  <p className="text-base font-semibold">{formatCurrency(aging.current)}</p>
+                </div>
+                <div className="p-3 border border-gray-200 rounded">
+                  <p className="text-xs text-gray-500">1-30 Days</p>
+                  <p className="text-base font-semibold">{formatCurrency(aging.days_1_30)}</p>
+                </div>
+                <div className="p-3 border border-gray-200 rounded">
+                  <p className="text-xs text-gray-500">31-60 Days</p>
+                  <p className="text-base font-semibold">{formatCurrency(aging.days_31_60)}</p>
+                </div>
+                <div className="p-3 border border-gray-200 rounded">
+                  <p className="text-xs text-gray-500">61-90 Days</p>
+                  <p className="text-base font-semibold">{formatCurrency(aging.days_61_90)}</p>
+                </div>
+                <div className="p-3 border border-gray-200 rounded">
+                  <p className="text-xs text-gray-500">90+ Days</p>
+                  <p className="text-base font-semibold">{formatCurrency(aging.days_90_plus)}</p>
+                </div>
+              </div>
+              <div className="mt-3 text-right">
+                <span className="text-sm text-gray-600 mr-2">Total Payable:</span>
+                <span className="text-lg font-bold text-blue-700">{formatCurrency(aging.total_payable)}</span>
               </div>
             </div>
 
