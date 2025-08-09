@@ -352,6 +352,7 @@ const ClientsListPage: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edit</th>
@@ -366,6 +367,13 @@ const ClientsListPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">{client.address || <span className="text-gray-400">Not specified</span>}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{client.region || <span className="text-gray-400">Not specified</span>}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{client.route_name_update || <span className="text-gray-400">Not specified</span>}</td>
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-right font-medium ${
+                      Number(client.balance || 0) > 0 ? 'text-blue-700' : 'text-gray-700'
+                    }`}
+                  >
+                    {Number(client.balance || 0).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {client.client_type === 0
                       ? <span className="text-gray-400">Not assigned</span>

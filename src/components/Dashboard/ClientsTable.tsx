@@ -289,9 +289,9 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ searchQuery = '' }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold">
-                        {typeof client.balance === 'number' && !isNaN(client.balance)
-                          ? client.balance.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
-                          : '-'}
+                        {client.balance !== undefined && client.balance !== null && !isNaN(Number(client.balance))
+                          ? Number(client.balance).toLocaleString(undefined, { style: 'currency', currency: 'KES' })
+                          : Number(0).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
