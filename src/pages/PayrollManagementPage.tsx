@@ -1,13 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { staffService, Staff } from '../services/staffService';
+import React, { useEffect, useMemo, useState } from 'react';
+import { API_CONFIG } from '../config/api';
+import { SearchIcon, FilterIcon, UsersIcon, WalletIcon, CalendarIcon } from 'lucide-react';
 
-const API_BASE = '/api/payroll';
+interface StaffItem {
+  id: number;
+  name: string;
+  role?: string;
+  salary?: number | null;
+}
+
+const API_BASE = API_CONFIG.getUrl('/payroll');
 
 const PayrollManagementPage: React.FC = () => {
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [staff, setStaff] = useState<StaffItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [salaryEdits, setSalaryEdits] = useState<{ [id: number]: string }>({});
+  // Reserved for future inline salary edits; disable to avoid unused warnings
+  // const [salaryEdits, setSalaryEdits] = useState<{ [id: number]: string }>({});
   const [showRunPayroll, setShowRunPayroll] = useState(false);
   const [runPayrollLoading, setRunPayrollLoading] = useState(false);
   const [runPayrollResult, setRunPayrollResult] = useState<any>(null);
@@ -23,22 +32,28 @@ const PayrollManagementPage: React.FC = () => {
   const [allHistoryData, setAllHistoryData] = useState<any[]>([]);
   const [paymentAccounts, setPaymentAccounts] = useState<any[]>([]);
   const [selectedPaymentAccount, setSelectedPaymentAccount] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     const fetchStaff = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await staffService.getStaffList();
-        setStaff(data);
-        // Initialize salary edits with any existing salary if present
-        const initialSalaries: { [id: number]: string } = {};
-        data.forEach((s: any) => {
-          if (s.salary !== undefined && s.salary !== null) {
-            initialSalaries[s.id] = String(s.salary);
-          }
-        });
-        setSalaryEdits(initialSalaries);
+        const url = API_CONFIG.getUrl('/staff/staff');
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        const normalized: StaffItem[] = (Array.isArray(data) ? data : []).map((s: any) => ({
+          id: Number(s.id),
+          name: s.name,
+          role: s.role,
+          salary: s.salary !== undefined && s.salary !== null ? Number(s.salary) : null,
+        }));
+        setStaff(normalized);
+        // Inline salary edits initialization omitted for now
       } catch (err: any) {
         setError('Failed to fetch staff');
       } finally {
@@ -52,7 +67,7 @@ const PayrollManagementPage: React.FC = () => {
   useEffect(() => {
     const fetchPaymentAccounts = async () => {
       try {
-        const res = await fetch(`${API_BASE}/payment-accounts`);
+        const res = await fetch(`${API_BASE}/payment-accounts`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
         const json = await res.json();
         if (json.success) {
           setPaymentAccounts(json.data || []);
@@ -73,7 +88,7 @@ const PayrollManagementPage: React.FC = () => {
     setHistoryLoading(true);
     setHistoryData([]);
     try {
-      const res = await fetch(`${API_BASE}/history?staff_id=${staffId}`);
+      const res = await fetch(`${API_BASE}/history?staff_id=${staffId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       const json = await res.json();
       setHistoryData(json.data || []);
     } catch {
@@ -88,7 +103,7 @@ const PayrollManagementPage: React.FC = () => {
     setAllHistoryLoading(true);
     setAllHistoryData([]);
     try {
-      const res = await fetch(`${API_BASE}/history`);
+      const res = await fetch(`${API_BASE}/history`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       const json = await res.json();
       setAllHistoryData(json.data || []);
     } catch {
@@ -118,7 +133,7 @@ const PayrollManagementPage: React.FC = () => {
       if (selectedPaymentAccount) body.payment_account_id = Number(selectedPaymentAccount);
       const res = await fetch(`${API_BASE}/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(body),
       });
       const json = await res.json();
@@ -163,26 +178,123 @@ const PayrollManagementPage: React.FC = () => {
     return { paye, nssf, nhif, total, net: gross - total };
   }
 
+  // Filtering and pagination
+  const filteredStaff = useMemo(() => {
+    let list = staff;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(s => s.name?.toLowerCase().includes(q) || s.role?.toLowerCase().includes(q));
+    }
+    if (roleFilter) list = list.filter(s => (s.role || '') === roleFilter);
+    return list;
+  }, [staff, search, roleFilter]);
+
+  const roles = useMemo(() => {
+    return Array.from(new Set(staff.map(s => s.role).filter(Boolean))) as string[];
+  }, [staff]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStaff.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredStaff.slice(start, start + pageSize);
+  }, [filteredStaff, currentPage, pageSize]);
+
+  // KPI summaries
+  const totalEmployees = filteredStaff.length;
+  const estimatedNetMonthly = filteredStaff.reduce((sum, s) => {
+    const gross = s.salary ? Number(s.salary) : 0;
+    const { net } = calculateDeductions(gross);
+    return sum + net;
+  }, 0);
+
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">Payroll Management</h1>
-      <div className="flex gap-4 mb-6">
-        <button
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          onClick={() => setShowRunPayroll(true)}
-        >
-          Run Payroll
-        </button>
-        <button
-          className="bg-blue-100 text-blue-800 px-4 py-2 rounded hover:bg-blue-200"
-          onClick={() => { setShowAllHistory(true); fetchAllHistory(); }}
-        >
-          View Payroll History
-        </button>
+    <div className="max-w-6xl mx-auto py-6 px-4">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Payroll Management</h1>
+          <p className="text-gray-600">Manage staff salaries, run payroll, and review history</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            onClick={() => setShowRunPayroll(true)}
+          >
+            Run Payroll
+          </button>
+          <button
+            className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+            onClick={() => { setShowAllHistory(true); fetchAllHistory(); }}
+          >
+            View History
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-3">
+          <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
+            <UsersIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-sm text-gray-500">Employees</div>
+            <div className="text-xl font-semibold text-gray-900">{totalEmployees}</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-3">
+          <div className="p-3 bg-emerald-100 text-emerald-700 rounded-lg">
+            <WalletIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-sm text-gray-500">Est. Net Monthly</div>
+            <div className="text-xl font-semibold text-gray-900">{estimatedNetMonthly.toLocaleString('en-KE', { style: 'currency', currency: 'KES' })}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="relative">
+            <SearchIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search by name or role"
+              className="pl-9 pr-3 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <FilterIcon className="w-4 h-4 text-gray-400" />
+              <select
+                value={roleFilter}
+                onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All roles</option>
+                {roles.map(r => (
+                  <option key={r} value={r || ''}>{r}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-sm text-gray-500">Rows</span>
+            <select
+              value={pageSize}
+              onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+              className="border border-gray-200 rounded-lg px-2 py-2 text-sm"
+            >
+              {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Staff Payroll Table */}
-      <div className="overflow-x-auto bg-white shadow rounded-lg">
+      <div className="overflow-x-auto bg-white shadow-sm rounded-xl border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
@@ -197,9 +309,9 @@ const PayrollManagementPage: React.FC = () => {
               <tr><td colSpan={4} className="text-center py-4">Loading...</td></tr>
             ) : error ? (
               <tr><td colSpan={4} className="text-center text-red-600 py-4">{error}</td></tr>
-            ) : staff.length === 0 ? (
+            ) : filteredStaff.length === 0 ? (
               <tr><td colSpan={4} className="text-center py-4">No staff found</td></tr>
-            ) : staff.map((s) => (
+            ) : pageItems.map((s) => (
               <tr key={s.id}>
                 <td className="px-4 py-2">{s.name}</td>
                 <td className="px-4 py-2">{s.role}</td>
@@ -218,12 +330,36 @@ const PayrollManagementPage: React.FC = () => {
         </table>
       </div>
 
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <div className="text-gray-600">Page {currentPage} of {totalPages}</div>
+        <div className="flex gap-2">
+          <button
+            className="px-3 py-1 border border-gray-200 rounded-lg bg-white disabled:opacity-50"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
+          <button
+            className="px-3 py-1 border border-gray-2 00 rounded-lg bg-white disabled:opacity-50"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       {/* Run Payroll Modal */}
       {showRunPayroll && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl relative border border-gray-200">
             <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setShowRunPayroll(false)}>&times;</button>
-            <h2 className="text-xl font-semibold mb-4">Run Payroll</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <CalendarIcon className="h-5 w-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-900">Run Payroll</h2>
+            </div>
             <form onSubmit={handleRunPayroll}>
               <div className="mb-4">
                 <label className="block font-medium mb-1">Pay Date</label>
