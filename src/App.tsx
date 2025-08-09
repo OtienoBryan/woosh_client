@@ -64,6 +64,7 @@ import ReceivablesCustomerPage from './pages/ReceivablesCustomerPage';
 import SuppliersPage from './pages/SuppliersPage';
 import SupplierInvoicesPage from './pages/SupplierInvoicesPage';
 import SupplierInvoicePage from './pages/SupplierInvoicePage';
+import SupplierLedgerPage from './pages/SupplierLedgerPage';
 import ProductsPage from './pages/ProductsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import SalesDashboardPage from './pages/SalesDashboardPage';
@@ -263,6 +264,7 @@ const App = () => {
             <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
             <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailsPage />} />
             <Route path="/supplier-invoice/:id" element={<SupplierInvoicePage />} />
+            <Route path="/suppliers/:supplierId/ledger" element={<SupplierLedgerPage />} />
             <Route path="/receive-items/:purchaseOrderId" element={<ReceiveItemsPage />} />
             <Route path="/store-inventory" element={<StoreInventoryPage />} />
             <Route path="/opening-quantities" element={<OpeningQuantitiesPage />} />

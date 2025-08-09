@@ -225,7 +225,7 @@ const FinancialDashboardPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 opacity-70">
           <StatCard
             title="Total Sales"
             value={stats ? formatCurrency(stats.totalSales) : '$0.00'}
