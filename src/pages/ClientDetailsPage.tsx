@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { clientService, Client } from '../services/clientService';
-import { Building2, Plus, Pencil, Trash2, Truck, FileText } from 'lucide-react';
+import { Building2, FileText } from 'lucide-react';
 import PaymentModal from '../components/Clients/PaymentModal';
 import { creditNoteService } from '../services/creditNoteService';
 
@@ -22,6 +22,7 @@ const ClientDetailsPage: React.FC = () => {
   const [unconfirmedPaymentsLoading, setUnconfirmedPaymentsLoading] = useState(false);
   const [creditNotes, setCreditNotes] = useState<any[]>([]);
   const [creditNotesLoading, setCreditNotesLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payments' | 'creditNotes' | 'history'>('overview');
 
   const fetchData = async () => {
     if (!id) return;
@@ -111,6 +112,17 @@ const ClientDetailsPage: React.FC = () => {
     fetchCreditNotes();
   }, [id]);
 
+  const formatKES = (n: number) => Number(n || 0).toLocaleString(undefined, { style: 'currency', currency: 'KES' });
+  const formatDate = (d: string) => (d ? new Date(d).toLocaleDateString() : '');
+
+  const totals = useMemo(() => {
+    const totalInvoiced = invoices.reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
+    const totalPaid = payments.filter((p: any) => p.status === 'confirmed').reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+    const outstanding = Math.max(0, totalInvoiced - totalPaid);
+    const currentBalance = client && (client as any).balance != null ? Number((client as any).balance) : outstanding;
+    return { totalInvoiced, totalPaid, outstanding, currentBalance };
+  }, [invoices, payments, client]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -155,37 +167,127 @@ const ClientDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{client.name || client.company_name}</h1>
-          <p className="text-gray-600">{client.address}</p>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header Card */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
+            <Building2 className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{client.name || (client as any).company_name}</h1>
+            <div className="text-sm text-gray-600">{client.address || '-'}</div>
+            <div className="text-sm text-gray-600">{(client as any).email || ''} {(client as any).contact ? `• ${(client as any).contact}` : ''}</div>
+          </div>
         </div>
-        <button
-          onClick={() => navigate(`/customers/${client.id}/ledger`)}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
-        >
-          View Ledger
-        </button>
-        <button
-          onClick={() => navigate(`/customers/${client.id}/payments`)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
-        >
-          View Payments
-        </button>
-        <button
-          onClick={() => navigate(`/dashboard/clients/${client.id}/credit-note`)}
-          className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center"
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          Create Credit Note
-        </button>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">
+            Balance: <span className="font-semibold">{formatKES(totals.currentBalance)}</span>
+          </div>
+          <button onClick={() => navigate(`/customers/${client.id}/ledger`)} className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-black text-sm">View Ledger</button>
+          <button onClick={() => navigate(`/customers/${client.id}/payments`)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Payments</button>
+          <button onClick={() => navigate(`/dashboard/clients/${client.id}/credit-note`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center">
+            <FileText className="w-4 h-4 mr-2" /> Credit Note
+          </button>
+        </div>
       </div>
 
-      {/* Invoices Section */}
-      <div className="mt-12">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Invoices</h2>
-        <div className="overflow-x-auto">
+      {/* Tabs */}
+      <div className="mb-4 border-b border-gray-200">
+        <nav className="-mb-px flex flex-wrap gap-4" aria-label="Tabs">
+          {[
+            { key: 'overview', label: 'Overview', count: undefined },
+            { key: 'invoices', label: 'Invoices', count: invoices.length },
+            { key: 'payments', label: 'Payments', count: payments.length },
+            { key: 'creditNotes', label: 'Credit Notes', count: creditNotes.length },
+            { key: 'history', label: 'History', count: history.length },
+          ].map((tab: any) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`whitespace-nowrap py-2 px-3 border-b-2 text-sm font-medium ${activeTab === tab.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'}`}
+            >
+              {tab.label}
+              {typeof tab.count === 'number' && (
+                <span className={`ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs ${activeTab === tab.key ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>{tab.count}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Overview */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="text-xs text-gray-500">Total Invoiced</div>
+                <div className="text-xl font-bold">{formatKES(totals.totalInvoiced)}</div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="text-xs text-gray-500">Total Paid</div>
+                <div className="text-xl font-bold text-green-700">{formatKES(totals.totalPaid)}</div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="text-xs text-gray-500">Outstanding</div>
+                <div className="text-xl font-bold text-red-700">{formatKES(totals.outstanding)}</div>
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-3">Recent Invoices</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {invoices.slice(0, 5).map((inv: any) => (
+                      <tr key={inv.id}>
+                        <td className="px-4 py-2 text-sm text-gray-900">{inv.invoice_number || inv.id}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900">{formatDate(inv.created_at)}</td>
+                        <td className="px-4 py-2 text-right text-sm text-gray-900">{formatKES(Number(inv.total_amount || 0))}</td>
+                        <td className="px-4 py-2 text-sm">{inv.status || '-'}</td>
+                      </tr>
+                    ))}
+                    {invoices.length === 0 && (
+                      <tr><td colSpan={4} className="px-4 py-3 text-center text-gray-500">No invoices</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-3">Client Info</h3>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div><span className="text-gray-500">Name:</span> {client.name || (client as any).company_name}</div>
+                <div><span className="text-gray-500">Email:</span> {(client as any).email || '-'}</div>
+                <div><span className="text-gray-500">Phone:</span> {(client as any).contact || '-'}</div>
+                <div><span className="text-gray-500">Address:</span> {client.address || '-'}</div>
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
+              <div className="flex flex-col gap-2">
+                <button onClick={() => setIsPaymentModalOpen(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Record Payment</button>
+                <button onClick={() => navigate(`/customers/${client.id}/ledger`)} className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-black text-sm">View Ledger</button>
+                <button onClick={() => navigate(`/dashboard/clients/${client.id}/credit-note`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"><FileText className="w-4 h-4 mr-2"/>Create Credit Note</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoices Tab */}
+      {activeTab === 'invoices' && (
+        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -213,19 +315,17 @@ const ClientDetailsPage: React.FC = () => {
                   return (
                     <tr key={inv.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.invoice_number || inv.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : ''}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(inv.created_at)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.so_number || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                        {inv.total_amount != null && !isNaN(Number(inv.total_amount))
-                          ? Number(inv.total_amount).toLocaleString(undefined, { style: 'currency', currency: 'KES' })
-                          : '-'}
+                        {inv.total_amount != null && !isNaN(Number(inv.total_amount)) ? formatKES(Number(inv.total_amount)) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.status || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-700 font-semibold">
-                        {paid > 0 ? paid.toLocaleString(undefined, { style: 'currency', currency: 'KES' }) : '-'}
+                        {paid > 0 ? formatKES(paid) : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold {balance === 0 ? 'text-green-700' : 'text-red-700'}">
-                        {balance.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-semibold ${balance === 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {formatKES(balance)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex space-x-2">
@@ -254,22 +354,19 @@ const ClientDetailsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      )}
 
-      {/* Credit Notes Section */}
-      <div className="mt-12">
+      {/* Credit Notes Tab */}
+      {activeTab === 'creditNotes' && (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Credit Notes</h2>
-          <button
-            onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)}
-            className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Create Credit Note
-          </button>
+          <h2 className="text-xl font-semibold text-gray-900 p-4">Credit Notes</h2>
+          <div className="p-4">
+            <button onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"><FileText className="w-4 h-4 mr-2" />Create Credit Note</button>
+          </div>
         </div>
         {creditNotesLoading ? (
-          <div className="text-gray-600">Loading credit notes...</div>
+          <div className="p-4 text-gray-600">Loading credit notes...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -328,12 +425,17 @@ const ClientDetailsPage: React.FC = () => {
           </div>
         )}
       </div>
+      )}
 
-      {/* Unconfirmed Payments Section */}
-      <div className="mt-12">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Unconfirmed Payments</h2>
+      {/* Payments Tab */}
+      {activeTab === 'payments' && (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Unconfirmed Payments</h2>
+          <button onClick={() => setIsPaymentModalOpen(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Record Payment</button>
+        </div>
         {unconfirmedPaymentsLoading ? (
-          <div className="text-gray-600">Loading unconfirmed payments...</div>
+          <div className="p-4 text-gray-600">Loading unconfirmed payments...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -405,13 +507,15 @@ const ClientDetailsPage: React.FC = () => {
           </div>
         )}
       </div>
-      {/* Client History Section */}
-      <div className="mt-12">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Client History</h2>
+      )}
+      {/* History Tab */}
+      {activeTab === 'history' && (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+        <div className="p-4 border-b border-gray-200"><h2 className="text-lg font-semibold text-gray-900">Client History</h2></div>
         {historyLoading ? (
-          <div className="text-gray-600">Loading history...</div>
+          <div className="p-4 text-gray-600">Loading history...</div>
         ) : historyError ? (
-          <div className="text-red-600">{historyError}</div>
+          <div className="p-4 text-red-600">{historyError}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -449,6 +553,7 @@ const ClientDetailsPage: React.FC = () => {
           </div>
         )}
       </div>
+      )}
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
