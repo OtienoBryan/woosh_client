@@ -51,21 +51,57 @@ const SupplierLedgerPage: React.FC = () => {
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
   const [accountId, setAccountId] = useState<number>(0);
+  const [accounts, setAccounts] = useState<Array<{ id: number; account_code?: string; account_name?: string; name?: string }>>([]);
   const [amount, setAmount] = useState<number>(0);
-  const [allocations, setAllocations] = useState<Array<{ purchase_order_id: number; po_number?: string; balance_remaining: number; amount: number }>>([]);
+  const [allocations, setAllocations] = useState<Array<{
+    purchase_order_id: number;
+    po_number?: string;
+    invoice_number?: string | null;
+    order_date?: string | null;
+    status?: string | null;
+    total_amount: number;
+    amount_paid: number;
+    balance_remaining: number;
+    amount: number;
+  }>>([]);
 
   const openPayModal = useCallback(async () => {
     setShowPayModal(true);
     setPayError(null);
     try {
-      const url = API_CONFIG.getUrl(`/purchase-orders`) + `?supplier_id=${supplierId}`;
+      // Load cash/bank accounts
+      try {
+        const accUrl = API_CONFIG.getUrl(`/financial/cash-equivalents/accounts`);
+        const accRes = await fetch(accUrl, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        const accData = await accRes.json();
+        if (accRes.ok && accData.success) {
+          const list = Array.isArray(accData.data) ? accData.data : [];
+          setAccounts(list);
+          if (!accountId && list.length > 0) setAccountId(Number(list[0].id));
+        }
+      } catch {}
+
+      const url = API_CONFIG.getUrl(`/financial/purchase-orders`) + `?supplier_id=${supplierId}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       const data = await res.json();
       if (res.ok && data.success) {
         const rows = (data.data || [])
-          .filter((po: any) => Number(po.supplier_id) === Number(supplierId));
-        const mapped = rows.map((po: any) => ({ purchase_order_id: po.id, po_number: po.po_number, balance_remaining: Number(po.total_amount) - Number(po.amount_paid || 0), amount: 0 }));
+          .filter((po: any) => ['received', 'partially_received'].includes(String(po.status || '').toLowerCase()))
+          .sort((a: any, b: any) => new Date(b.order_date || b.created_at || 0).getTime() - new Date(a.order_date || a.created_at || 0).getTime());
+        const mapped = rows.map((po: any) => ({
+          purchase_order_id: po.id,
+          po_number: po.po_number,
+          invoice_number: po.invoice_number || null,
+          order_date: po.order_date || po.created_at || null,
+          status: po.status || null,
+          total_amount: Number(po.total_amount || 0),
+          amount_paid: Number(po.amount_paid || 0),
+          balance_remaining: Number(po.total_amount || 0) - Number(po.amount_paid || 0),
+          amount: 0,
+        }));
         setAllocations(mapped);
+      } else {
+        setPayError(data.error || 'Failed to load purchase orders');
       }
     } catch {}
   }, [supplierId]);
@@ -74,7 +110,9 @@ const SupplierLedgerPage: React.FC = () => {
     setPayLoading(true);
     setPayError(null);
     try {
+      if (!accountId) throw new Error('Please select an account');
       const hasAlloc = allocations.some(a => a.amount && a.amount > 0);
+      if (!hasAlloc && (!amount || amount <= 0)) throw new Error('Payment amount must be greater than 0');
       const payload: any = {
         supplier_id: Number(supplierId),
         payment_date: paymentDate,
@@ -88,7 +126,7 @@ const SupplierLedgerPage: React.FC = () => {
       } else {
         payload.amount = amount;
       }
-      const res = await fetch(API_CONFIG.getUrl(`/suppliers/${supplierId}/pay`), {
+      const res = await fetch(API_CONFIG.getUrl(`/financial/suppliers/${supplierId}/pay`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +134,11 @@ const SupplierLedgerPage: React.FC = () => {
         },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch {
+        throw new Error(raw || `Unexpected non-JSON response (HTTP ${res.status})`);
+      }
       if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
       setShowPayModal(false);
       setPage(1);
@@ -106,6 +148,7 @@ const SupplierLedgerPage: React.FC = () => {
       setPayLoading(false);
     }
   };
+  const totalAllocated = allocations.reduce((s, a) => s + Number(a.amount || 0), 0);
   
 
   useEffect(() => {
@@ -361,8 +404,13 @@ const SupplierLedgerPage: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Account ID</label>
-                      <input type="number" value={accountId || ''} onChange={e => setAccountId(parseInt(e.target.value || '0'))} className="w-full border rounded px-2 py-1" placeholder="e.g. 5" />
+                      <label className="block text-sm text-gray-600 mb-1">Account</label>
+                      <select value={accountId || 0} onChange={e => setAccountId(parseInt(e.target.value || '0'))} className="w-full border rounded px-2 py-1">
+                        <option value={0}>Select account</option>
+                        {accounts.map(a => (
+                          <option key={a.id} value={a.id}>{`${a.account_code ? `${a.account_code} - ` : ''}${a.account_name || a.name || a.id}`}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Reference</label>
@@ -375,24 +423,34 @@ const SupplierLedgerPage: React.FC = () => {
                   </div>
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">Allocations (Optional)</h4>
-                      <span className="text-xs text-gray-500">Leave all amounts 0 to make a single bulk payment</span>
+                      <h4 className="font-semibold">Supplier Invoices (from purchase orders)</h4>
+                      <span className="text-xs text-gray-500">Enter amounts to allocate; leave all 0 to make a bulk payment</span>
                     </div>
                     <div className="overflow-x-auto border rounded">
                       <table className="min-w-full text-sm">
                         <thead className="bg-gray-50">
                           <tr>
+                            <th className="px-3 py-2 text-left">Invoice</th>
                             <th className="px-3 py-2 text-left">PO</th>
+                            <th className="px-3 py-2 text-left">Date</th>
+                            <th className="px-3 py-2 text-left">Status</th>
+                            <th className="px-3 py-2 text-right">Total</th>
+                            <th className="px-3 py-2 text-right">Paid</th>
                             <th className="px-3 py-2 text-right">Balance</th>
                             <th className="px-3 py-2 text-right">Pay Amount</th>
                           </tr>
                         </thead>
                         <tbody>
                           {allocations.length === 0 ? (
-                            <tr><td colSpan={3} className="px-3 py-3 text-center text-gray-500">No POs</td></tr>
+                            <tr><td colSpan={8} className="px-3 py-3 text-center text-gray-500">No purchase orders found for this supplier</td></tr>
                           ) : allocations.map((a, idx) => (
                             <tr key={a.purchase_order_id} className="border-t">
+                              <td className="px-3 py-2">{a.invoice_number || '-'}</td>
                               <td className="px-3 py-2">{a.po_number || a.purchase_order_id}</td>
+                              <td className="px-3 py-2">{a.order_date ? new Date(a.order_date).toLocaleDateString() : '-'}</td>
+                              <td className="px-3 py-2">{a.status || '-'}</td>
+                              <td className="px-3 py-2 text-right">{formatCurrency(a.total_amount)}</td>
+                              <td className="px-3 py-2 text-right">{formatCurrency(a.amount_paid)}</td>
                               <td className="px-3 py-2 text-right">{formatCurrency(a.balance_remaining)}</td>
                               <td className="px-3 py-2 text-right">
                                 <input
@@ -421,6 +479,7 @@ const SupplierLedgerPage: React.FC = () => {
                     </div>
                   )}
                   <div className="mt-6 flex items-center justify-end gap-2">
+                    <div className="mr-auto text-sm text-gray-600">Allocated: <span className="font-semibold">{totalAllocated.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}</span></div>
                     <button className="px-4 py-2 border rounded" onClick={() => setShowPayModal(false)}>Cancel</button>
                     <button className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50" disabled={payLoading || (!allocations.some(a => (a.amount || 0) > 0) && (!amount || amount <= 0)) || !accountId} onClick={submitPayment}>
                       {payLoading ? 'Saving...' : 'Save Payment'}
