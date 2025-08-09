@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { API_CONFIG } from '../config/api';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+ 
 
 type LedgerEntry = {
   id: number;
@@ -42,6 +43,70 @@ const SupplierLedgerPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const tableRef = useRef<HTMLDivElement>(null);
   const [aging, setAging] = useState<Aging>({ current: 0, days_1_30: 0, days_31_60: 0, days_61_90: 0, days_90_plus: 0, total_payable: 0 });
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [paymentDate, setPaymentDate] = useState<string>(() => new Date().toISOString().slice(0,10));
+  const [reference, setReference] = useState('');
+  const [notes, setNotes] = useState('');
+  const [accountId, setAccountId] = useState<number>(0);
+  const [amount, setAmount] = useState<number>(0);
+  const [allocations, setAllocations] = useState<Array<{ purchase_order_id: number; po_number?: string; balance_remaining: number; amount: number }>>([]);
+
+  const openPayModal = useCallback(async () => {
+    setShowPayModal(true);
+    setPayError(null);
+    try {
+      const url = API_CONFIG.getUrl(`/purchase-orders`) + `?supplier_id=${supplierId}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const rows = (data.data || [])
+          .filter((po: any) => Number(po.supplier_id) === Number(supplierId));
+        const mapped = rows.map((po: any) => ({ purchase_order_id: po.id, po_number: po.po_number, balance_remaining: Number(po.total_amount) - Number(po.amount_paid || 0), amount: 0 }));
+        setAllocations(mapped);
+      }
+    } catch {}
+  }, [supplierId]);
+
+  const submitPayment = async () => {
+    setPayLoading(true);
+    setPayError(null);
+    try {
+      const hasAlloc = allocations.some(a => a.amount && a.amount > 0);
+      const payload: any = {
+        supplier_id: Number(supplierId),
+        payment_date: paymentDate,
+        payment_method: paymentMethod,
+        account_id: accountId,
+        reference,
+        notes,
+      };
+      if (hasAlloc) {
+        payload.allocations = allocations.filter(a => a.amount && a.amount > 0).map(a => ({ purchase_order_id: a.purchase_order_id, amount: a.amount }));
+      } else {
+        payload.amount = amount;
+      }
+      const res = await fetch(API_CONFIG.getUrl(`/suppliers/${supplierId}/pay`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      setShowPayModal(false);
+      setPage(1);
+    } catch (e: any) {
+      setPayError(e.message || 'Failed to record payment');
+    } finally {
+      setPayLoading(false);
+    }
+  };
+  
 
   useEffect(() => {
     const load = async () => {
@@ -114,6 +179,7 @@ const SupplierLedgerPage: React.FC = () => {
             <p className="text-gray-600">{supplier ? supplier.company_name : 'Loading supplier...'}</p>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={openPayModal} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Make Payment</button>
             <button
               onClick={async () => {
                 if (!tableRef.current) return;
@@ -270,6 +336,100 @@ const SupplierLedgerPage: React.FC = () => {
                 <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.balance)}</p>
               </div>
             </div>
+
+            {/* Payment Modal */}
+            {showPayModal && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+                <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Record Supplier Payment</h3>
+                    <button className="text-gray-500 hover:text-gray-800" onClick={() => setShowPayModal(false)}>✕</button>
+                  </div>
+                  {payError && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{payError}</div>}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Payment Date</label>
+                      <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} className="w-full border rounded px-2 py-1" />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Payment Method</label>
+                      <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full border rounded px-2 py-1">
+                        <option value="cash">Cash</option>
+                        <option value="check">Check</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="credit_card">Credit Card</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Account ID</label>
+                      <input type="number" value={accountId || ''} onChange={e => setAccountId(parseInt(e.target.value || '0'))} className="w-full border rounded px-2 py-1" placeholder="e.g. 5" />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Reference</label>
+                      <input type="text" value={reference} onChange={e => setReference(e.target.value)} className="w-full border rounded px-2 py-1" placeholder="Ref no." />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm text-gray-600 mb-1">Notes</label>
+                    <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full border rounded px-2 py-1" rows={2} />
+                  </div>
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Allocations (Optional)</h4>
+                      <span className="text-xs text-gray-500">Leave all amounts 0 to make a single bulk payment</span>
+                    </div>
+                    <div className="overflow-x-auto border rounded">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left">PO</th>
+                            <th className="px-3 py-2 text-right">Balance</th>
+                            <th className="px-3 py-2 text-right">Pay Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allocations.length === 0 ? (
+                            <tr><td colSpan={3} className="px-3 py-3 text-center text-gray-500">No POs</td></tr>
+                          ) : allocations.map((a, idx) => (
+                            <tr key={a.purchase_order_id} className="border-t">
+                              <td className="px-3 py-2">{a.po_number || a.purchase_order_id}</td>
+                              <td className="px-3 py-2 text-right">{formatCurrency(a.balance_remaining)}</td>
+                              <td className="px-3 py-2 text-right">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={a.balance_remaining}
+                                  step="0.01"
+                                  value={a.amount || 0}
+                                  onChange={e => {
+                                    const v = parseFloat(e.target.value || '0');
+                                    setAllocations(prev => prev.map((row, i) => i === idx ? { ...row, amount: isNaN(v) ? 0 : v } : row));
+                                  }}
+                                  className="w-32 border rounded px-2 py-1 text-right"
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  {!allocations.some(a => (a.amount || 0) > 0) && (
+                    <div className="mt-4">
+                      <label className="block text-sm text-gray-600 mb-1">Bulk Payment Amount</label>
+                      <input type="number" min={0} step="0.01" value={amount || 0} onChange={e => setAmount(parseFloat(e.target.value || '0'))} className="w-48 border rounded px-2 py-1" />
+                    </div>
+                  )}
+                  <div className="mt-6 flex items-center justify-end gap-2">
+                    <button className="px-4 py-2 border rounded" onClick={() => setShowPayModal(false)}>Cancel</button>
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50" disabled={payLoading || (!allocations.some(a => (a.amount || 0) > 0) && (!amount || amount <= 0)) || !accountId} onClick={submitPayment}>
+                      {payLoading ? 'Saving...' : 'Save Payment'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
 
             {/* Aging Balance */}
             <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
