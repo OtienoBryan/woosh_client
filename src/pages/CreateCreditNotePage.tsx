@@ -661,6 +661,9 @@ const CreateCreditNotePage: React.FC = () => {
                   Creating credit note from {selectedInvoices.size} selected invoice{selectedInvoices.size !== 1 ? 's' : ''}
                 </p>
               )}
+              <p className="text-xs text-blue-600 mt-2">
+                Note: Only products and quantities from the selected invoices can be used in this credit note.
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
