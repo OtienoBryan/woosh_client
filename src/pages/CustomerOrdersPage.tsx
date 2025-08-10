@@ -309,6 +309,11 @@ const CustomerOrdersPage: React.FC = () => {
   };
 
   const startEditing = () => {
+    if (user?.role !== 'admin') {
+      setError('Only users with admin role can edit orders');
+      return;
+    }
+    
     if (!selectedOrder) return;
     
     setEditForm({
@@ -336,6 +341,11 @@ const CustomerOrdersPage: React.FC = () => {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.role !== 'admin') {
+      setError('Only users with admin role can edit orders');
+      return;
+    }
+    
     if (!selectedOrder) return;
     
     setSubmitting(true);
@@ -492,6 +502,11 @@ const CustomerOrdersPage: React.FC = () => {
   });
 
   const convertToInvoice = async () => {
+    if (user?.role !== 'admin') {
+      setError('Only users with admin role can convert orders to invoices');
+      return;
+    }
+    
     if (!selectedOrder) return;
     
     try {
@@ -529,6 +544,10 @@ const CustomerOrdersPage: React.FC = () => {
 
   // Rider assignment functions
   const openAssignRiderModal = async (order: SalesOrder) => {
+    if (user?.role !== 'stock') {
+      setError('Only users with stock role can assign riders');
+      return;
+    }
     setAssigningOrder(order);
     setSelectedRider(null);
     setAssignError(null);
@@ -543,6 +562,11 @@ const CustomerOrdersPage: React.FC = () => {
   };
 
   const handleAssignRider = async () => {
+    if (user?.role !== 'stock') {
+      setAssignError('Only users with stock role can assign riders');
+      return;
+    }
+    
     if (!assigningOrder || !selectedRider) return;
     
     try {
@@ -914,7 +938,7 @@ const CustomerOrdersPage: React.FC = () => {
                              <Eye className="h-4 w-4 mr-1" />
                              View
                            </button>
-                           {order.my_status === 1 && (
+                           {order.my_status === 1 && user?.role === 'stock' && (
                              <button
                                onClick={() => openAssignRiderModal(order)}
                                className="text-green-600 hover:text-green-900 flex items-center bg-green-50 hover:bg-green-100 px-2 py-1 rounded"
@@ -1000,14 +1024,16 @@ const CustomerOrdersPage: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     {!isEditing && (
                       <>
-                        <button
-                          onClick={startEditing}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit Order
-                        </button>
-                        {selectedOrder.status === 'draft' && (
+                        {user?.role === 'admin' && (
+                          <button
+                            onClick={startEditing}
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit Order
+                          </button>
+                        )}
+                        {selectedOrder.status === 'draft' && user?.role === 'admin' && (
                           <button
                             onClick={convertToInvoice}
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -1015,6 +1041,11 @@ const CustomerOrdersPage: React.FC = () => {
                             <Save className="h-4 w-4 mr-1" />
                             Convert to Invoice
                           </button>
+                        )}
+                        {user?.role !== 'admin' && (
+                          <div className="text-sm text-gray-500 italic">
+                            Only admin users can edit orders or convert to invoices
+                          </div>
                         )}
                       </>
                     )}
@@ -1594,13 +1625,25 @@ const CustomerOrdersPage: React.FC = () => {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={closeViewModal}
-                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                >
-                  Close
-                </button>
+                <div className="flex space-x-4">
+                  {selectedOrder.my_status === 1 && user?.role === 'stock' && (
+                    <button
+                      type="button"
+                      onClick={() => openAssignRiderModal(selectedOrder)}
+                      className="px-6 py-3 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center"
+                    >
+                      <Truck className="h-4 w-4 mr-2" />
+                      Assign Rider
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={closeViewModal}
+                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               )}
             </div>
           </div>
