@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Filter, Download, Eye, Calendar, DollarSign, User, Building } from 'lucide-react';
+import { FileText, Search, Filter, Download, Eye, Calendar, DollarSign, User, Building, X, Package, Receipt } from 'lucide-react';
 import { creditNoteService } from '../services/creditNoteService';
+
+interface CreditNoteItem {
+  product_id: number;
+  product?: any;
+  invoice_id: number;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
 
 interface CreditNote {
   id: number;
   credit_note_number: string;
-  client_id: number;
-  customer_name: string;
+  customer_id: number;
+  customer_name?: string;
   credit_note_date: string;
-  reason: string;
+  reason?: string;
   total_amount: number;
   status: string;
   created_at: string;
@@ -16,6 +25,26 @@ interface CreditNote {
   email?: string;
   contact?: string;
   address?: string;
+  items?: CreditNoteItem[];
+}
+
+interface CreditNoteDetails {
+  id: number;
+  credit_note_number: string;
+  customer_id: number;
+  customer_name?: string;
+  credit_note_date: string;
+  reason?: string;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  email?: string;
+  contact?: string;
+  address?: string;
+  items?: CreditNoteItem[];
 }
 
 const CreditNoteSummaryPage: React.FC = () => {
@@ -27,6 +56,11 @@ const CreditNoteSummaryPage: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCreditNote, setSelectedCreditNote] = useState<CreditNoteDetails | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     fetchCreditNotes();
@@ -111,8 +145,8 @@ const CreditNoteSummaryPage: React.FC = () => {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -133,6 +167,30 @@ const CreditNoteSummaryPage: React.FC = () => {
   };
 
   const totals = calculateTotals();
+
+  const handleViewDetails = async (creditNote: CreditNote) => {
+    setModalLoading(true);
+    setShowModal(true);
+    
+    try {
+      const response = await creditNoteService.getById(creditNote.id);
+      if (response.success) {
+        setSelectedCreditNote(response.data);
+      } else {
+        setError('Failed to fetch credit note details');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to fetch credit note details');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedCreditNote(null);
+    setError(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -204,7 +262,7 @@ const CreditNoteSummaryPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active Clients</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {new Set(creditNotes.map(note => note.client_id)).size}
+                  {new Set(creditNotes.map(note => note.customer_id)).size}
                 </p>
               </div>
             </div>
@@ -346,7 +404,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900">
                             {note.customer_name || 'Unknown Customer'}
                           </div>
-                          <div className="text-sm text-gray-500">ID: {note.client_id || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">ID: {note.customer_id || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {note.credit_note_date ? formatDate(note.credit_note_date) : 'N/A'}
@@ -366,17 +424,14 @@ const CreditNoteSummaryPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                                                          <button
-                                onClick={() => {
-                                  // TODO: Implement view details functionality
-                                  alert(`View details for credit note ${note.credit_note_number || note.id || 'Unknown'}`);
-                                }}
-                                className="text-blue-600 hover:text-blue-900 flex items-center"
-                                title="View Details"
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
-                              </button>
+                                                                                      <button
+                              onClick={() => handleViewDetails(note)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center"
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </button>
                               <button
                                 onClick={() => {
                                   // TODO: Implement edit functionality
@@ -442,6 +497,161 @@ const CreditNoteSummaryPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Credit Note Details Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Credit Note Details</h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {modalLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : selectedCreditNote ? (
+              <div className="space-y-6">
+                {/* Header Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-2">Credit Note Information</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Number:</span>
+                        <span className="font-medium">{selectedCreditNote.credit_note_number || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Date:</span>
+                        <span className="font-medium">
+                          {selectedCreditNote.credit_note_date ? formatDate(selectedCreditNote.credit_note_date) : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Status:</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedCreditNote.status)}`}>
+                          {selectedCreditNote.status || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Reason:</span>
+                        <span className="font-medium">{selectedCreditNote.reason || 'No reason provided'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-2">Customer Information</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium">{selectedCreditNote.customer_name || 'Unknown Customer'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">ID:</span>
+                        <span className="font-medium">{selectedCreditNote.customer_id || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">{selectedCreditNote.email || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Contact:</span>
+                        <span className="font-medium">{selectedCreditNote.contact || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Summary */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-700 mb-3">Financial Summary</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-sm text-blue-600">Subtotal</p>
+                      <p className="text-xl font-bold text-blue-900">{formatCurrency(selectedCreditNote.subtotal || 0)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-blue-600">Tax Amount</p>
+                      <p className="text-xl font-bold text-blue-900">{formatCurrency(selectedCreditNote.tax_amount || 0)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-blue-600">Total Amount</p>
+                      <p className="text-2xl font-bold text-blue-900">{formatCurrency(selectedCreditNote.total_amount || 0)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Credit Note Items */}
+                {selectedCreditNote.items && selectedCreditNote.items.length > 0 ? (
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-3">Credit Note Items</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Price</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {selectedCreditNote.items.map((item, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                <div className="flex items-center">
+                                  <Package className="h-4 w-4 text-gray-400 mr-2" />
+                                  <span>{item.product?.product_name || `Product ${item.product_id}`}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                <div className="flex items-center">
+                                  <Receipt className="h-4 w-4 text-gray-400 mr-2" />
+                                  <span>Invoice {item.invoice_id}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(item.unit_price)}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(item.total_price)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p>No items found for this credit note</p>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="flex justify-end pt-6 border-t border-gray-200">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>Failed to load credit note details</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
