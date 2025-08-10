@@ -14,7 +14,10 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
-  Receipt
+  Receipt,
+  Search,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { 
   customersService, 
@@ -48,8 +51,10 @@ const CreateCreditNotePage: React.FC = () => {
   const [clientId, setClientId] = useState('');
   const [creditNoteDate, setCreditNoteDate] = useState(new Date().toISOString().split('T')[0]);
   const [reason, setReason] = useState('');
-  const [selectedInvoice, setSelectedInvoice] = useState<CustomerInvoice | null>(null);
+  const [selectedInvoices, setSelectedInvoices] = useState<Set<number>>(new Set());
   const [items, setItems] = useState<CreditNoteItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [availableProducts, setAvailableProducts] = useState<Map<number, any[]>>(new Map());
 
   useEffect(() => {
     fetchData();
@@ -67,7 +72,7 @@ const CreateCreditNotePage: React.FC = () => {
     if (urlInvoiceId && customerInvoices.length > 0) {
       const invoice = customerInvoices.find(inv => inv.id === parseInt(urlInvoiceId));
       if (invoice) {
-        setSelectedInvoice(invoice);
+        setSelectedInvoices(new Set([invoice.id]));
       }
     }
   }, [searchParams, customerInvoices]);
@@ -78,12 +83,15 @@ const CreateCreditNotePage: React.FC = () => {
     }
   }, [clientId]);
 
-  // Auto-load invoice items when invoice is selected
+  // Auto-load invoice items when invoices are selected
   useEffect(() => {
-    if (selectedInvoice) {
+    if (selectedInvoices.size > 0) {
       loadInvoiceItems();
+    } else {
+      setItems([]);
+      setAvailableProducts(new Map());
     }
-  }, [selectedInvoice]);
+  }, [selectedInvoices]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -109,8 +117,11 @@ const CreateCreditNotePage: React.FC = () => {
   const fetchCustomerInvoices = async () => {
     try {
       const response = await creditNoteService.getCustomerInvoices(parseInt(clientId));
-      if (response.success) {
-        setCustomerInvoices(response.data || []);
+      if (response.success && Array.isArray(response.data)) {
+        setCustomerInvoices(response.data);
+      } else {
+        console.warn('Invalid response format for customer invoices:', response);
+        setCustomerInvoices([]);
       }
     } catch (err: any) {
       console.error('Error fetching customer invoices:', err);
@@ -118,18 +129,47 @@ const CreateCreditNotePage: React.FC = () => {
     }
   };
 
-  const handleInvoiceSelect = (invoice: CustomerInvoice) => {
-    setSelectedInvoice(invoice);
-    setItems([]); // Clear existing items
+  const handleInvoiceSelect = (invoiceId: number) => {
+    const newSelectedInvoices = new Set(selectedInvoices);
+    if (newSelectedInvoices.has(invoiceId)) {
+      newSelectedInvoices.delete(invoiceId);
+    } else {
+      newSelectedInvoices.add(invoiceId);
+    }
+    setSelectedInvoices(newSelectedInvoices);
+    
+    // Clear items when changing invoice selection
+    if (newSelectedInvoices.size === 0) {
+      setItems([]);
+      setAvailableProducts(new Map());
+    }
   };
 
   const addItem = () => {
+    const selectedInvoiceIds = Array.from(selectedInvoices);
+    if (selectedInvoiceIds.length === 0) return;
+    
+    // Find the first available product from any selected invoice
+    let firstAvailableProduct: any = null;
+    let firstInvoiceId: number = 0;
+    
+    for (const invoiceId of selectedInvoiceIds) {
+      const invoiceProducts = availableProducts.get(invoiceId);
+      if (invoiceProducts && invoiceProducts.length > 0) {
+        firstAvailableProduct = invoiceProducts[0];
+        firstInvoiceId = invoiceId;
+        break;
+      }
+    }
+    
+    if (!firstAvailableProduct) return;
+    
     const newItem: CreditNoteItem = {
-      product_id: 0,
-      invoice_id: selectedInvoice?.id,
-      quantity: 1,
-      unit_price: 0,
-      total_price: 0
+      product_id: firstAvailableProduct.product_id,
+      invoice_id: firstInvoiceId,
+      quantity: firstAvailableProduct.quantity,
+      unit_price: firstAvailableProduct.unit_price,
+      total_price: firstAvailableProduct.total_price
     };
     setItems([...items, newItem]);
   };
@@ -145,16 +185,36 @@ const CreateCreditNotePage: React.FC = () => {
     // Calculate total price
     if (field === 'quantity' || field === 'unit_price') {
       const item = updatedItems[index];
-      item.total_price = item.quantity * item.unit_price;
+      item.total_price = (Number(item.quantity) || 0) * (Number(item.unit_price) || 0);
     }
 
     // Set product details if product_id changed
     if (field === 'product_id') {
-      const product = products.find(p => p.id === value);
-      if (product) {
-        updatedItems[index].product = product;
-        updatedItems[index].unit_price = product.selling_price || 0;
-        updatedItems[index].total_price = updatedItems[index].quantity * (product.selling_price || 0);
+      const item = updatedItems[index];
+      const invoiceProducts = availableProducts.get(item.invoice_id);
+      if (invoiceProducts) {
+        const product = invoiceProducts.find(p => p.product_id === value);
+        if (product) {
+          updatedItems[index].unit_price = Number(product.unit_price) || 0;
+          updatedItems[index].total_price = (Number(updatedItems[index].quantity) || 0) * (Number(product.unit_price) || 0);
+        }
+      }
+    }
+
+    // If invoice_id changed, update product_id to match available products
+    if (field === 'invoice_id') {
+      const item = updatedItems[index];
+      const invoiceProducts = availableProducts.get(value);
+      if (invoiceProducts && invoiceProducts.length > 0) {
+        // Reset to first available product from this invoice
+        const firstProduct = invoiceProducts[0];
+        updatedItems[index].product_id = firstProduct.product_id;
+        updatedItems[index].unit_price = Number(firstProduct.unit_price) || 0;
+        updatedItems[index].total_price = (Number(updatedItems[index].quantity) || 0) * (Number(firstProduct.unit_price) || 0);
+      } else {
+        updatedItems[index].product_id = 0;
+        updatedItems[index].unit_price = 0;
+        updatedItems[index].total_price = 0;
       }
     }
 
@@ -162,45 +222,66 @@ const CreateCreditNotePage: React.FC = () => {
   };
 
   const loadInvoiceItems = async () => {
-    if (!selectedInvoice) return;
+    if (selectedInvoices.size === 0) return;
 
     setLoadingInvoiceItems(true);
     try {
-      const response = await invoiceService.getById(selectedInvoice.id);
+      const allItems: CreditNoteItem[] = [];
+      const newAvailableProducts = new Map<number, any[]>();
       
-      if (response.success && response.data && response.data.items) {
-        // Convert invoice items to credit note items
-        const creditNoteItems: CreditNoteItem[] = response.data.items.map((item: any) => ({
-          product_id: item.product_id,
-          invoice_id: selectedInvoice.id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price
-        }));
+      // Load items from all selected invoices
+      for (const invoiceId of selectedInvoices) {
+        const response = await invoiceService.getById(invoiceId);
         
-        setItems(creditNoteItems);
+        if (response.success && response.data && response.data.items) {
+          // Store available products for this invoice
+          newAvailableProducts.set(invoiceId, response.data.items);
+          
+          // Convert invoice items to credit note items
+          const creditNoteItems: CreditNoteItem[] = response.data.items.map((item: any) => ({
+            product_id: item.product_id,
+            invoice_id: invoiceId,
+            quantity: Number(item.quantity) || 0,
+            unit_price: Number(item.unit_price) || 0,
+            total_price: Number(item.total_price) || 0
+          }));
+          
+          allItems.push(...creditNoteItems);
+        }
+      }
+      
+      setAvailableProducts(newAvailableProducts);
+      
+      if (allItems.length > 0) {
+        setItems(allItems);
       } else {
-        // Fallback to generic item if no items found
-        const newItem: CreditNoteItem = {
-          product_id: 0,
-          invoice_id: selectedInvoice.id,
-          quantity: 1,
-          unit_price: selectedInvoice.total_amount,
-          total_price: selectedInvoice.total_amount
-        };
-        setItems([newItem]);
+        // Fallback to generic items if no items found
+        const fallbackItems: CreditNoteItem[] = Array.from(selectedInvoices).map(invoiceId => {
+          const invoice = customerInvoices.find(inv => inv.id === invoiceId);
+          return {
+            product_id: 0,
+            invoice_id: invoiceId,
+            quantity: 1,
+            unit_price: Number(invoice?.total_amount) || 0,
+            total_price: Number(invoice?.total_amount) || 0
+          };
+        });
+        setItems(fallbackItems);
       }
     } catch (error) {
       console.error('Error loading invoice items:', error);
-      // Fallback to generic item on error
-      const newItem: CreditNoteItem = {
-        product_id: 0,
-        invoice_id: selectedInvoice.id,
-        quantity: 1,
-        unit_price: selectedInvoice.total_amount,
-        total_price: selectedInvoice.total_amount
-      };
-      setItems([newItem]);
+      // Fallback to generic items on error
+      const fallbackItems: CreditNoteItem[] = Array.from(selectedInvoices).map(invoiceId => {
+        const invoice = customerInvoices.find(inv => inv.id === invoiceId);
+        return {
+          product_id: 0,
+          invoice_id: invoiceId,
+          quantity: 1,
+          unit_price: Number(invoice?.total_amount) || 0,
+          total_price: Number(invoice?.total_amount) || 0
+        };
+      });
+      setItems(fallbackItems);
     } finally {
       setLoadingInvoiceItems(false);
     }
@@ -232,6 +313,11 @@ const CreateCreditNotePage: React.FC = () => {
       return;
     }
 
+    if (selectedInvoices.size === 0) {
+      setError('Please select at least one invoice');
+      return;
+    }
+
     if (items.length === 0) {
       setError('Please add at least one item');
       return;
@@ -242,6 +328,23 @@ const CreateCreditNotePage: React.FC = () => {
       return;
     }
 
+    if (items.some(item => item.invoice_id === 0)) {
+      setError('Please select invoices for all items');
+      return;
+    }
+
+    // Validate that quantities don't exceed invoice quantities
+    for (const item of items) {
+      const invoiceProducts = availableProducts.get(item.invoice_id);
+      if (invoiceProducts) {
+        const invoiceProduct = invoiceProducts.find(p => p.product_id === item.product_id);
+        if (invoiceProduct && item.quantity > Number(invoiceProduct.quantity)) {
+          setError(`Quantity for product ${invoiceProduct.product_name || 'Unknown'} cannot exceed ${invoiceProduct.quantity} (invoice quantity)`);
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -250,7 +353,7 @@ const CreateCreditNotePage: React.FC = () => {
         customer_id: parseInt(clientId),
         credit_note_date: creditNoteDate,
         reason: reason || undefined,
-        original_invoice_id: selectedInvoice?.id,
+        original_invoice_ids: Array.from(selectedInvoices),
         items: items
       };
 
@@ -262,9 +365,10 @@ const CreateCreditNotePage: React.FC = () => {
         setClientId('');
         setCreditNoteDate(new Date().toISOString().split('T')[0]);
         setReason('');
-        setSelectedInvoice(null);
+        setSelectedInvoices(new Set());
         setItems([]);
         setCustomerInvoices([]);
+        setAvailableProducts(new Map());
       } else {
         setError(response.error || 'Failed to create credit note');
       }
@@ -295,10 +399,10 @@ const CreateCreditNotePage: React.FC = () => {
             <div className="p-2 bg-blue-100 rounded-lg">
               <FileText className="h-6 w-6 text-blue-600" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create Credit Note</h1>
-              <p className="text-sm text-gray-500">Generate a credit note for a client</p>
-            </div>
+                          <div>
+                <h1 className="text-2xl font-bold text-gray-900">Create Credit Note</h1>
+                <p className="text-sm text-gray-500">Generate a credit note for a client from multiple invoices - only products and quantities from selected invoices are allowed</p>
+              </div>
           </div>
         </div>
 
@@ -321,29 +425,60 @@ const CreateCreditNotePage: React.FC = () => {
           </div>
         )}
 
-                 {/* Customer Selection */}
-         <div className="mb-6">
-           <label className="block text-sm font-medium text-gray-700 mb-2">
-             Customer *
-           </label>
-           <select
-             value={clientId}
-             onChange={(e) => {
-               setClientId(e.target.value);
-               setSelectedInvoice(null);
-               setItems([]);
-             }}
-             className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-             required
-           >
-             <option value="">Select a customer</option>
-             {customers.map((customer) => (
-               <option key={customer.id} value={customer.id}>
-                 {customer.company_name || customer.customer_code}
-               </option>
-             ))}
-           </select>
-         </div>
+        {/* Customer Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Customer *
+          </label>
+          <select
+            value={clientId}
+            onChange={(e) => {
+              setClientId(e.target.value);
+              setSelectedInvoices(new Set());
+              setItems([]);
+            }}
+            className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          >
+            <option value="">Select a customer</option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.company_name || customer.customer_code}
+              </option>
+            ))}
+          </select>
+          
+          {/* Customer Information Display */}
+          {clientId && (
+            <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              {(() => {
+                const selectedCustomer = customers.find(c => c.id === parseInt(clientId));
+                return selectedCustomer ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Customer:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {selectedCustomer.company_name || selectedCustomer.customer_code}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Contact:</span>
+                      <span className="ml-2 text-gray-700">
+                        {selectedCustomer.contact_person || selectedCustomer.contact || '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Email:</span>
+                      <span className="ml-2 text-gray-700">
+                        {selectedCustomer.email || '-'}
+                      </span>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          )}
+        </div>
 
         {/* Two Panel Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -355,52 +490,156 @@ const CreateCreditNotePage: React.FC = () => {
                 Available Invoices
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Select an invoice to populate the credit note
+                Select multiple invoices to include in the credit note. Only products and quantities from these invoices can be used.
               </p>
+              {clientId && customerInvoices && Array.isArray(customerInvoices) && customerInvoices.length > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-blue-700">
+                      <span className="font-medium">Total Available Credit:</span>
+                      <span className="ml-2 text-lg font-bold">
+                        ${(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices.reduce((sum, inv) => sum + (Number(inv.remaining_amount) || 0), 0) : 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      {(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices.length : 0)} invoice{(customerInvoices && Array.isArray(customerInvoices) && customerInvoices.length !== 1) ? 's' : ''} available
+                    </div>
+                  </div>
+                </div>
+              )}
+              {selectedInvoices.size > 0 && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-green-700">
+                      <span className="font-medium">Selected Invoices:</span>
+                      <span className="ml-2 text-lg font-bold">
+                        {selectedInvoices.size} invoice{selectedInvoices.size !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedInvoices(new Set())}
+                      className="text-xs text-green-600 hover:text-green-800 underline"
+                    >
+                      Clear Selection
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
-                         <div className="p-6">
-               {!clientId ? (
+            {/* Search and Filter */}
+            {clientId && customerInvoices && Array.isArray(customerInvoices) && customerInvoices.length > 0 && (
+              <div className="px-6 py-3 border-b border-gray-200">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search invoices by number or date..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+            )}
+            
+            <div className="p-6">
+              {!clientId ? (
                  <div className="text-center py-8">
                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                    <p className="text-gray-500">Please select a customer first</p>
                  </div>
-               ) : customerInvoices.length === 0 ? (
+               ) : loading ? (
+                 <div className="text-center py-8">
+                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                   <p className="text-gray-500">Loading customer invoices...</p>
+                 </div>
+               ) : !customerInvoices || !Array.isArray(customerInvoices) || customerInvoices.length === 0 ? (
                 <div className="text-center py-8">
                   <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">No invoices available for this customer</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {customerInvoices.map((invoice) => (
+                  {(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices : []).map((invoice) => (
                     <div
                       key={invoice.id}
-                      onClick={() => handleInvoiceSelect(invoice)}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedInvoice?.id === invoice.id
-                          ? 'border-blue-500 bg-blue-50'
+                        selectedInvoices.has(invoice.id)
+                          ? 'border-green-500 bg-green-50'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {invoice.invoice_number}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {new Date(invoice.invoice_date).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Total: ${invoice.total_amount.toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-green-600">
-                            ${invoice.remaining_amount.toFixed(2)} remaining
-                          </p>
-                          {selectedInvoice?.id === invoice.id && (
-                            <ArrowRight className="h-4 w-4 text-blue-600 ml-2" />
+                      <div className="flex items-start space-x-3">
+                        <button
+                          onClick={() => handleInvoiceSelect(invoice.id)}
+                          className="mt-1 flex-shrink-0"
+                        >
+                          {selectedInvoices.has(invoice.id) ? (
+                            <CheckSquare className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <Square className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                           )}
+                        </button>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-medium text-gray-900">
+                              {invoice.invoice_number}
+                            </h3>
+                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                              Active
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Invoice Date</p>
+                              <p className="text-gray-700 font-medium">
+                                {new Date(invoice.invoice_date).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Due Date</p>
+                              <p className="text-gray-700 font-medium">
+                                {new Date(invoice.due_date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Total Amount</p>
+                              <p className="text-gray-900 font-semibold">
+                                ${(Number(invoice.total_amount) || 0).toFixed(2)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Credited</p>
+                              <p className="text-orange-600 font-medium">
+                                ${(Number(invoice.credited_amount) || 0).toFixed(2)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Remaining</p>
+                              <p className="text-green-600 font-semibold">
+                                ${(Number(invoice.remaining_amount) || 0).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                          {invoice.notes && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500">Notes:</p>
+                              <p className="text-xs text-gray-600 italic">{invoice.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col items-end space-y-2">
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500 mb-1">Available for Credit</div>
+                            <div className="text-lg font-bold text-green-600">
+                              ${(Number(invoice.remaining_amount) || 0).toFixed(2)}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -417,9 +656,9 @@ const CreateCreditNotePage: React.FC = () => {
                 <FileText className="h-5 w-5 mr-2 text-green-600" />
                 Credit Note Details
               </h2>
-              {selectedInvoice && (
+              {selectedInvoices.size > 0 && (
                 <p className="text-sm text-gray-500 mt-1">
-                  Creating credit note for invoice: {selectedInvoice.invoice_number}
+                  Creating credit note from {selectedInvoices.size} selected invoice{selectedInvoices.size !== 1 ? 's' : ''}
                 </p>
               )}
             </div>
@@ -469,7 +708,8 @@ const CreateCreditNotePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={addItem}
-                    className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    disabled={selectedInvoices.size === 0 || Array.from(availableProducts.values()).every(products => products.length === 0)}
+                    className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Item
@@ -480,82 +720,119 @@ const CreateCreditNotePage: React.FC = () => {
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">
-                      {selectedInvoice ? 'Select an invoice to load items' : 'No items added yet'}
+                      {selectedInvoices.size > 0 ? 'Select invoices to load items' : 'No invoices selected'}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {items.map((item, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Product *
-                            </label>
-                            <select
-                              value={item.product_id}
-                              onChange={(e) => updateItem(index, 'product_id', parseInt(e.target.value))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              required
-                            >
-                              <option value={0}>Select a product</option>
-                              {products.map((product) => (
-                                <option key={product.id} value={product.id}>
-                                  {product.product_name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                    {items.map((item, index) => {
+                      const invoiceProducts = availableProducts.get(item.invoice_id);
+                      const availableProductsForInvoice = invoiceProducts || [];
+                      
+                      return (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Invoice
+                              </label>
+                              <select
+                                value={item.invoice_id}
+                                onChange={(e) => updateItem(index, 'invoice_id', parseInt(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required
+                              >
+                                <option value={0}>Select invoice</option>
+                                {Array.from(selectedInvoices).map((invoiceId) => {
+                                  const invoice = customerInvoices.find(inv => inv.id === invoiceId);
+                                  return (
+                                    <option key={invoiceId} value={invoiceId}>
+                                      {invoice?.invoice_number || `Invoice ${invoiceId}`}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Quantity
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.quantity}
-                              onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Product *
+                              </label>
+                              <select
+                                value={item.product_id}
+                                onChange={(e) => updateItem(index, 'product_id', parseInt(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required
+                              >
+                                <option value={0}>Select a product</option>
+                                {availableProductsForInvoice.map((product) => (
+                                  <option key={product.product_id} value={product.product_id}>
+                                    {product.product_name || `Product ${product.product_id}`}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Unit Price
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.unit_price}
-                              onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Quantity
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                max={(() => {
+                                  const selectedProduct = availableProductsForInvoice.find(p => p.product_id === item.product_id);
+                                  return selectedProduct ? Number(selectedProduct.quantity) : 0;
+                                })()}
+                                step="0.01"
+                                value={item.quantity}
+                                onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Max: {(() => {
+                                  const selectedProduct = availableProductsForInvoice.find(p => p.product_id === item.product_id);
+                                  return selectedProduct ? selectedProduct.quantity : 0;
+                                })()}
+                              </p>
+                            </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Total Price
-                            </label>
-                            <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-                              ${item.total_price.toFixed(2)}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Unit Price
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.unit_price}
+                                onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Total Price
+                              </label>
+                              <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                                ${(Number(item.total_price) || 0).toFixed(2)}
+                              </div>
+                            </div>
+
+                            <div className="flex items-end">
+                              <button
+                                type="button"
+                                onClick={() => removeItem(index)}
+                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex items-end">
-                            <button
-                              type="button"
-                              onClick={() => removeItem(index)}
-                              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -567,16 +844,16 @@ const CreateCreditNotePage: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Subtotal (Net):</span>
-                      <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
+                      <span className="font-medium">${(Number(calculateSubtotal()) || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tax (16%):</span>
-                      <span className="font-medium">${calculateTaxTotal().toFixed(2)}</span>
+                      <span className="font-medium">${(Number(calculateTaxTotal()) || 0).toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-300 pt-2">
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold text-gray-900">Total Credit Amount:</span>
-                        <span className="text-lg font-semibold text-gray-900">${calculateTotal().toFixed(2)}</span>
+                        <span className="text-lg font-semibold text-gray-900">${(Number(calculateTotal()) || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -594,7 +871,7 @@ const CreateCreditNotePage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || items.length === 0}
+                  disabled={submitting || items.length === 0 || selectedInvoices.size === 0}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   {submitting ? (

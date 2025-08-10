@@ -19,7 +19,7 @@ axios.interceptors.request.use(
 export interface CreditNoteItem {
   product_id: number;
   product?: any;
-  invoice_id?: number;
+  invoice_id: number; // Required for credit note items
   quantity: number;
   unit_price: number;
   total_price: number;
@@ -29,7 +29,8 @@ export interface CreateCreditNoteForm {
   customer_id: number;
   credit_note_date: string;
   reason?: string;
-  original_invoice_id?: number;
+  original_invoice_ids?: number[]; // Support multiple invoices
+  original_invoice_id?: number; // Keep for backward compatibility
   items: CreditNoteItem[];
 }
 
