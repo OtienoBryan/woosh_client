@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { salesOrdersService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
-import { 
+import {
   TrendingUpIcon, 
   UsersIcon, 
   ShoppingCartIcon, 
@@ -207,10 +207,10 @@ const SalesDashboardPage: React.FC = () => {
         setMonthlyData(data);
         setStats(prev => ({ ...prev, totalSales, totalOrders: orders.length }));
 
-        // Fetch pie chart data for current month
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    // Fetch pie chart data for current month
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
         
         const [vapesRes, pouchesRes] = await Promise.all([
           fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'vape' }),
@@ -219,10 +219,10 @@ const SalesDashboardPage: React.FC = () => {
         
         const vapesTotal = vapesRes.success ? vapesRes.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
         const pouchesTotal = pouchesRes.success ? pouchesRes.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-        setRechartsPieData([
-          { type: 'Vapes', value: vapesTotal },
-          { type: 'Pouches', value: pouchesTotal },
-        ]);
+      setRechartsPieData([
+        { type: 'Vapes', value: vapesTotal },
+        { type: 'Pouches', value: pouchesTotal },
+      ]);
 
         // Fetch product performance
         const [vapesPerfRes, pouchesPerfRes] = await Promise.all([
@@ -374,8 +374,8 @@ const SalesDashboardPage: React.FC = () => {
             bgColor="bg-gradient-to-r from-orange-600 to-orange-700"
             onClick={() => navigate('/shared-performance')}
           />
-        </div>
-
+      </div>
+     
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Monthly Sales Chart */}
@@ -383,9 +383,9 @@ const SalesDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Monthly Sales Trend</h2>
               <button
-                onClick={() => navigate('/dashboard/reports/sales-report')}
+              onClick={() => navigate('/dashboard/reports/sales-report')}
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
+            >
                 View Details →
               </button>
             </div>
@@ -427,9 +427,9 @@ const SalesDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Product Performance</h2>
               <button
-                onClick={() => navigate('/dashboard/reports/product-performance')}
+              onClick={() => navigate('/dashboard/reports/product-performance')}
                 className="text-green-600 hover:text-green-800 text-sm font-medium"
-              >
+            >
                 View Details →
               </button>
             </div>
@@ -469,7 +469,7 @@ const SalesDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Managers Performance</h2>
               <button
-                onClick={() => navigate('/managers-performance')}
+              onClick={() => navigate('/managers-performance')}
                 className="text-purple-600 hover:text-purple-800 text-sm font-medium"
               >
                 View Details →
@@ -522,7 +522,7 @@ const SalesDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Top 10 Sales Reps</h2>
               <button
-                onClick={() => navigate('/shared-performance')}
+              onClick={() => navigate('/shared-performance')}
                 className="text-orange-600 hover:text-orange-800 text-sm font-medium"
               >
                 View Details →

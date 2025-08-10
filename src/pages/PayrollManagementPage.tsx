@@ -34,6 +34,16 @@ const PayrollManagementPage: React.FC = () => {
   const [selectedPaymentAccount, setSelectedPaymentAccount] = useState<string>('');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
+  const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string }>(() => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    return {
+      start: firstDayOfMonth.toISOString().slice(0, 10),
+      end: lastDayOfMonth.toISOString().slice(0, 10)
+    };
+  });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -42,7 +52,7 @@ const PayrollManagementPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const url = API_CONFIG.getUrl('/staff/staff');
+        const url = API_CONFIG.getUrl('/staff');
         const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
         if (!res.ok) throw new Error('Failed');
         const data = await res.json();
@@ -193,6 +203,97 @@ const PayrollManagementPage: React.FC = () => {
     return Array.from(new Set(staff.map(s => s.role).filter(Boolean))) as string[];
   }, [staff]);
 
+  // Filtered payroll history data
+  const filteredHistoryData = useMemo(() => {
+    let filtered = historyData;
+    
+    // Filter by search term
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(h => 
+        h.staff_name?.toLowerCase().includes(q) || 
+        h.role?.toLowerCase().includes(q) || 
+        h.notes?.toLowerCase().includes(q)
+      );
+    }
+    
+    // Filter by role
+    if (roleFilter) {
+      filtered = filtered.filter(h => h.role === roleFilter);
+    }
+    
+    // Filter by date range
+    if (dateRangeFilter.start || dateRangeFilter.end) {
+      filtered = filtered.filter(h => {
+        const payDate = new Date(h.pay_date);
+        const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null;
+        const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
+        
+        if (startDate && endDate) {
+          return payDate >= startDate && payDate <= endDate;
+        } else if (startDate) {
+          return payDate >= startDate;
+        } else if (endDate) {
+          return payDate <= endDate;
+        }
+        return true;
+      });
+    }
+    
+    return filtered;
+  }, [historyData, search, roleFilter, dateRangeFilter]);
+
+  const filteredAllHistoryData = useMemo(() => {
+    let filtered = allHistoryData;
+    
+    // Filter by search term
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(h => 
+        h.staff_name?.toLowerCase().includes(q) || 
+        h.role?.toLowerCase().includes(q) || 
+        h.notes?.toLowerCase().includes(q)
+      );
+    }
+    
+    // Filter by role
+    if (roleFilter) {
+      filtered = filtered.filter(h => h.role === roleFilter);
+    }
+    
+    // Filter by date range
+    if (dateRangeFilter.start || dateRangeFilter.end) {
+      filtered = filtered.filter(h => {
+        const payDate = new Date(h.pay_date);
+        const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null;
+        const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
+        
+        if (startDate && endDate) {
+          return payDate >= startDate && payDate <= endDate;
+        } else if (startDate) {
+          return payDate >= startDate;
+        } else if (endDate) {
+          return payDate <= endDate;
+        }
+        return true;
+      });
+    }
+    
+    return filtered;
+  }, [allHistoryData, search, roleFilter, dateRangeFilter]);
+
+  // Helper function to get current month date range
+  const getCurrentMonthRange = () => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    return {
+      start: firstDayOfMonth.toISOString().slice(0, 10),
+      end: lastDayOfMonth.toISOString().slice(0, 10)
+    };
+  };
+
   const totalPages = Math.max(1, Math.ceil(filteredStaff.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageItems = useMemo(() => {
@@ -216,18 +317,18 @@ const PayrollManagementPage: React.FC = () => {
           <p className="text-gray-600">Manage staff salaries, run payroll, and review history</p>
         </div>
         <div className="flex gap-2">
-          <button
+        <button
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-            onClick={() => setShowRunPayroll(true)}
-          >
-            Run Payroll
-          </button>
-          <button
+          onClick={() => setShowRunPayroll(true)}
+        >
+          Run Payroll
+        </button>
+        <button
             className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
-            onClick={() => { setShowAllHistory(true); fetchAllHistory(); }}
-          >
+          onClick={() => { setShowAllHistory(true); fetchAllHistory(); }}
+        >
             View History
-          </button>
+        </button>
         </div>
       </div>
 
@@ -353,60 +454,60 @@ const PayrollManagementPage: React.FC = () => {
 
       {/* Run Payroll Modal */}
       {showRunPayroll && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl relative border border-gray-200">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setShowRunPayroll(false)}>&times;</button>
-            <div className="flex items-center gap-2 mb-4">
-              <CalendarIcon className="h-5 w-5 text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900">Run Payroll</h2>
-            </div>
-            <form onSubmit={handleRunPayroll}>
-              <div className="mb-4">
-                <label className="block font-medium mb-1">Pay Date</label>
-                <input type="date" value={payDate} onChange={e => setPayDate(e.target.value)} className="border rounded px-2 py-1" required />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <CalendarIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Run Payroll</h2>
+                    <p className="text-green-100">Process payroll for selected staff members</p>
+                  </div>
               </div>
-              <div className="mb-4">
-                <label className="block font-medium mb-1">Select Staff (optional)</label>
-                <select
-                  multiple
-                  value={selectedStaffIds.map(String)}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
-                    setSelectedStaffIds(options);
-                  }}
-                  className="border rounded px-2 py-1 w-full h-24"
+                <button 
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  onClick={() => setShowRunPayroll(false)}
                 >
-                  {staff.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                  ))}
-                </select>
-                <div className="text-xs text-gray-500 mt-1">Leave empty to run for all staff</div>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div className="mb-4">
-                <label className="block font-medium mb-1">Override Salaries (optional)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id)).map(s => (
-                    <div key={s.id} className="flex items-center gap-2">
-                      <span className="w-32 truncate">{s.name}</span>
+              </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <form onSubmit={handleRunPayroll} className="space-y-6">
+                {/* Basic Settings Section */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Basic Settings
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Pay Date</label>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder={s.salary !== undefined && s.salary !== null ? Number(s.salary).toLocaleString('en-US', { minimumFractionDigits: 2 }) : 'N/A'}
-                        value={overrideSalaries[s.id] || ''}
-                        onChange={e => setOverrideSalaries({ ...overrideSalaries, [s.id]: e.target.value })}
-                        className="border rounded px-2 py-1 w-24"
+                        type="date" 
+                        value={payDate} 
+                        onChange={e => setPayDate(e.target.value)} 
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                        required 
                       />
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block font-medium mb-1">Payment Account</label>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Payment Account</label>
                 <select
                   value={selectedPaymentAccount}
                   onChange={e => setSelectedPaymentAccount(e.target.value)}
-                  className="border rounded px-2 py-1 w-full"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   required
                 >
                   <option value="">Select Payment Account</option>
@@ -416,131 +517,787 @@ const PayrollManagementPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <div className="text-xs text-gray-500 mt-1">Select the account to pay wages from.</div>
+                    </div>
+                  </div>
               </div>
-              {/* Deductions Preview Table */}
+
+                {/* Staff Selection Section */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <UsersIcon className="w-5 h-5 text-gray-600" />
+                    Staff Selection
+                  </h3>
               <div className="mb-4">
-                <label className="block font-medium mb-1">Deductions Preview</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Staff Members
+                    </label>
+                    <div className="bg-white border border-gray-300 rounded-lg p-4 max-h-48 overflow-y-auto">
+                      <div className="space-y-2">
+                        {staff.map(s => (
+                          <label key={s.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  if (selectedStaffIds.length === 0) {
+                                    // If "all" was selected, now select only this one
+                                    setSelectedStaffIds([s.id]);
+                                  } else {
+                                    setSelectedStaffIds([...selectedStaffIds, s.id]);
+                                  }
+                                } else {
+                                  setSelectedStaffIds(selectedStaffIds.filter(id => id !== s.id));
+                                }
+                              }}
+                              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{s.name}</div>
+                              <div className="text-sm text-gray-500">{s.role}</div>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {s.salary ? `KES ${Number(s.salary).toLocaleString()}` : 'N/A'}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500 mt-2">
+                      {selectedStaffIds.length === 0 ? 
+                        'All staff members will be included' : 
+                        `${selectedStaffIds.length} staff member(s) selected`
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                {/* Salary Overrides Section */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    Salary Overrides (Optional)
+                  </h3>
+                  <div className="bg-white border border-gray-300 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id)).map(s => (
+                        <div key={s.id} className="space-y-2">
+                          <div className="text-sm font-medium text-gray-900">{s.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Override:</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder={s.salary ? Number(s.salary).toLocaleString() : 'Enter amount'}
+                              value={overrideSalaries[s.id] || ''}
+                              onChange={e => setOverrideSalaries({ ...overrideSalaries, [s.id]: e.target.value })}
+                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                          </div>
+                          {s.salary && (
+                            <div className="text-xs text-gray-500">
+                              Current: KES {Number(s.salary).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deductions Preview Section */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Payroll Preview
+                  </h3>
+                  <div className="bg-white border border-gray-300 rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs border border-gray-200 rounded">
-                    <thead>
-                      <tr>
-                        <th className="px-2 py-1 border-b">Name</th>
-                        <th className="px-2 py-1 border-b">Gross</th>
-                        <th className="px-2 py-1 border-b">PAYE</th>
-                        <th className="px-2 py-1 border-b">NSSF</th>
-                        <th className="px-2 py-1 border-b">NHIF</th>
-                        <th className="px-2 py-1 border-b">Total Deductions</th>
-                        <th className="px-2 py-1 border-b">Net Pay</th>
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff Member</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Pay</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PAYE</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NSSF</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NHIF</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Deductions</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Pay</th>
                       </tr>
                     </thead>
-                    <tbody>
+                        <tbody className="bg-white divide-y divide-gray-200">
                       {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id)).map(s => {
                         const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
                         const ded = calculateDeductions(gross);
                         return (
-                          <tr key={s.id}>
-                            <td className="px-2 py-1">{s.name}</td>
-                            <td className="px-2 py-1">{gross.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-2 py-1">{ded.paye.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-2 py-1">{ded.nssf.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-2 py-1">{ded.nhif.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-2 py-1">{ded.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-2 py-1 font-semibold">{ded.net.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                              <tr key={s.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">{s.name}</div>
+                                    <div className="text-sm text-gray-500">{s.role}</div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                  KES {gross.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">
+                                  KES {ded.paye.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">
+                                  KES {ded.nssf.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">
+                                  KES {ded.nhif.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-medium">
+                                  KES {ded.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-bold">
+                                  KES {ded.net.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
                           </tr>
                         );
                       })}
                     </tbody>
+                        <tfoot className="bg-gray-50">
+                          <tr>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">Totals</td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              KES {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id))
+                                .reduce((sum, s) => {
+                                  const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
+                                  return sum + gross;
+                                }, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-red-600">
+                              KES {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id))
+                                .reduce((sum, s) => {
+                                  const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
+                                  return sum + calculateDeductions(gross).paye;
+                                }, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-red-600">
+                              KES {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id))
+                                .reduce((sum, s) => {
+                                  const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
+                                  return sum + calculateDeductions(gross).nssf;
+                                }, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-red-600">
+                              KES {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id))
+                                .reduce((sum, s) => {
+                                  const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
+                                  return sum + calculateDeductions(gross).nhif;
+                                }, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-red-600">
+                              KES {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id))
+                                .reduce((sum, s) => {
+                                  const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
+                                  return sum + calculateDeductions(gross).total;
+                                }, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-bold text-green-600">
+                              KES {staff.filter(s => selectedStaffIds.length === 0 || selectedStaffIds.includes(s.id))
+                                .reduce((sum, s) => {
+                                  const gross = overrideSalaries[s.id] !== undefined && overrideSalaries[s.id] !== '' ? Number(overrideSalaries[s.id]) : (s.salary ?? 0);
+                                  return sum + calculateDeductions(gross).net;
+                                }, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        </tfoot>
                   </table>
                 </div>
               </div>
-              <div className="mb-4">
-                <label className="block font-medium mb-1">Notes (optional)</label>
-                <textarea value={notes} onChange={e => setNotes(e.target.value)} className="border rounded px-2 py-1 w-full" rows={2} />
+                </div>
+
+                {/* Notes Section */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Additional Notes (Optional)
+                  </h3>
+                  <textarea 
+                    value={notes} 
+                    onChange={e => setNotes(e.target.value)} 
+                    placeholder="Enter any additional notes about this payroll run..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none"
+                    rows={3}
+                  />
               </div>
-              <div className="flex gap-4 items-center">
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={runPayrollLoading}>
-                  {runPayrollLoading ? 'Processing...' : 'Run Payroll'}
-                </button>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                  <div className="flex items-center gap-4">
                 {runPayrollResult && (
-                  <span className={runPayrollResult.success ? 'text-green-600' : 'text-red-600'}>
+                      <div className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        runPayrollResult.success 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
                     {runPayrollResult.success ? runPayrollResult.message : runPayrollResult.error}
-                  </span>
-                )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowRunPayroll(false)}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={runPayrollLoading}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
+                    >
+                      {runPayrollLoading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Run Payroll
+                        </>
+                      )}
+                    </button>
+                  </div>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Staff Payroll History Modal */}
       {showHistoryStaffId && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl relative">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setShowHistoryStaffId(null)}>&times;</button>
-            <h2 className="text-xl font-semibold mb-4">Payroll History</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full h-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <WalletIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Payroll History</h2>
+                    <p className="text-blue-100">
+                      {staff.find(s => s.id === showHistoryStaffId)?.name} - Payment Records
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  onClick={() => setShowHistoryStaffId(null)}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto h-full">
             {historyLoading ? (
-              <div>Loading...</div>
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-lg">Loading payroll history...</span>
+                  </div>
+                </div>
             ) : historyData.length === 0 ? (
-              <div className="text-gray-500">No payroll history found.</div>
-            ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <WalletIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Payroll History</h3>
+                  <p className="text-gray-500">This staff member hasn't received any payroll payments yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-green-600">Total Payments</p>
+                          <p className="text-2xl font-bold text-green-900">{filteredHistoryData.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-600">Total Amount</p>
+                          <p className="text-2xl font-bold text-blue-900">
+                            KES {filteredHistoryData.reduce((sum, h) => sum + Number(h.amount), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-600">Latest Payment</p>
+                          <p className="text-lg font-bold text-purple-900">
+                            {filteredHistoryData[0]?.pay_date ? new Date(filteredHistoryData[0].pay_date).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Date Range Filter */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="date"
+                            value={dateRangeFilter.start}
+                            onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, start: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Start Date"
+                          />
+                          <span className="flex items-center text-gray-500">to</span>
+                          <input
+                            type="date"
+                            value={dateRangeFilter.end}
+                            onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, end: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="End Date"
+                          />
+                        </div>
+                      </div>
+                                              <div className="flex items-end gap-2">
+                          <button
+                            onClick={() => setDateRangeFilter(getCurrentMonthRange())}
+                            className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                          >
+                            Current Month
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDateRangeFilter(getCurrentMonthRange());
+                              setSearch('');
+                              setRoleFilter('');
+                            }}
+                            className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Reset All
+                          </button>
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* History Table */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                      <h3 className="text-lg font-semibold text-gray-900">Payment Records</h3>
+                    </div>
+                    <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-2 text-left">Pay Date</th>
-                    <th className="px-4 py-2 text-left">Amount</th>
-                    <th className="px-4 py-2 text-left">Notes</th>
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pay Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {historyData.map((h: any) => (
-                    <tr key={h.id}>
-                      <td className="px-4 py-2">{h.pay_date}</td>
-                      <td className="px-4 py-2">{Number(h.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-4 py-2">{h.notes || '-'}</td>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredHistoryData.map((h: any, index: number) => (
+                            <tr key={h.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span className="text-sm font-medium text-blue-600">{index + 1}</span>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {new Date(h.pay_date).toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                      })}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {new Date(h.pay_date).toLocaleDateString('en-US', { 
+                                        weekday: 'long' 
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-lg font-bold text-green-600">
+                                  KES {Number(h.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="text-sm text-gray-900 max-w-xs">
+                                  {h.notes || (
+                                    <span className="text-gray-400 italic">No notes provided</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  Paid
+                                </span>
+                              </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+                    </div>
+                  </div>
+                </div>
             )}
+            </div>
           </div>
         </div>
       )}
 
       {/* All Payroll History Modal */}
       {showAllHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setShowAllHistory(false)}>&times;</button>
-            <h2 className="text-xl font-semibold mb-4">All Payroll History</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full h-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">All Payroll History</h2>
+                    <p className="text-indigo-100">Complete overview of all payroll payments across the organization</p>
+                  </div>
+                </div>
+                <button 
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  onClick={() => setShowAllHistory(false)}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto h-full">
             {allHistoryLoading ? (
-              <div>Loading...</div>
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <svg className="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-lg">Loading payroll history...</span>
+                  </div>
+                </div>
             ) : allHistoryData.length === 0 ? (
-              <div className="text-gray-500">No payroll history found.</div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200 text-xs">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-2 text-left">Pay Date</th>
-                    <th className="px-4 py-2 text-left">Staff</th>
-                    <th className="px-4 py-2 text-left">Role</th>
-                    <th className="px-4 py-2 text-left">Amount</th>
-                    <th className="px-4 py-2 text-left">Notes</th>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Payroll History</h3>
+                  <p className="text-gray-500">No payroll payments have been processed yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-green-600">Total Staff Paid</p>
+                          <p className="text-2xl font-bold text-green-900">
+                            {new Set(allHistoryData.map(h => h.staff_id || h.staff_name)).size}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-600">Total Payments</p>
+                          <p className="text-2xl font-bold text-blue-900">{filteredAllHistoryData.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-600">Total Amount</p>
+                          <p className="text-2xl font-bold text-purple-900">
+                            KES {filteredAllHistoryData.reduce((sum, h) => sum + Number(h.amount), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-orange-600">Latest Payment</p>
+                          <p className="text-lg font-bold text-orange-900">
+                            {filteredAllHistoryData[0]?.pay_date ? new Date(filteredAllHistoryData[0].pay_date).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex flex-col gap-4">
+                      {/* Search and Role Filter Row */}
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1">
+                          <div className="relative">
+                            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Search by staff name, role, or notes..."
+                              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <select
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          >
+                            <option value="">All Roles</option>
+                            {Array.from(new Set(allHistoryData.map(h => h.role))).map(role => (
+                              <option key={role} value={role}>{role}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => {
+                              setSearch('');
+                              setRoleFilter('');
+                              setDateRangeFilter(getCurrentMonthRange());
+                            }}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                          >
+                            Reset to Current Month
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Date Range Filter Row */}
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="date"
+                              value={dateRangeFilter.start}
+                              onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, start: e.target.value })}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              placeholder="Start Date"
+                            />
+                            <span className="flex items-center text-gray-500">to</span>
+                            <input
+                              type="date"
+                              value={dateRangeFilter.end}
+                              onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, end: e.target.value })}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              placeholder="End Date"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <button
+                            onClick={() => setDateRangeFilter(getCurrentMonthRange())}
+                            className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                          >
+                            Current Month
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSearch('');
+                              setRoleFilter('');
+                              setDateRangeFilter(getCurrentMonthRange());
+                            }}
+                            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Reset All
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* History Table */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                      <h3 className="text-lg font-semibold text-gray-900">Payment Records</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pay Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff Member</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {allHistoryData.map((h: any) => (
-                    <tr key={h.id}>
-                      <td className="px-4 py-2">{h.pay_date}</td>
-                      <td className="px-4 py-2">{h.staff_name}</td>
-                      <td className="px-4 py-2">{h.role}</td>
-                      <td className="px-4 py-2">{Number(h.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-4 py-2">{h.notes || '-'}</td>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredAllHistoryData.map((h: any, index: number) => (
+                            <tr key={h.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                    <span className="text-sm font-medium text-indigo-600">{index + 1}</span>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {new Date(h.pay_date).toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                      })}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {new Date(h.pay_date).toLocaleDateString('en-US', { 
+                                        weekday: 'short' 
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <span className="text-sm font-medium text-gray-600">
+                                      {h.staff_name?.charAt(0)?.toUpperCase() || '?'}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm font-medium text-gray-900">{h.staff_name}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {h.role || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-lg font-bold text-green-600">
+                                  KES {Number(h.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="text-sm text-gray-900 max-w-xs">
+                                  {h.notes || (
+                                    <span className="text-gray-400 italic">No notes provided</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  Paid
+                                </span>
+                              </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
+                    </div>
+                    
+                    {/* No Results Message */}
+                    {allHistoryData.filter(h => {
+                      const searchLower = search.toLowerCase();
+                      const matchesSearch = !search || 
+                        h.staff_name?.toLowerCase().includes(searchLower) ||
+                        h.role?.toLowerCase().includes(searchLower) ||
+                        h.notes?.toLowerCase().includes(searchLower);
+                      const matchesRole = !roleFilter || h.role === roleFilter;
+                      return matchesSearch && matchesRole;
+                    }).length === 0 && search && (
+                      <div className="text-center py-8 text-gray-500">
+                        No results found for "{search}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
