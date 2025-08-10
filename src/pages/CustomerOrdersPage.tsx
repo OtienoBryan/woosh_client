@@ -311,12 +311,6 @@ const CustomerOrdersPage: React.FC = () => {
   const startEditing = () => {
     if (!selectedOrder) return;
     
-    // Only admin users can edit orders
-    if (user?.role !== 'admin') {
-      setError('Only admin users can edit orders');
-      return;
-    }
-    
     setEditForm({
       expected_delivery_date: selectedOrder.expected_delivery_date || '',
       notes: selectedOrder.notes || '',
@@ -343,12 +337,6 @@ const CustomerOrdersPage: React.FC = () => {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder) return;
-    
-    // Only admin users can submit order edits
-    if (user?.role !== 'admin') {
-      setError('Only admin users can edit orders');
-      return;
-    }
     
     setSubmitting(true);
     try {
@@ -506,12 +494,6 @@ const CustomerOrdersPage: React.FC = () => {
   const convertToInvoice = async () => {
     if (!selectedOrder) return;
     
-    // Only admin users can convert orders to invoices
-    if (user?.role !== 'admin') {
-      setError('Only admin users can convert orders to invoices');
-      return;
-    }
-    
     try {
       setSubmitting(true);
       
@@ -547,12 +529,6 @@ const CustomerOrdersPage: React.FC = () => {
 
   // Rider assignment functions
   const openAssignRiderModal = async (order: SalesOrder) => {
-    // Only admin users can assign riders
-    if (user?.role !== 'admin') {
-      setError('Only admin users can assign riders');
-      return;
-    }
-    
     setAssigningOrder(order);
     setSelectedRider(null);
     setAssignError(null);
@@ -568,12 +544,6 @@ const CustomerOrdersPage: React.FC = () => {
 
   const handleAssignRider = async () => {
     if (!assigningOrder || !selectedRider) return;
-    
-    // Only admin users can assign riders
-    if (user?.role !== 'admin') {
-      setAssignError('Only admin users can assign riders');
-      return;
-    }
     
     try {
       setAssignLoading(true);
@@ -944,7 +914,7 @@ const CustomerOrdersPage: React.FC = () => {
                              <Eye className="h-4 w-4 mr-1" />
                              View
                            </button>
-                           {order.my_status === 1 && user?.role === 'admin' && (
+                           {order.my_status === 1 && (
                              <button
                                onClick={() => openAssignRiderModal(order)}
                                className="text-green-600 hover:text-green-900 flex items-center bg-green-50 hover:bg-green-100 px-2 py-1 rounded"
@@ -1030,16 +1000,14 @@ const CustomerOrdersPage: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     {!isEditing && (
                       <>
-                        {user?.role === 'admin' && (
-                          <button
-                            onClick={startEditing}
-                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit Order
-                          </button>
-                        )}
-                        {user?.role === 'admin' && selectedOrder.status === 'draft' && (
+                        <button
+                          onClick={startEditing}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit Order
+                        </button>
+                        {selectedOrder.status === 'draft' && (
                           <button
                             onClick={convertToInvoice}
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -1051,12 +1019,7 @@ const CustomerOrdersPage: React.FC = () => {
                       </>
                     )}
                     
-                    {/* Show message for non-admin users */}
-                    {!isEditing && user?.role !== 'admin' && (
-                      <div className="text-sm text-gray-500 italic">
-                        Only admin users can edit orders or convert to invoices
-                      </div>
-                    )}
+
                     
                     <button
                       onClick={closeViewModal}
