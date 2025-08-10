@@ -108,6 +108,7 @@ const SalesDashboardPage: React.FC = () => {
   const [productPerfLoading, setProductPerfLoading] = useState(true);
   const [productPerfError, setProductPerfError] = useState<string | null>(null);
   const [topReps, setTopReps] = useState<{ name: string; overall: number }[]>([]);
+  const [pendingLeavesCount, setPendingLeavesCount] = useState(0);
   const [stats, setStats] = useState({
     totalSales: 0,
     totalOrders: 0,
@@ -248,13 +249,19 @@ const SalesDashboardPage: React.FC = () => {
           setProductPerf(merged);
         }
 
-        // Fetch managers data
-        const [mgrRes, repRes] = await Promise.all([
+        // Fetch managers data and leaves
+        const [mgrRes, repRes, leavesRes] = await Promise.all([
           fetchData('/managers'),
-          fetchData('/sales/performance')
+          fetchData('/sales/performance'),
+          fetchData('/sales-rep-leaves/sales-rep-leaves')
         ]);
         setManagers(mgrRes || []);
         setRepData(repRes.data || []);
+        
+        // Calculate pending leaves count
+        const leaves = leavesRes || [];
+        const pendingCount = leaves.filter((leave: any) => leave.status === '0' || leave.status === 0).length;
+        setPendingLeavesCount(pendingCount);
         
       } catch (err: any) {
         setError('Failed to fetch dashboard data');
@@ -304,7 +311,7 @@ const SalesDashboardPage: React.FC = () => {
 
   const navigationItems = [
     { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200', badge: pendingLeavesCount },
     { to: '/products', label: 'Products', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
     { to: '/managers', label: 'Managers', icon: <UserCheckIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/clients-list', label: 'Clients', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
@@ -333,10 +340,15 @@ const SalesDashboardPage: React.FC = () => {
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md`}
+                className={`${item.color} flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md relative`}
               >
                 {item.icon}
                 <span className="mt-2 text-center">{item.label}</span>
+                {item.badge && item.badge > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
