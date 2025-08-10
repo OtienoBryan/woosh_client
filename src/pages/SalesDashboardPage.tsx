@@ -357,11 +357,11 @@ const SalesDashboardPage: React.FC = () => {
 
 
         {/* Debug Info - Remove after testing */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+        {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-yellow-800">
             Debug: newOrdersCount = {newOrdersCount}, pendingLeavesCount = {pendingLeavesCount}
           </p>
-        </div>
+        </div> */}
 
         {/* Navigation Menu */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
