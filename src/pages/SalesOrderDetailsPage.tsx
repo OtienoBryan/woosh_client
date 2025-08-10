@@ -6,6 +6,7 @@ import axios from 'axios';
 import { FileText, X, CreditCard } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -36,6 +37,7 @@ interface PaymentAccount {
 
 const SalesOrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [salesOrder, setSalesOrder] = useState<SalesOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +152,11 @@ const SalesOrderDetailsPage: React.FC = () => {
   };
 
   const openPaymentModal = async () => {
+    if (user?.role !== 'admin') {
+      setError('Only users with admin role can record payments');
+      return;
+    }
+    
     if (paymentAccounts.length === 0) {
       await fetchPaymentAccounts();
     }
@@ -175,6 +182,11 @@ const SalesOrderDetailsPage: React.FC = () => {
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (user?.role !== 'admin') {
+      setSuccessMsg('Only users with admin role can record payments');
+      return;
+    }
 
     if (!selectedAccount) {
       setSuccessMsg('Please select a payment account');
@@ -229,6 +241,11 @@ const SalesOrderDetailsPage: React.FC = () => {
   };
 
   const confirmPayment = async () => {
+    if (user?.role !== 'admin') {
+      setSuccessMsg('Only users with admin role can confirm payments');
+      return;
+    }
+    
     try {
       setSubmitting(true);
 
@@ -338,7 +355,7 @@ const SalesOrderDetailsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Sales Order #{salesOrder?.so_number}</h1>
           </div>
           <div className="flex items-center space-x-4">
-            {salesOrder.status === 'confirmed' && (
+            {salesOrder.status === 'confirmed' && user?.role === 'admin' && (
               <button
                 onClick={openPaymentModal}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -347,7 +364,7 @@ const SalesOrderDetailsPage: React.FC = () => {
                 Record Payment
               </button>
             )}
-            {salesOrder.status === 'in payment' && (
+            {salesOrder.status === 'in payment' && user?.role === 'admin' && (
               <button
                 onClick={confirmPayment}
                 disabled={submitting}
@@ -365,8 +382,11 @@ const SalesOrderDetailsPage: React.FC = () => {
               View Journal Entries
             </button>
             <button onClick={handleExportPDF} className="ml-4 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-900">Export as PDF</button>
-            <Link to="/all-orders" className="text-blue-600 hover:underline">Back to Sales Orders</Link>
+            
           </div>
+          
+          {/* Informational message for non-admin users */}
+          
         </div>
         {/* Everything else INSIDE the ref */}
         <div ref={invoiceRef} className="a4-invoice-print m-2 relative">
