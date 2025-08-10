@@ -1,11 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Staff, staffService, CreateStaffData } from '../services/staffService';
-import { Role, roleService } from '../services/roleService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { teamService } from '../services/teamService';
 import { Link } from 'react-router-dom';
 
+// Enhanced SVG icons for modern design
+const Icons = {
+  Plus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
+  Download: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+  Search: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+  Filter: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>,
+  Eye: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
+  Edit: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+  UserPlus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>,
+  UserMinus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+  Document: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+  Photo: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+  Grid: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+  List: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>,
+  MoreVertical: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>,
+  Badge: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
+  Clock: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  Upload: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>,
+  ChevronDown: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>,
+  X: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+};
+
+// Interface for team creation (used in team modal - kept for future functionality)
+// @ts-ignore - Team interface kept for future use
 interface Team {
   id: number;
   name: string;
@@ -17,6 +40,7 @@ const REQUIRED_ROLES = ['Team Leader', 'Driver', 'Cash Officer', 'Police'];
 
 const StaffList: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +61,19 @@ const StaffList: React.FC = () => {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [teamName, setTeamName] = useState('');
-  const [selectedStaff, setSelectedStaff] = useState<Staff[]>([]);
-  const [teamSize, setTeamSize] = useState(4); // Default team size
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  
+  // Enhanced state for redesigned interface
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedEmploymentType, setSelectedEmploymentType] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy] = useState<'name' | 'role' | 'date'>('name'); // Future use for sorting
+  const [sortOrder] = useState<'asc' | 'desc'>('asc'); // Future use for sorting
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [actionMenuStaffId, setActionMenuStaffId] = useState<number | null>(null);
 
   // Get current date in format: DD MMMM YYYY
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -47,6 +81,17 @@ const StaffList: React.FC = () => {
     month: 'long',
     year: 'numeric'
   });
+
+  // Click outside handler to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActionMenuStaffId(null);
+      setShowBulkActions(false);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,6 +108,7 @@ const StaffList: React.FC = () => {
         console.log('Departments data:', departmentsData);
         
         setStaff(staffData);
+        setFilteredStaff(staffData);
         setDepartments(departmentsData);
         setError(null);
       } catch (err) {
@@ -71,8 +117,9 @@ const StaffList: React.FC = () => {
         
         if (err instanceof Error) {
           errorMessage = `Error: ${err.message}`;
-        } else if (err.response) {
-          errorMessage = `Server Error: ${err.response.data.message || 'Unknown error'}`;
+        } else if (typeof err === 'object' && err !== null && 'response' in err) {
+          const errorWithResponse = err as { response: { data: { message?: string } } };
+          errorMessage = `Server Error: ${errorWithResponse.response.data.message || 'Unknown error'}`;
         }
         
         setError(errorMessage);
@@ -83,6 +130,69 @@ const StaffList: React.FC = () => {
 
     fetchData();
   }, []);
+
+  // Enhanced filtering and sorting logic
+  useEffect(() => {
+    let filtered = [...staff];
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(member => 
+        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.empl_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.id_no.toString().includes(searchTerm)
+      );
+    }
+    
+    // Apply role filter
+    if (selectedRole) {
+      filtered = filtered.filter(member => member.role === selectedRole);
+    }
+    
+    // Apply status filter
+    if (selectedStatus !== 'all') {
+      const status = selectedStatus === 'active' ? 1 : 0;
+      filtered = filtered.filter(member => member.status === status);
+    }
+    
+    // Apply employment type filter
+    if (selectedEmploymentType) {
+      filtered = filtered.filter(member => member.employment_type === selectedEmploymentType);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: string | number = '';
+      let bValue: string | number = '';
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'role':
+          aValue = a.role.toLowerCase();
+          bValue = b.role.toLowerCase();
+          break;
+        case 'date':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+    
+    setFilteredStaff(filtered);
+  }, [staff, searchTerm, selectedRole, selectedStatus, selectedEmploymentType, sortBy, sortOrder]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -213,6 +323,52 @@ const StaffList: React.FC = () => {
     return shuffled;
   };
 
+  // Helper functions for future features (bulk operations)
+  // const toggleStaffSelection = (staffId: number) => { ... };
+  // const selectAllStaff = () => { ... };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedRole('');
+    setSelectedStatus('all');
+    setSelectedEmploymentType('');
+  };
+
+  const getRoleStats = () => {
+    const stats = staff.reduce((acc, member) => {
+      const role = member.role;
+      if (!acc[role]) {
+        acc[role] = { total: 0, active: 0 };
+      }
+      acc[role].total++;
+      if (member.status === 1) {
+        acc[role].active++;
+      }
+      return acc;
+    }, {} as Record<string, { total: number; active: number }>);
+    
+    return stats;
+  };
+
+  const getStatusBadgeColor = (status: number) => {
+    return status === 1 
+      ? 'bg-green-100 text-green-800 border-green-200' 
+      : 'bg-red-100 text-red-800 border-red-200';
+  };
+
+  const getEmploymentTypeBadgeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'consultant':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'contract':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'permanent':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -283,7 +439,6 @@ const StaffList: React.FC = () => {
 
       setIsTeamModalOpen(false);
       setTeamName('');
-      setTeamSize(4);
       setError(null);
     } catch (err) {
       console.error('Error creating teams:', err);
@@ -295,170 +450,661 @@ const StaffList: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Loading staff list...</div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Loading Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="h-8 bg-gray-200 rounded-lg w-48 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-64 mt-2 animate-pulse"></div>
+                </div>
+                <div className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Loading Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-gray-200 rounded-lg animate-pulse w-12 h-12"></div>
+                  <div className="ml-4 flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-20 animate-pulse mb-2"></div>
+                    <div className="h-8 bg-gray-200 rounded w-12 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Loading Content */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-lg font-medium text-gray-900">Loading staff list...</p>
+              <p className="text-sm text-gray-500">Please wait while we fetch your team data</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-600">{error}</div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Manage your team members and track their information
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="text-red-400 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Staff Data</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="mt-8">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Staff List - {currentDate}
-            </h3>
-            <div className="flex space-x-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage your team members and track their information
+                </p>
+              </div>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Add Staff
+                <Icons.Plus />
+                <span className="ml-2">Add Staff</span>
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              <a
-                href="/dashboard/photo-list"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-gren-700"
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Icons.UserPlus />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Staff</p>
+                <p className="text-2xl font-semibold text-gray-900">{staff.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Icons.Badge />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Active</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {staff.filter(s => s.status === 1).length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Icons.Document />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Roles</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {Object.keys(getRoleStats()).length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Icons.Clock />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Recently Added</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {staff.filter(s => {
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    return new Date(s.created_at) > oneWeekAgo;
+                  }).length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Icons.Search />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search staff..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center space-x-4">
+                {/* Filters Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <Icons.Filter />
+                  <span className="ml-2">Filters</span>
+                  {(selectedRole || selectedStatus !== 'all' || selectedEmploymentType) && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                      Active
+                    </span>
+                  )}
+                </button>
+
+                {/* View Toggle */}
+                <div className="flex border border-gray-300 rounded-lg">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-l-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    title="Table View"
+                  >
+                    <Icons.List />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-r-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    title="Card View"
+                  >
+                    <Icons.Grid />
+                  </button>
+                </div>
+
+                {/* Export and Actions */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={exportToPDF}
+                    disabled={isExporting}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <Icons.Download />
+                    <span className="ml-2">{isExporting ? 'Exporting...' : 'Export'}</span>
+                  </button>
+
+                                    {/* Quick Links */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowBulkActions(!showBulkActions);
+                      }}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <Icons.MoreVertical />
+                      <Icons.ChevronDown />
+                    </button>
+                    
+                    {showBulkActions && (
+                      <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                      >
+                        <div className="py-1">
+                          <Link
+                            to="/dashboard/photo-list"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowBulkActions(false)}
               >
                 Photo List
-              </a>
+                          </Link>
               <Link
                 to="/dashboard/employee-warnings"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowBulkActions(false)}
               >
                 Employee Warnings
               </Link>
               <Link
                 to="/dashboard/expiring-contracts"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowBulkActions(false)}
               >
                 Expiring Contracts
               </Link>
               <Link
                 to="/upload-document"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowBulkActions(false)}
               >
                 Upload Documents
               </Link>
-              <button
-                onClick={exportToPDF}
-                disabled={isExporting}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                  isExporting
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-red-900 hover:bg-red-700'
-                }`}
-              >
-                {isExporting ? 'Exporting...' : 'Export to PDF'}
-              </button>
-              {/* <button
-                onClick={() => setIsTeamModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-              >
-                Create Teams
-              </button> */}
-            </div>
-          </div>
-          
-          <div ref={contentRef} className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Employee Number
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ID Number
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Employment Type
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {staff.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.role}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.empl_no}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.id_no}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.employment_type}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(member)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(member.id, member.status)}
-                          className={`${
-                            member.status === 1 
-                              ? 'text-red-600 hover:text-red-900' 
-                              : 'text-green-600 hover:text-green-900'
-                          }`}
-                        >
-                          {member.status === 1 ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <Link
-                          to={`/upload-document?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
-                          className="text-purple-600 hover:text-purple-900"
-                        >
-                          Upload Docs
-                        </Link>
-                        <Link
-                          to={`/employee-documents?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          View Docs
-                        </Link>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">All Roles</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+                    <select
+                      value={selectedEmploymentType}
+                      onChange={(e) => setSelectedEmploymentType(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">All Types</option>
+                      <option value="Consultant">Consultant</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Permanent">Permanent</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-end">
+              <button
+                      onClick={clearFilters}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Clear Filters
+              </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Content Area */}
+        <div ref={contentRef}>
+          {filteredStaff.length === 0 ? (
+            // Empty State
+            <div className="bg-white rounded-lg shadow text-center py-12">
+              <Icons.UserPlus />
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No staff members found</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                {searchTerm || selectedRole || selectedStatus !== 'all' || selectedEmploymentType
+                  ? 'Try adjusting your search or filters'
+                  : 'Get started by adding your first staff member'}
+              </p>
+              {!searchTerm && !selectedRole && selectedStatus === 'all' && !selectedEmploymentType && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <Icons.Plus />
+                  <span className="ml-2">Add Staff Member</span>
+                </button>
+              )}
+            </div>
+                    ) : viewMode === 'list' ? (
+            // Table View (Primary View)
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Staff Member
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Employee #
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID Number
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Employment Type
+                      </th>
+                      <th scope="col" className="relative px-6 py-3">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredStaff.map((member) => (
+                      <tr key={member.id} className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="relative">
+                              {member.photo_url ? (
+                                <img
+                                  src={member.photo_url}
+                                  alt={member.name}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <span className="text-sm font-semibold text-gray-600">
+                                    {member.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                                member.status === 1 ? 'bg-green-400' : 'bg-red-400'
+                              }`}></div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                              <div className="text-sm text-gray-500">{member.role}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{member.role}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 font-mono">{member.empl_no}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 font-mono">{member.id_no}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(member.status)}`}>
+                            {member.status === 1 ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {member.employment_type && (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
+                              {member.employment_type}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActionMenuStaffId(actionMenuStaffId === member.id ? null : member.id);
+                              }}
+                              className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors duration-150"
+                              title="Actions"
+                            >
+                              <Icons.MoreVertical />
+                            </button>
+                            
+                            {actionMenuStaffId === member.id && (
+                              <div 
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                              >
+                                <div className="py-1">
+                                  <button
+                                    onClick={() => {
+                                      handleEdit(member);
+                                      setActionMenuStaffId(null);
+                                    }}
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                  >
+                                    <Icons.Edit />
+                                    <span className="ml-2">Edit Profile</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleToggleStatus(member.id, member.status);
+                                      setActionMenuStaffId(null);
+                                    }}
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                  >
+                                    {member.status === 1 ? <Icons.UserMinus /> : <Icons.UserPlus />}
+                                    <span className="ml-2">{member.status === 1 ? 'Deactivate' : 'Activate'}</span>
+                                  </button>
+                                  <Link
+                                    to={`/upload-document?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                    onClick={() => setActionMenuStaffId(null)}
+                                  >
+                                    <Icons.Upload />
+                                    <span className="ml-2">Upload Documents</span>
+                                  </Link>
+                                  <Link
+                                    to={`/employee-documents?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                    onClick={() => setActionMenuStaffId(null)}
+                                  >
+                                    <Icons.Eye />
+                                    <span className="ml-2">View Documents</span>
+                                  </Link>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            // Grid View (Alternative View)
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredStaff.map((member) => (
+                <div
+                  key={member.id}
+                  className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="p-6">
+                    {/* Photo and Basic Info */}
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="relative">
+                        {member.photo_url ? (
+                          <img
+                            src={member.photo_url}
+                            alt={member.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-xl font-semibold text-gray-600">
+                              {member.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                          member.status === 1 ? 'bg-green-400' : 'bg-red-400'
+                        }`}></div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          {member.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 truncate">{member.role}</p>
+                      </div>
+                      
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActionMenuStaffId(actionMenuStaffId === member.id ? null : member.id);
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <Icons.MoreVertical />
+                        </button>
+                        
+                        {actionMenuStaffId === member.id && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                          >
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  handleEdit(member);
+                                  setActionMenuStaffId(null);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                Edit Profile
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleToggleStatus(member.id, member.status);
+                                  setActionMenuStaffId(null);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                {member.status === 1 ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <Link
+                                to={`/upload-document?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setActionMenuStaffId(null)}
+                              >
+                                Upload Documents
+                              </Link>
+                              <Link
+                                to={`/employee-documents?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setActionMenuStaffId(null)}
+                              >
+                                View Documents
+                              </Link>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Details */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Employee #:</span>
+                        <span className="font-medium text-gray-900">{member.empl_no}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">ID Number:</span>
+                        <span className="font-medium text-gray-900">{member.id_no}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Status Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(member.status)}`}>
+                        {member.status === 1 ? 'Active' : 'Inactive'}
+                      </span>
+                      {member.employment_type && (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
+                          {member.employment_type}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Add Staff Modal */}
+      {/* Enhanced Add/Edit Staff Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-screen overflow-y-auto">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
                 {isEditMode ? 'Edit Staff Member' : 'Add New Staff Member'}
               </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {isEditMode ? 'Update staff member information' : 'Enter staff member details'}
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
@@ -470,59 +1116,78 @@ const StaffList: React.FC = () => {
                     empl_no: '',
                     id_no: 0,
                     role: '',
-                    employment_type: 'Permanent',
+                    employment_type: 'Consultant',
                   });
                   setSelectedFile(null);
                 }}
-                className="text-gray-400 hover:text-gray-500"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <span className="sr-only">Close</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <Icons.X />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  required
-                  value={newStaff.name}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
+              {/* Photo Upload Section */}
+              <div className="text-center">
+                <div className="relative inline-block">
+                  {selectedFile ? (
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="Preview"
+                      className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
+                    />
+                  ) : newStaff.photo_url ? (
+                    <img
+                      src={newStaff.photo_url}
+                      alt={newStaff.name}
+                      className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto border-4 border-white shadow-lg">
+                      <Icons.Photo />
               </div>
-              <div>
-                <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
-                  Photo
+                  )}
+                  <label
+                    htmlFor="photo"
+                    className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 cursor-pointer transition-colors"
+                  >
+                    <Icons.Upload />
                 </label>
+                </div>
                 <input
                   type="file"
                   name="photo"
                   id="photo"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-md file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100"
+                  className="hidden"
                 />
-                {selectedFile && (
-                  <p className="mt-2 text-sm text-gray-500">
-                    Selected file: {selectedFile.name}
-                  </p>
-                )}
+                <p className="text-sm text-gray-500 mt-2">Click to upload photo</p>
               </div>
+
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 gap-6">
               <div>
-                <label htmlFor="empl_no" className="block text-sm font-medium text-gray-700">
-                  Employee Number
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    required
+                    value={newStaff.name}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Enter full name"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="empl_no" className="block text-sm font-medium text-gray-700 mb-2">
+                      Employee Number *
                 </label>
                 <input
                   type="text"
@@ -531,12 +1196,13 @@ const StaffList: React.FC = () => {
                   required
                   value={newStaff.empl_no}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="EMP001"
                 />
               </div>
               <div>
-                <label htmlFor="id_no" className="block text-sm font-medium text-gray-700">
-                  ID Number
+                    <label htmlFor="id_no" className="block text-sm font-medium text-gray-700 mb-2">
+                      ID Number *
                 </label>
                 <input
                   type="number"
@@ -545,12 +1211,15 @@ const StaffList: React.FC = () => {
                   required
                   value={newStaff.id_no}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="123456789"
                 />
               </div>
+                </div>
+
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                  Role
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                    Role *
                 </label>
                 <select
                   name="role"
@@ -558,7 +1227,7 @@ const StaffList: React.FC = () => {
                   required
                   value={newStaff.role}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >
                   <option value="">Select a role</option>
                   {departments.map((department) => (
@@ -568,19 +1237,26 @@ const StaffList: React.FC = () => {
                   ))}
                 </select>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">Employment Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Employment Type *
+                  </label>
                 <select
                   name="employment_type"
                   value={newStaff.employment_type}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >
                   <option value="Consultant">Consultant</option>
                   <option value="Contract">Contract</option>
+                    <option value="Permanent">Permanent</option>
                 </select>
               </div>
-              <div className="flex justify-end space-x-3">
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -597,18 +1273,25 @@ const StaffList: React.FC = () => {
                     });
                     setSelectedFile(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 ${
+                  className={`px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
                     isUploading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {isUploading ? 'Saving...' : isEditMode ? 'Update Staff' : 'Add Staff'}
+                  {isUploading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    isEditMode ? 'Update Staff' : 'Add Staff'
+                  )}
                 </button>
               </div>
             </form>
@@ -627,7 +1310,6 @@ const StaffList: React.FC = () => {
                 onClick={() => {
                   setIsTeamModalOpen(false);
                   setTeamName('');
-                  setTeamSize(4);
                 }}
                 className="text-gray-400 hover:text-gray-500"
               >
@@ -670,7 +1352,6 @@ const StaffList: React.FC = () => {
                   onClick={() => {
                     setIsTeamModalOpen(false);
                     setTeamName('');
-                    setTeamSize(4);
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 >
