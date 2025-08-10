@@ -109,6 +109,7 @@ const SalesDashboardPage: React.FC = () => {
   const [productPerfError, setProductPerfError] = useState<string | null>(null);
   const [topReps, setTopReps] = useState<{ name: string; overall: number }[]>([]);
   const [pendingLeavesCount, setPendingLeavesCount] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [stats, setStats] = useState({
     totalSales: 0,
     totalOrders: 0,
@@ -175,7 +176,7 @@ const SalesDashboardPage: React.FC = () => {
         setStats(prev => ({ ...prev, activeReps: reps.length, avgPerformance: Number(avgPerformance.toFixed(1)) }));
 
         // Fetch sales orders for monthly data
-        const ordersRes = await salesOrdersService.getAll();
+        const ordersRes = await salesOrdersService.getAllIncludingDrafts();
         const orders = ordersRes.data || [];
         
         // Group by month
@@ -263,6 +264,26 @@ const SalesDashboardPage: React.FC = () => {
         const pendingCount = leaves.filter((leave: any) => leave.status === '0' || leave.status === 0).length;
         setPendingLeavesCount(pendingCount);
         
+        // Calculate new orders count (orders with my_status = 0)
+        console.log('Orders data structure:', orders.slice(0, 3).map(o => ({ 
+          id: o.id, 
+          status: o.my_status, 
+          allKeys: Object.keys(o),
+          sampleValues: Object.entries(o).slice(0, 5)
+        })));
+        
+        const newOrders = orders.filter((order: any) => {
+          return order.my_status === 0 || order.my_status === '0';
+        });
+        
+        console.log('New orders calculation:', {
+          totalOrders: orders.length,
+          newOrdersCount: newOrders.length,
+          sampleOrders: newOrders.slice(0, 3).map(o => ({ id: o.id, status: o.my_status }))
+        });
+        
+        setNewOrdersCount(newOrders.length);
+        
       } catch (err: any) {
         setError('Failed to fetch dashboard data');
         console.error('Dashboard data fetch error:', err);
@@ -317,7 +338,7 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/clients-list', label: 'Clients', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
     { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
     { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/dashboard/reports/sales-report', label: 'Sales Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { to: '/financial/customer-orders', label: 'Sales Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200', badge: newOrdersCount },
     { to: '/dashboard/reports/product-performance', label: 'Product Performance', icon: <PieChartIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
     { to: '/master-sales', label: 'Master Sales', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/sales-rep-master-report', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
@@ -331,6 +352,15 @@ const SalesDashboardPage: React.FC = () => {
         {/* Header */}
         <div className="mb-1">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Dashboard</h1>
+        </div>
+
+
+
+        {/* Debug Info - Remove after testing */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <p className="text-sm text-yellow-800">
+            Debug: newOrdersCount = {newOrdersCount}, pendingLeavesCount = {pendingLeavesCount}
+          </p>
         </div>
 
         {/* Navigation Menu */}
