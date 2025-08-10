@@ -478,7 +478,7 @@ const CreateCreditNotePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-              <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+              <div className="w-full px-6 sm:px-8 lg:px-10">
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center space-x-4">
@@ -523,7 +523,7 @@ const CreateCreditNotePage: React.FC = () => {
               setSelectedInvoices(new Set());
               setItems([]);
             }}
-            className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+            className="w-full max-w-lg px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
             required
           >
             <option value="">Select a customer</option>
@@ -567,9 +567,9 @@ const CreateCreditNotePage: React.FC = () => {
         </div>
 
         {/* Two Panel Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-16">
           {/* Left Panel - Invoices List */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 xl:col-span-1">
             <div className="px-8 py-6 border-b border-gray-200">
               <h2 className="text-xl font-medium text-gray-900 flex items-center">
                 <Receipt className="h-6 w-6 mr-3 text-blue-600" />
@@ -797,7 +797,7 @@ const CreateCreditNotePage: React.FC = () => {
           </div>
 
           {/* Right Panel - Credit Note Form */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 xl:col-span-2">
             <div className="px-8 py-6 border-b border-gray-200">
               <h2 className="text-xl font-medium text-gray-900 flex items-center">
                 <FileText className="h-6 w-6 mr-3 text-green-600" />
