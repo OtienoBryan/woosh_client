@@ -450,12 +450,12 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/inventory-transactions" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <InventoryTransactionsPage />
               </RoleBasedRoute>
             } />
             <Route path="/inventory-as-of" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <InventoryAsOfPage />
               </RoleBasedRoute>
             } />
@@ -465,17 +465,17 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/stock-transfer-history" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <StockTransferHistoryPage />
               </RoleBasedRoute>
             } />
             <Route path="/stock-take" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <StockTakePage />
               </RoleBasedRoute>
             } />
             <Route path="/stock-take-history" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <StockTakeHistoryPage />
               </RoleBasedRoute>
             } />

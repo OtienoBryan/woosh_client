@@ -381,9 +381,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Inventory Dashboard</h1>
-              <p className="text-lg text-gray-600">
-                Monitor inventory levels, track performance, and manage stock across all stores
-              </p>
+              
             </div>
             
             {/* Quick Action Buttons */}
@@ -399,7 +397,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
               </Link>
               
               <Link
-                to="/store-inventory"
+                to="/inventory-transactions"
                 className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,6 +415,15 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 </svg>
                 Stock Take
               </Link>
+              <Link
+                to="/financial/suppliers"
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Vendors
+              </Link>
             </div>
           </div>
         </div>
@@ -433,7 +440,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Products</p>
+                <p className="text-sm font-medium text-gray-600">Orders</p>
                 <p className="text-2xl font-bold text-gray-900">{formatNumber(inventoryStats.totalProducts)}</p>
               </div>
             </div>
@@ -516,7 +523,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">Stock Summary Across All Stores</h2>
-                    <p className="text-sm text-gray-600 mt-1">Comprehensive view of inventory levels by product and store</p>
+                    
                   </div>
                   
                   {/* Category Filter */}
@@ -642,102 +649,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
         )}
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          <Link
-            to="/inventory-transactions"
-            className="group bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:border-blue-200"
-          >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
-                  <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">View Detailed Inventory</h3>
-                <p className="text-xs text-gray-500 mt-1">Complete inventory management</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/inventory-transactions"
-            className="group bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:border-green-200"
-          >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors duration-200">
-                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-green-600 transition-colors duration-200">View Transactions</h3>
-                <p className="text-xs text-gray-500 mt-1">Track inventory movements</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/stock-take"
-            className="group bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:border-purple-200"
-          >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-200">
-                  <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-purple-600 transition-colors duration-200">Stock Take</h3>
-                <p className="text-xs text-gray-500 mt-1">Physical inventory count</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/financial/post-receipt"
-            className="group bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:border-orange-200"
-          >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
-                  <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200">Post Receipt</h3>
-                <p className="text-xs text-gray-500 mt-1">Record new inventory</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/financial/suppliers"
-            className="group bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:border-pink-200"
-          >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center group-hover:bg-pink-200 transition-colors duration-200">
-                  <svg className="h-6 w-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-pink-600 transition-colors duration-200">Manage Suppliers</h3>
-                <p className="text-xs text-gray-500 mt-1">Supplier information</p>
-              </div>
-            </div>
-          </Link>
-        </div>
+         
       </div>
     </div>
   );
