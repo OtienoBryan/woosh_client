@@ -389,7 +389,7 @@ const SalesDashboardPage: React.FC = () => {
           <StatCard
             title="Total Sales"
             value={stats.totalSales.toLocaleString()}
-            prefix="$"
+            prefix=""
             icon={<DollarSignIcon className="h-6 w-6" />}
             bgColor="bg-gradient-to-r from-green-600 to-green-700"
             onClick={() => navigate('/dashboard/reports/sales-report')}
@@ -535,7 +535,7 @@ const SalesDashboardPage: React.FC = () => {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    outerRadius={120}
                     fill="#8884d8"
                     dataKey="value"
                   >

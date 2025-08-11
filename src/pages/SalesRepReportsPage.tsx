@@ -187,7 +187,7 @@ const SalesRepReportsPage: React.FC = () => {
       </div>
 
       {/* Debug Info */}
-      <div className="mt-4 p-4 bg-gray-100 rounded">
+      <div className="mt-4 p-4 bg-gray-100 rounded hidden">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">Debug Info:</h3>
         <p className="text-xs text-gray-600">Visibility Reports: {reports.visibility_reports?.length || 0}</p>
         <p className="text-xs text-gray-600">Feedback Reports: {reports.feedback_reports?.length || 0}</p>
