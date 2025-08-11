@@ -67,6 +67,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
   const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
   const [stockSummaryData, setStockSummaryData] = useState<StockSummaryData | null>(null);
   const [stockSummaryCategoryFilter, setStockSummaryCategoryFilter] = useState<string>('all');
+  const [stockSummarySearchTerm, setStockSummarySearchTerm] = useState<string>('');
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [creditNoteStats, setCreditNoteStats] = useState({
@@ -323,9 +324,20 @@ const InventoryStaffDashboardPage: React.FC = () => {
     
     let filteredProducts = stockSummaryData.products;
     
+    // Apply category filter
     if (stockSummaryCategoryFilter !== 'all') {
-      filteredProducts = stockSummaryData.products.filter((product: any) => 
+      filteredProducts = filteredProducts.filter((product: any) => 
         product.category === stockSummaryCategoryFilter
+      );
+    }
+    
+    // Apply search filter
+    if (stockSummarySearchTerm.trim()) {
+      const searchLower = stockSummarySearchTerm.toLowerCase();
+      filteredProducts = filteredProducts.filter((product: any) => 
+        product.product_name?.toLowerCase().includes(searchLower) ||
+        product.product_code?.toLowerCase().includes(searchLower) ||
+        product.category?.toLowerCase().includes(searchLower)
       );
     }
     
@@ -535,41 +547,89 @@ const InventoryStaffDashboardPage: React.FC = () => {
                     
                   </div>
                   
-                  {/* Category Filter */}
-                  <div className="flex-shrink-0">
-                    <label htmlFor="stock-summary-category-filter" className="block text-sm font-medium text-gray-700 mb-2">
-                      Filter by Category
-                    </label>
-                    <select
-                      id="stock-summary-category-filter"
-                      value={stockSummaryCategoryFilter}
-                      onChange={(e) => setStockSummaryCategoryFilter(e.target.value)}
-                      className="block w-64 border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      <option value="all">All Categories</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.name}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                  {/* Search and Filters */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Search Bar */}
+                    <div className="flex-shrink-0">
+                      <label htmlFor="stock-summary-search" className="block text-sm font-medium text-gray-700 mb-2">
+                        Search Products
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          id="stock-summary-search"
+                          placeholder="Search by name, code, or category..."
+                          value={stockSummarySearchTerm}
+                          onChange={(e) => setStockSummarySearchTerm(e.target.value)}
+                          className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        {stockSummarySearchTerm && (
+                          <button
+                            onClick={() => setStockSummarySearchTerm('')}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Category Filter */}
+                    <div className="flex-shrink-0">
+                      <label htmlFor="stock-summary-category-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                        Filter by Category
+                      </label>
+                      <select
+                        id="stock-summary-category-filter"
+                        value={stockSummaryCategoryFilter}
+                        onChange={(e) => setStockSummaryCategoryFilter(e.target.value)}
+                        className="block w-64 border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="all">All Categories</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.name}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Filter Indicators */}
-              {stockSummaryCategoryFilter !== 'all' && (
-                <div className="px-6 py-3 bg-purple-50 border-b border-purple-200">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                      <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                      </svg>
-                      Category: {stockSummaryCategoryFilter}
-                    </span>
+              {/* Results Count and Filter Indicators */}
+              <div className={`px-6 py-3 border-b ${(stockSummaryCategoryFilter !== 'all' || stockSummarySearchTerm.trim()) ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {stockSummaryCategoryFilter !== 'all' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                        <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                        </svg>
+                        Category: {stockSummaryCategoryFilter}
+                      </span>
+                    )}
+                    {stockSummarySearchTerm.trim() && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Search: "{stockSummarySearchTerm}"
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Showing {getFilteredStockSummary().length} of {stockSummaryData?.products?.length || 0} products
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Table Content */}
               {getFilteredStockSummary().length === 0 ? (
@@ -579,9 +639,13 @@ const InventoryStaffDashboardPage: React.FC = () => {
                   </svg>
                   <h3 className="mt-4 text-lg font-medium text-gray-900">No products found</h3>
                   <p className="mt-2 text-gray-500">
-                    {stockSummaryCategoryFilter === 'all' 
-                      ? 'No products found in the stock summary.' 
-                      : `No products found for category "${stockSummaryCategoryFilter}".`}
+                    {stockSummarySearchTerm.trim() && stockSummaryCategoryFilter !== 'all'
+                      ? `No products found for search "${stockSummarySearchTerm}" in category "${stockSummaryCategoryFilter}".`
+                      : stockSummarySearchTerm.trim()
+                      ? `No products found for search "${stockSummarySearchTerm}".`
+                      : stockSummaryCategoryFilter !== 'all'
+                      ? `No products found for category "${stockSummaryCategoryFilter}".`
+                      : 'No products found in the stock summary.'}
                   </p>
                 </div>
               ) : (
