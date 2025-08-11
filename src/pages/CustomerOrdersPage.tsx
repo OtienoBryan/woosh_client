@@ -16,7 +16,8 @@ import {
   Trash2,
   Save,
   Truck,
-  Home
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 import { salesOrdersService, productsService } from '../services/financialService';
 import { SalesOrder, Product } from '../types/financial';
@@ -67,10 +68,29 @@ const CustomerOrdersPage: React.FC = () => {
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
+  // Receive to Stock Modal state
+  const [showReceiveToStockModal, setShowReceiveToStockModal] = useState(false);
+  const [receivingOrder, setReceivingOrder] = useState<SalesOrder | null>(null);
+  const [receiveForm, setReceiveForm] = useState({
+    store_id: '',
+    notes: '',
+    items: [] as Array<{
+      product_id: number;
+      product_name: string;
+      quantity: number;
+      original_quantity: number;
+      unit_cost: number;
+    }>
+  });
+  const [stores, setStores] = useState<Array<{ id: number; store_name: string; store_code: string }>>([]);
+  const [receiveLoading, setReceiveLoading] = useState(false);
+  const [receiveError, setReceiveError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchOrders();
     fetchProducts();
     fetchRiders();
+    fetchStores();
   }, []);
 
   // Close product dropdown when clicking outside
@@ -87,6 +107,20 @@ const CustomerOrdersPage: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const fetchStores = async () => {
+    try {
+      const response = await fetch('/api/financial/stores');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setStores(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching stores:', err);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -215,6 +249,12 @@ const CustomerOrdersPage: React.FC = () => {
         unselected: 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50',
         pillSel: 'bg-white text-rose-700',
         pillUnsel: 'bg-rose-100 text-rose-800'
+      },
+      '6': {
+        selected: 'bg-orange-600 text-white border-orange-600',
+        unselected: 'bg-white text-orange-700 border-orange-300 hover:bg-orange-50',
+        pillSel: 'bg-white text-orange-700',
+        pillUnsel: 'bg-orange-100 text-orange-800'
       }
     };
     const conf = byVal[value] || byVal['all'];
@@ -291,7 +331,8 @@ const CustomerOrdersPage: React.FC = () => {
       2: 'In Transit',
       3: 'Complete',
       4: 'Cancelled',
-      5: 'Declined'
+      5: 'Declined',
+      6: 'Returned to Stock'
     };
     return statusMap[my_status || 0] || 'Unknown';
   };
@@ -593,6 +634,144 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
+  // Receive to Stock functions
+  const openReceiveToStockModal = (order: SalesOrder) => {
+    if (user?.role !== 'stock') {
+      setError('Only users with stock role can receive products to stock');
+      return;
+    }
+    
+    if (order.my_status !== 4) { // 4 = Cancelled only
+      setError('Only cancelled orders can have products returned to stock');
+      return;
+    }
+    
+    setReceivingOrder(order);
+    setReceiveForm({
+      store_id: '',
+      notes: `Return to stock from cancelled order ${order.so_number}`,
+      items: order.items?.map(item => {
+        // Try to find the product in our products list to get the cost price
+        const product = products.find(p => p.id === item.product_id);
+        return {
+          product_id: item.product_id,
+          product_name: item.product?.product_name || `Product ${item.product_id}`,
+          quantity: item.quantity,
+          original_quantity: item.quantity,
+          unit_cost: product?.cost_price || 0 // Use product cost price if available
+        };
+      }) || []
+    });
+    setReceiveError(null);
+    setShowReceiveToStockModal(true);
+  };
+
+  const closeReceiveToStockModal = () => {
+    setShowReceiveToStockModal(false);
+    setReceivingOrder(null);
+    setReceiveForm({
+      store_id: '',
+      notes: '',
+      items: []
+    });
+    setReceiveError(null);
+  };
+
+  const handleReceiveFormChange = (field: string, value: any) => {
+    setReceiveForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleReceiveItemChange = (index: number, field: string, value: any) => {
+    const newItems = [...receiveForm.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setReceiveForm(prev => ({
+      ...prev,
+      items: newItems
+    }));
+  };
+
+  const resetToOriginalQuantities = () => {
+    setReceiveForm(prev => ({
+      ...prev,
+      items: prev.items.map(item => ({
+        ...item,
+        quantity: item.original_quantity
+      }))
+    }));
+  };
+
+  const handleReceiveToStock = async () => {
+    if (!receivingOrder || !receiveForm.store_id) {
+      setReceiveError('Please select a store and ensure all required fields are filled');
+      return;
+    }
+
+    if (receiveForm.items.some(item => item.quantity <= 0)) {
+      setReceiveError('All quantities must be greater than 0');
+      return;
+    }
+
+    // Check that quantities don't exceed original quantities
+    const invalidQuantities = receiveForm.items.filter(item => item.quantity > item.original_quantity);
+    if (invalidQuantities.length > 0) {
+      setReceiveError(`Quantities cannot exceed original order quantities: ${invalidQuantities.map(item => item.product_name).join(', ')}`);
+      return;
+    }
+
+    try {
+      setReceiveLoading(true);
+      setReceiveError(null);
+
+      // Create inventory transaction for each product
+      const inventoryData = {
+        order_id: receivingOrder.id,
+        store_id: receiveForm.store_id,
+        notes: receiveForm.notes,
+        items: receiveForm.items.map(item => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_cost: item.unit_cost,
+          transaction_type: 'adjustment',
+          reference_type: 'sales_order_return'
+        }))
+      };
+
+      // Call the API to receive products back to stock
+      const response = await fetch('/api/financial/receive-to-stock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inventoryData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSuccessMessage('Products successfully received back to stock!');
+          await fetchOrders();
+          closeReceiveToStockModal();
+          setTimeout(() => {
+            setSuccessMessage('');
+          }, 3000);
+        } else {
+          setReceiveError(result.error || 'Failed to receive products to stock');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setReceiveError(errorData.error || 'Failed to receive products to stock');
+      }
+    } catch (err: any) {
+      console.error('Error receiving products to stock:', err);
+      setReceiveError(err.message || 'Failed to receive products to stock');
+    } finally {
+      setReceiveLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -702,6 +881,7 @@ const CustomerOrdersPage: React.FC = () => {
                 { value: '3', label: 'Complete' },
                 { value: '4', label: 'Cancelled' },
                 { value: '5', label: 'Declined' },
+                { value: '6', label: 'Returned to Stock' },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -906,6 +1086,7 @@ const CustomerOrdersPage: React.FC = () => {
                           order.my_status === 3 ? 'bg-green-100 text-green-800' :
                           order.my_status === 4 ? 'bg-red-100 text-red-800' :
                           order.my_status === 5 ? 'bg-red-100 text-red-800' :
+                          order.my_status === 6 ? 'bg-orange-100 text-orange-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {getMyStatusText(order.my_status)}
@@ -946,6 +1127,26 @@ const CustomerOrdersPage: React.FC = () => {
                                <Truck className="h-4 w-4 mr-1" />
                                Assign Rider
                              </button>
+                           )}
+                           {(order.my_status === 4 || order.my_status === 6) && user?.role === 'stock' && (
+                             order.my_status === 6 ? (
+                               <button
+                                 disabled
+                                 className="text-gray-400 flex items-center bg-gray-100 px-2 py-1 rounded cursor-not-allowed"
+                                 title="Products already returned to stock"
+                               >
+                                 <ArrowLeft className="h-4 w-4 mr-1" />
+                                 Already Returned
+                               </button>
+                             ) : (
+                               <button
+                                 onClick={() => openReceiveToStockModal(order)}
+                                 className="text-orange-600 hover:text-orange-900 flex items-center bg-orange-50 hover:bg-orange-100 px-2 py-1 rounded"
+                               >
+                                 <ArrowLeft className="h-4 w-4 mr-1" />
+                                 Receive to Stock
+                               </button>
+                             )
                            )}
                            {(order.my_status === 1 || order.my_status === 2 || order.my_status === 3) && (
                              <button
@@ -1636,6 +1837,16 @@ const CustomerOrdersPage: React.FC = () => {
                       Assign Rider
                     </button>
                   )}
+                  {selectedOrder.my_status === 4 && (user?.role === 'stock' || user?.role === 'admin') && (
+                    <button
+                      type="button"
+                      onClick={() => openReceiveToStockModal(selectedOrder)}
+                      className="px-6 py-3 text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors flex items-center"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Receive to Stock
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={closeViewModal}
@@ -1803,6 +2014,235 @@ const CustomerOrdersPage: React.FC = () => {
             )}
           </div>,
           document.body
+        )}
+
+        {/* Receive to Stock Modal */}
+        {showReceiveToStockModal && receivingOrder && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-10 mx-auto p-8 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-xl rounded-lg bg-white">
+              <div className="mt-2">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Receive Products to Stock
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Order: {receivingOrder.so_number} - {receivingOrder.customer_name || receivingOrder.customer?.name}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Order Date: {formatDate(receivingOrder.order_date)} | Total Items: {receivingOrder.items?.length || 0}
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeReceiveToStockModal}
+                    className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Error Message */}
+                {receiveError && (
+                  <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {receiveError}
+                  </div>
+                )}
+
+                {/* Form */}
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <h4 className="text-sm font-medium text-orange-800 mb-2">Return Summary</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-orange-600">Total Items:</span>
+                        <span className="ml-2 font-medium text-orange-800">
+                          {receiveForm.items.reduce((sum, item) => sum + item.quantity, 0)} / {receiveForm.items.reduce((sum, item) => sum + item.original_quantity, 0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-orange-600">Total Value:</span>
+                        <span className="ml-2 font-medium text-orange-800">
+                          {formatCurrency(receiveForm.items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0))}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-orange-600">Store:</span>
+                        <span className="ml-2 font-medium text-orange-800">
+                          {stores.find(s => s.id.toString() === receiveForm.store_id)?.store_name || 'Not selected'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Store Selection */}
+                  <div className="p-6 bg-blue-50 rounded-lg">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Select Store</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Store *
+                        </label>
+                        <select
+                          value={receiveForm.store_id}
+                          onChange={(e) => handleReceiveFormChange('store_id', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Select a store...</option>
+                          {stores.map(store => (
+                            <option key={store.id} value={store.id}>
+                              {store.store_name} ({store.store_code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Notes
+                        </label>
+                        <textarea
+                          value={receiveForm.notes}
+                          onChange={(e) => handleReceiveFormChange('notes', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Add notes about this return to stock..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Products to Receive */}
+                  <div className="p-6 bg-green-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-medium text-gray-900">Products to Receive</h4>
+                      <button
+                        type="button"
+                        onClick={resetToOriginalQuantities}
+                        className="px-3 py-1 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                      >
+                        Reset to Original
+                      </button>
+                    </div>
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium mb-1">Instructions:</p>
+                        <ul className="list-disc list-inside space-y-1 text-xs">
+                          <li>Adjust the return quantity for each product (cannot exceed original order quantity)</li>
+                          <li>Set the unit cost for inventory valuation (if left as 0, product's default cost will be used)</li>
+                          <li>All products will be added to the selected store's inventory</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {receiveForm.items.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p>No products to receive.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="border border-gray-200 rounded-md overflow-hidden">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Original Qty</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return Qty</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Default Cost</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Cost</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {receiveForm.items.map((item, index) => (
+                                  <tr key={index}>
+                                    <td className="px-4 py-2">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {item.product_name}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        Product ID: {item.product_id}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2">
+                                      <div className="text-sm text-gray-900">
+                                        {item.original_quantity}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max={item.original_quantity}
+                                        value={item.quantity}
+                                        onChange={(e) => handleReceiveItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-2 text-sm text-gray-600">
+                                      {(() => {
+                                        const product = products.find(p => p.id === item.product_id);
+                                        return product?.cost_price ? formatCurrency(product.cost_price) : 'N/A';
+                                      })()}
+                                    </td>
+                                    <td className="px-4 py-2">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={item.unit_cost}
+                                        onChange={(e) => handleReceiveItemChange(index, 'unit_cost', parseFloat(e.target.value) || 0)}
+                                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="0.00"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-2 text-sm text-gray-900">
+                                      {formatCurrency(item.quantity * item.unit_cost)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="flex justify-end items-center pt-4 border-t border-gray-200">
+                            <div className="text-right space-y-1">
+                              <div className="text-sm text-gray-600">
+                                Total Items: {receiveForm.items.reduce((sum, item) => sum + item.quantity, 0)}
+                              </div>
+                              <div className="text-lg font-bold text-gray-900">
+                                Total Value: {formatCurrency(receiveForm.items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0))}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={closeReceiveToStockModal}
+                      className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleReceiveToStock}
+                      disabled={receiveLoading || !receiveForm.store_id || receiveForm.items.some(item => item.quantity <= 0)}
+                      className="px-6 py-3 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {receiveLoading ? 'Processing...' : 'Receive to Stock'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
