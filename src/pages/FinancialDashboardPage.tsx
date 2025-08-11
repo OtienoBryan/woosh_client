@@ -207,7 +207,7 @@ const FinancialDashboardPage = () => {
     { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     { to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
     { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/credit-note-summary', label: 'Credit Note Summary', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    //{ to: '/credit-note-summary', label: 'Credit Note Summary', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     { to: '/receipts', label: 'Receipts', icon: <ReceiptIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     { to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },

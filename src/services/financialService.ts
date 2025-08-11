@@ -548,6 +548,20 @@ export const journalEntriesService = {
       console.error('API call failed:', error);
       throw error;
     }
+  },
+
+  getByAccountCode: async (accountCode: string): Promise<ApiResponse<any[]>> => {
+    console.log('Calling API for account code:', accountCode);
+    console.log('API URL:', `${API_BASE_URL}/financial/journal-entries?account_code=${accountCode}`);
+    
+    try {
+      const response = await axios.get(`${API_BASE_URL}/financial/journal-entries?account_code=${accountCode}`);
+      console.log('API response received:', response);
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
 }; 
 

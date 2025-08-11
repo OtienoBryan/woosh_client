@@ -165,6 +165,9 @@ const BalanceSheetReportPage: React.FC = () => {
 
   const handleAccountClick = (account: Account) => {
     console.log('Account clicked:', account);
+    console.log('Account ID type:', typeof account.id, 'Value:', account.id);
+    console.log('Account Code:', account.account_code);
+    console.log('Full account object:', JSON.stringify(account, null, 2));
     setSelectedAccount(account);
     setShowJournalEntriesModal(true);
     console.log('Modal state updated:', { selectedAccount: account, showJournalEntriesModal: true });

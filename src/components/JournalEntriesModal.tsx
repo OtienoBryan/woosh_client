@@ -49,23 +49,46 @@ const JournalEntriesModal: React.FC<JournalEntriesModalProps> = ({ isOpen, onClo
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching journal entries for account:', account.account_code);
+      console.log('Fetching journal entries for account:', account);
+      console.log('Account ID:', account.id);
+      console.log('Account Code:', account.account_code);
       
       // First, try to get all journal entries to see if the API is working
       try {
         const allEntriesResponse = await journalEntriesService.getAll();
         console.log('All entries response:', allEntriesResponse);
+        console.log('Total entries available:', allEntriesResponse.data?.length || 0);
+        
+        // Check if any entries have the same account_id as our account
+        if (allEntriesResponse.data) {
+          const matchingEntries = allEntriesResponse.data.filter((entry: any) => 
+            entry.account_id === account.id
+          );
+          console.log('Entries matching account ID:', matchingEntries.length);
+          console.log('Matching entries:', matchingEntries);
+          
+          // Also check by account_code
+          const matchingByCode = allEntriesResponse.data.filter((entry: any) => 
+            entry.account_code === account.account_code
+          );
+          console.log('Entries matching account code:', matchingByCode.length);
+          console.log('Matching by code:', matchingByCode);
+        }
       } catch (allEntriesError) {
         console.log('Could not fetch all entries:', allEntriesError);
       }
       
-      // Use the new getByAccount method
-      const response = await journalEntriesService.getByAccount(account.id);
-      console.log('API response:', response);
+                    // Use the getByAccount method with account ID from chart_of_accounts table
+       console.log('Calling getByAccount with ID:', account.id);
+       const response = await journalEntriesService.getByAccount(account.id);
+       console.log('API response by ID:', response);
+       console.log('Response success:', response.success);
+       console.log('Response data length:', response.data?.length || 0);
       
       if (response.success && response.data) {
         setEntries(response.data);
         console.log('Journal entries set:', response.data);
+        console.log('Entries count:', response.data.length);
       } else {
         setError(response.error || 'Failed to fetch journal entries');
         console.error('API error:', response.error);
