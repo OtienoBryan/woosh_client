@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Filter, Download, Eye, Calendar, DollarSign, User, Building, X, Package, Receipt } from 'lucide-react';
+import { FileText, Search, Download, Eye, Calendar, DollarSign, Building, X, Package, Receipt, ArrowLeft, CheckSquare, Info } from 'lucide-react';
 import { creditNoteService } from '../services/creditNoteService';
+import { storeService } from '../services/storeService';
+import { Store } from '../types/financial';
+import { API_CONFIG } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface CreditNoteItem {
   product_id: number;
+  product_name?: string;
+  product_code?: string;
   product?: any;
   invoice_id: number;
   quantity: number;
@@ -20,6 +26,11 @@ interface CreditNote {
   reason?: string;
   total_amount: number;
   status: string;
+  my_status?: number;
+  received_by?: number;
+  received_at?: string;
+  staff_name?: string;
+  creator_name?: string;
   created_at: string;
   updated_at: string;
   email?: string;
@@ -39,6 +50,11 @@ interface CreditNoteDetails {
   tax_amount: number;
   total_amount: number;
   status: string;
+  my_status?: number;
+  received_by?: number;
+  received_at?: string;
+  staff_name?: string;
+  creator_name?: string;
   created_at: string;
   updated_at: string;
   email?: string;
@@ -61,10 +77,31 @@ const CreditNoteSummaryPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCreditNote, setSelectedCreditNote] = useState<CreditNoteDetails | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  
+  // Receive back functionality state
+  const [showReceiveBackModal, setShowReceiveBackModal] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [selectedStore, setSelectedStore] = useState<string>('');
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [submittingReceiveBack, setSubmittingReceiveBack] = useState(false);
+  const [receiveBackSuccess, setReceiveBackSuccess] = useState<string | null>(null);
+
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchCreditNotes();
   }, []);
+
+  // Monitor user role changes and close modal if user doesn't have stock role
+  useEffect(() => {
+    if (showReceiveBackModal && user && user.role !== 'stock' && user.role !== 'admin') {
+      setShowReceiveBackModal(false);
+      setSelectedItems(new Set());
+      setSelectedStore('');
+      setReceiveBackSuccess(null);
+    }
+  }, [user, showReceiveBackModal]);
 
   const fetchCreditNotes = async () => {
     try {
@@ -143,6 +180,32 @@ const CreditNoteSummaryPage: React.FC = () => {
     }
   };
 
+  const getMyStatusColor = (myStatus: number | undefined) => {
+    if (myStatus === undefined || myStatus === null) return 'bg-gray-100 text-gray-800';
+    
+    switch (myStatus) {
+      case 0:
+        return 'bg-yellow-100 text-yellow-800';
+      case 1:
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getMyStatusText = (myStatus: number | undefined) => {
+    if (myStatus === undefined || myStatus === null) return 'Unknown';
+    
+    switch (myStatus) {
+      case 0:
+        return 'Not Received';
+      case 1:
+        return 'Received';
+      default:
+        return 'Unknown';
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
@@ -192,6 +255,111 @@ const CreditNoteSummaryPage: React.FC = () => {
     setError(null);
   };
 
+  const fetchStores = async () => {
+    setLoadingStores(true);
+    try {
+      const response = await storeService.getAllStores();
+      if (response.success) {
+        setStores(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stores:', error);
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  const handleReceiveBack = () => {
+    // Check if user has stock role
+    if (user?.role !== 'stock' && user?.role !== 'admin') {
+      setError('Access denied. Only users with stock role can receive items back to stock.');
+      return;
+    }
+
+    // Check if credit note has already been received
+    if (selectedCreditNote?.my_status === 1) {
+      setError('This credit note has already been received back to stock.');
+      return;
+    }
+
+    setShowReceiveBackModal(true);
+    // Automatically select all items by default
+    if (selectedCreditNote?.items) {
+      const allItemIndices = selectedCreditNote.items.map((_, index) => index);
+      setSelectedItems(new Set(allItemIndices));
+    } else {
+      setSelectedItems(new Set());
+    }
+    setSelectedStore('');
+    setReceiveBackSuccess(null);
+    fetchStores();
+  };
+
+  const closeReceiveBackModal = () => {
+    setShowReceiveBackModal(false);
+    setSelectedItems(new Set());
+    setSelectedStore('');
+    setReceiveBackSuccess(null);
+  };
+
+
+
+  const handleReceiveBackSubmit = async () => {
+    // Check if user has stock role
+    if (user?.role !== 'stock' && user?.role !== 'admin') {
+      setError('Access denied. Only users with stock role can receive items back to stock.');
+      return;
+    }
+
+    if (!selectedCreditNote || selectedItems.size === 0 || !selectedStore) {
+      setError('Please select items and a store to receive back inventory');
+      return;
+    }
+
+    setSubmittingReceiveBack(true);
+    try {
+      const itemsToReceive = Array.from(selectedItems).map(index => {
+        const item = selectedCreditNote.items![index];
+        return {
+          productId: item.product_id,
+          quantity: item.quantity,
+          storeId: parseInt(selectedStore)
+        };
+      });
+
+      // Use fetch API to submit receive back request [[memory:5416987]]
+      const url = API_CONFIG.getUrl('/financial/credit-notes/receive-back');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          creditNoteId: selectedCreditNote.id,
+          items: itemsToReceive
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setReceiveBackSuccess('Items successfully received back to inventory');
+        setTimeout(() => {
+          closeReceiveBackModal();
+          // Refresh the page to show updated credit note status
+          window.location.reload();
+        }, 2000);
+      } else {
+        setError(data.error || 'Failed to receive back items');
+      }
+    } catch (error) {
+      setError('Failed to receive back items');
+    } finally {
+      setSubmittingReceiveBack(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="w-full px-6 sm:px-8 lg:px-10">
@@ -207,6 +375,29 @@ const CreditNoteSummaryPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Role-based Information */}
+        {user?.role === 'stock' || user?.role === 'admin' ? (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <Info className="h-5 w-5 text-blue-600 mr-2" />
+              <div className="text-sm text-blue-700">
+                <p className="font-medium">Stock Management Access</p>
+                <p>You have permission to receive credit note items back to stock. Look for the "Can Receive" indicator in the table below.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <Info className="h-5 w-5 text-gray-600 mr-2" />
+              <div className="text-sm text-gray-700">
+                <p className="font-medium">View Only Access</p>
+                <p>You can view credit note details but cannot receive items back to stock. Contact a stock manager for inventory operations.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -268,6 +459,28 @@ const CreditNoteSummaryPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Stock User Summary Card */}
+        {(user?.role === 'stock' || user?.role === 'admin') && (
+          <div className="mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <ArrowLeft className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Credit Notes Available for Receiving</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {creditNotes.filter(note => note.my_status !== 1).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {creditNotes.filter(note => note.my_status === 1).length} already received
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filters and Search */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
@@ -378,10 +591,16 @@ const CreditNoteSummaryPage: React.FC = () => {
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
+                        Created By
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        Amount
+                      </th>
+                                                                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Receive Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Received By
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Reason
@@ -409,13 +628,37 @@ const CreditNoteSummaryPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {note.credit_note_date ? formatDate(note.credit_note_date) : 'N/A'}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {note.creator_name ? (
+                            <span className="font-medium text-blue-700">{note.creator_name}</span>
+                          ) : (
+                            <span className="text-gray-500">Unknown</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {formatCurrency(note.total_amount || 0)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(note.status)}`}>
-                            {note.status || 'Unknown'}
-                          </span>
+                                                                         <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getMyStatusColor(note.my_status)}`}>
+                              {getMyStatusText(note.my_status)}
+                            </span>
+                            {note.my_status !== 1 && user?.role === 'stock' && (
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                                <ArrowLeft className="h-3 w-3 mr-1" />
+                                Can Receive
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {note.my_status === 1 && note.staff_name ? (
+                            <span className="font-medium text-green-700">{note.staff_name}</span>
+                          ) : note.my_status === 1 ? (
+                            <span className="text-gray-500">User ID: {note.received_by}</span>
+                          ) : (
+                            <span className="text-gray-400">Not received</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900 max-w-xs truncate" title={note.reason || 'No reason provided'}>
@@ -539,10 +782,38 @@ const CreditNoteSummaryPage: React.FC = () => {
                           {selectedCreditNote.status || 'Unknown'}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                                                                   <div className="flex justify-between">
                         <span className="text-gray-600">Reason:</span>
                         <span className="font-medium">{selectedCreditNote.reason || 'No reason provided'}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Created By:</span>
+                        <span className="font-medium">
+                          {selectedCreditNote.creator_name || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Created At:</span>
+                        <span className="font-medium">
+                          {selectedCreditNote.created_at ? formatDate(selectedCreditNote.created_at) : 'Unknown'}
+                        </span>
+                      </div>
+                      {selectedCreditNote.my_status === 1 && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Received By:</span>
+                            <span className="font-medium">
+                              {selectedCreditNote.staff_name || `User ID: ${selectedCreditNote.received_by || 'Unknown'}`}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Received At:</span>
+                            <span className="font-medium">
+                              {selectedCreditNote.received_at ? formatDate(selectedCreditNote.received_at) : 'Unknown'}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -609,7 +880,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                               <td className="px-4 py-3 text-sm text-gray-900">
                                 <div className="flex items-center">
                                   <Package className="h-4 w-4 text-gray-400 mr-2" />
-                                  <span>{item.product?.product_name || `Product ${item.product_id}`}</span>
+                                  <span>{item.product_name || item.product?.product_name || `Product ${item.product_id}`}</span>
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-900">
@@ -635,7 +906,16 @@ const CreditNoteSummaryPage: React.FC = () => {
                 )}
 
                 {/* Footer */}
-                <div className="flex justify-end pt-6 border-t border-gray-200">
+                <div className="flex justify-between pt-6 border-t border-gray-200">
+                  {user?.role === 'stock' && selectedCreditNote?.my_status !== 1 && (
+                    <button
+                      onClick={handleReceiveBack}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Receive Back to Stock
+                    </button>
+                  )}
                   <button
                     onClick={closeModal}
                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
@@ -647,6 +927,170 @@ const CreditNoteSummaryPage: React.FC = () => {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <p>Failed to load credit note details</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Receive Back Modal */}
+      {showReceiveBackModal && selectedCreditNote && (user?.role === 'stock' || user?.role === 'admin') && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Receive Back to Stock</h3>
+              <button
+                onClick={closeReceiveBackModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {receiveBackSuccess ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckSquare className="h-8 w-8 text-green-600" />
+                </div>
+                <p className="text-green-600 font-semibold text-lg">{receiveBackSuccess}</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Info Message */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <Info className="h-5 w-5 text-blue-600 mr-2" />
+                    <div className="text-sm text-blue-700">
+                      <p className="font-medium">All items are automatically selected</p>
+                      <p>All items must be received back to stock and cannot be unselected.</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Store Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Store to Receive Inventory
+                  </label>
+                  {loadingStores ? (
+                    <div className="text-sm text-gray-500">Loading stores...</div>
+                  ) : (
+                    <select
+                      value={selectedStore}
+                      onChange={(e) => setSelectedStore(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Choose a store...</option>
+                      {stores.map((store) => (
+                        <option key={store.id} value={store.id.toString()}>
+                          {store.store_name} ({store.store_code})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Items Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Select Items to Receive Back
+                    </label>
+                    <span className="text-sm text-gray-500">
+                      {selectedItems.size} of {selectedCreditNote.items?.length || 0} items selected
+                    </span>
+                  </div>
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-300">
+                                      <div className="flex items-center justify-center">
+                  <span className="text-sm font-medium text-gray-700">
+                    All items are automatically selected and cannot be unselected
+                  </span>
+                </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {selectedCreditNote.items && selectedCreditNote.items.length > 0 ? (
+                        selectedCreditNote.items.map((item, index) => (
+                          <div
+                            key={index}
+                            className="p-4 border-b border-gray-100 last:border-b-0 bg-blue-50"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className="h-5 w-5 text-blue-600 bg-blue-600 rounded flex items-center justify-center mr-3">
+                                  <CheckSquare className="h-3 w-3 text-white" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center">
+                                    <Package className="h-4 w-4 text-gray-400 mr-2" />
+                                    <span className="font-medium text-gray-900">
+                                      {item.product_name || item.product?.product_name || `Product ${item.product_id}`}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1">
+                                    Quantity: {item.quantity} | Unit Price: {formatCurrency(item.unit_price)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-medium text-gray-900">
+                                  {formatCurrency(item.total_price)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">
+                          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p>No items available for this credit note</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                {selectedItems.size > 0 && selectedStore && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-700 mb-2">Receive Back Summary</h4>
+                    <div className="text-sm text-blue-600">
+                      <p>Store: {stores.find(s => s.id.toString() === selectedStore)?.store_name}</p>
+                      <p>Items to receive: {selectedItems.size}</p>
+                      <p>Total quantity: {
+                        Array.from(selectedItems).reduce((sum, index) => {
+                          return sum + (selectedCreditNote.items?.[index]?.quantity || 0);
+                        }, 0)
+                      }</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Display */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={closeReceiveBackModal}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReceiveBackSubmit}
+                    disabled={selectedItems.size === 0 || !selectedStore || submittingReceiveBack}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {submittingReceiveBack && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    )}
+                    {submittingReceiveBack ? 'Processing...' : 'Receive Back to Stock'}
+                  </button>
+                </div>
               </div>
             )}
           </div>

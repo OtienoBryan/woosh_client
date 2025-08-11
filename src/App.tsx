@@ -380,7 +380,7 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/credit-note-summary" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <CreditNoteSummaryPage />
               </RoleBasedRoute>
             } />

@@ -48,6 +48,11 @@ export interface CreditNote {
   tax_amount: number;
   total_amount: number;
   status: string;
+  my_status?: number;
+  received_by?: number;
+  received_at?: string;
+  staff_name?: string;
+  creator_name?: string;
   created_at: string;
   updated_at: string;
   items?: CreditNoteItem[];

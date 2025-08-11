@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { storeService } from '../services/storeService';
 import { productsService, categoriesService } from '../services/financialService';
+import { creditNoteService } from '../services/creditNoteService';
 import { StockSummaryData } from '../services/storeService';
 import { StoreInventory, StoreInventorySummary } from '../types/financial';
+import { CreditNote } from '../services/creditNoteService';
 import axios from 'axios';
 import { 
   BarChart, 
@@ -66,6 +68,12 @@ const InventoryStaffDashboardPage: React.FC = () => {
   const [stockSummaryData, setStockSummaryData] = useState<StockSummaryData | null>(null);
   const [stockSummaryCategoryFilter, setStockSummaryCategoryFilter] = useState<string>('all');
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
+  const [creditNoteStats, setCreditNoteStats] = useState({
+    totalCreditNotes: 0,
+    pendingReceiving: 0,
+    received: 0
+  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -90,7 +98,8 @@ const InventoryStaffDashboardPage: React.FC = () => {
         monthlySalesResponse,
         categoryResponse,
         stockSummaryResponse,
-        categoriesResponse
+        categoriesResponse,
+        creditNotesResponse
       ] = await Promise.all([
         storeService.getAllStoresInventory(),
         axios.get('/api/financial/sales-orders'),
@@ -99,7 +108,8 @@ const InventoryStaffDashboardPage: React.FC = () => {
         axios.get('/api/financial/sales-orders'),
         axios.get('/api/financial/products'),
         storeService.getStockSummary(),
-        categoriesService.getAll()
+        categoriesService.getAll(),
+        creditNoteService.getAll()
       ]);
 
       // Process inventory data
@@ -198,6 +208,22 @@ const InventoryStaffDashboardPage: React.FC = () => {
 
       if (categoriesResponse.success) {
         setCategories(categoriesResponse.data || []);
+      }
+
+      // Process credit notes data
+      if (creditNotesResponse.success) {
+        const creditNotes = creditNotesResponse.data || [];
+        setCreditNotes(creditNotes);
+        
+        const totalCreditNotes = creditNotes.length;
+        const pendingReceiving = creditNotes.filter(note => note.my_status !== 1).length;
+        const received = creditNotes.filter(note => note.my_status === 1).length;
+        
+        setCreditNoteStats({
+          totalCreditNotes,
+          pendingReceiving,
+          received
+        });
       }
 
     } catch (err) {
@@ -460,7 +486,27 @@ const InventoryStaffDashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+          <Link
+                to="/credit-note-summary"
+                 >
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Credit Notes Summary</p>
+                <p className="text-2xl font-bold text-gray-900">{formatNumber(creditNoteStats.pendingReceiving)}</p>
+              </div>
+            </div>
+            </Link>
+          </div>
         </div>
+ 
 
         {/* Stock Summary Table */}
         {selectedStore === 'all' && stockSummaryData && stockSummaryData.products.length > 0 && (

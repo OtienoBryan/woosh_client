@@ -112,6 +112,7 @@ const StatCard: React.FC<StatCardProps> = ({
 const FinancialDashboardPage = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
+  const [newCreditNotesCount, setNewCreditNotesCount] = useState<number>(0);
   const [hasNewChat, setHasNewChat] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +146,21 @@ const FinancialDashboardPage = () => {
         }
       } catch {}
     };
+    
+    // Fetch count of new (my_status = 0) credit notes for badge on Credit Notes card
+    const fetchNewCreditNotes = async () => {
+      try {
+        const url = API_CONFIG.getUrl('/financial/credit-notes');
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        const data = await res.json();
+        if (res.ok && data && data.success && Array.isArray(data.data)) {
+          // Count credit notes with my_status = 0 (new/unprocessed)
+          const count = data.data.filter((cn: any) => String(cn.my_status || '0') === '0').length;
+          setNewCreditNotesCount(count);
+        }
+      } catch {}
+    };
+    
     const fetchChatLatest = async () => {
       try {
         const url = API_CONFIG.getUrl('/chat/latest');
@@ -158,6 +174,7 @@ const FinancialDashboardPage = () => {
       } catch {}
     };
     fetchNewOrders();
+    fetchNewCreditNotes();
     fetchChatLatest();
   }, []);
 
@@ -309,6 +326,11 @@ const FinancialDashboardPage = () => {
                 {item.to === '/financial/customer-orders' && (
                   <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-red-600 text-white shadow">
                     {newOrdersCount}
+                  </span>
+                )}
+                {item.to === '/credit-note-summary' && newCreditNotesCount > 0 && (
+                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-orange-600 text-white shadow">
+                    {newCreditNotesCount}
                   </span>
                 )}
                 {item.to === '/chat-room' && hasNewChat && (
