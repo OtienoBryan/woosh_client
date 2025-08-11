@@ -68,8 +68,10 @@ const CreditNoteSummaryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('0');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
   
@@ -116,15 +118,57 @@ const CreditNoteSummaryPage: React.FC = () => {
     }
   };
 
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('0');
+    setDateFilter('all');
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
+  };
+
+  const validateDateRange = () => {
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      setError('Start date cannot be after end date');
+      return false;
+    }
+    setError(null);
+    return true;
+  };
+
   const filteredCreditNotes = creditNotes.filter(note => {
     const matchesSearch = (note.credit_note_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (note.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (note.reason || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || note.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || note.my_status === parseInt(statusFilter);
     
     let matchesDate = true;
-    if (dateFilter !== 'all' && note.credit_note_date) {
+    
+    // Priority: Date range filter overrides dateFilter
+    if (startDate || endDate) {
+      if (note.credit_note_date) {
+        const noteDate = new Date(note.credit_note_date);
+        
+        if (startDate && endDate) {
+          // Both start and end date specified
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999); // Include the entire end date
+          matchesDate = noteDate >= start && noteDate <= end;
+        } else if (startDate) {
+          // Only start date specified
+          const start = new Date(startDate);
+          matchesDate = noteDate >= start;
+        } else if (endDate) {
+          // Only end date specified
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999); // Include the entire end date
+          matchesDate = noteDate <= end;
+        }
+      }
+    } else if (dateFilter !== 'all' && note.credit_note_date) {
+      // Use dateFilter only when no date range is specified
       const noteDate = new Date(note.credit_note_date);
       const today = new Date();
       const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -364,7 +408,7 @@ const CreditNoteSummaryPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="w-full px-6 sm:px-8 lg:px-10">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-10 hidden">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-blue-100 rounded-lg">
               <FileText className="h-8 w-8 text-blue-600" />
@@ -378,7 +422,7 @@ const CreditNoteSummaryPage: React.FC = () => {
 
         {/* Role-based Information */}
         {user?.role === 'stock' || user?.role === 'admin' ? (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 hidden">
             <div className="flex items-center">
               <Info className="h-5 w-5 text-blue-600 mr-2" />
               <div className="text-sm text-blue-700">
@@ -462,7 +506,7 @@ const CreditNoteSummaryPage: React.FC = () => {
 
         {/* Stock User Summary Card */}
         {(user?.role === 'stock' || user?.role === 'admin') && (
-          <div className="mb-8">
+          <div className="mb-8 hidden">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-orange-100 rounded-lg">
@@ -502,14 +546,9 @@ const CreditNoteSummaryPage: React.FC = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="applied">Applied</option>
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
+                <option value="all">All Receive Statuses</option>
+                <option value="0">Not Received</option>
+                <option value="1">Received</option>
               </select>
 
               <select
@@ -523,6 +562,39 @@ const CreditNoteSummaryPage: React.FC = () => {
                 <option value="month">This Month</option>
                 <option value="quarter">This Quarter</option>
               </select>
+
+              {/* Date Range Filter */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    if (endDate && new Date(e.target.value) > new Date(endDate)) {
+                      setError('Start date cannot be after end date');
+                    } else {
+                      setError(null);
+                    }
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Start Date"
+                />
+                <span className="text-gray-500 text-sm">to</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    if (startDate && new Date(startDate) > new Date(e.target.value)) {
+                      setError('Start date cannot be after end date');
+                    } else {
+                      setError(null);
+                    }
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="End Date"
+                />
+              </div>
             </div>
 
             <div className="flex space-x-3">
@@ -531,6 +603,12 @@ const CreditNoteSummaryPage: React.FC = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Refresh
+              </button>
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Clear Filters
               </button>
               <button
                 onClick={() => {
@@ -544,6 +622,85 @@ const CreditNoteSummaryPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Active Filters Indicator */}
+          {(searchTerm || statusFilter !== '0' || dateFilter !== 'all' || startDate || endDate) && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+                {searchTerm && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    Search: "{searchTerm}"
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="ml-2 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {statusFilter !== '0' && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    Status: {statusFilter === '1' ? 'Received' : 'Not Received'}
+                    <button
+                      onClick={() => setStatusFilter('0')}
+                      className="ml-2 text-green-600 hover:text-green-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {dateFilter !== 'all' && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                    Date: {dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : dateFilter === 'month' ? 'This Month' : 'This Quarter'}
+                    <button
+                      onClick={() => setDateFilter('all')}
+                      className="ml-2 text-yellow-600 hover:text-yellow-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {startDate && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    From: {new Date(startDate).toLocaleDateString()}
+                    <button
+                      onClick={() => setStartDate('')}
+                      className="ml-2 text-purple-600 hover:text-purple-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {endDate && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    To: {new Date(endDate).toLocaleDateString()}
+                    <button
+                      onClick={() => setEndDate('')}
+                      className="ml-2 text-purple-600 hover:text-purple-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Debug Information */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb- hidden">
+          <h3 className="text-sm font-medium text-gray-800 mb-2">Debug Info:</h3>
+          <div className="text-xs text-gray-600 space-y-1">
+            <div>Total Credit Notes: {creditNotes.length}</div>
+            <div>Filtered Credit Notes: {filteredCreditNotes.length}</div>
+            <div>Status Filter: {statusFilter}</div>
+            <div>Date Filter: {dateFilter}</div>
+            <div>Start Date: {startDate || 'None'}</div>
+            <div>End Date: {endDate || 'None'}</div>
+            <div>Total Amount: {formatCurrency(totals.totalAmount)}</div>
+            <div>Count: {totals.count}</div>
+          </div>
         </div>
 
         {/* Credit Notes Table */}
@@ -552,6 +709,16 @@ const CreditNoteSummaryPage: React.FC = () => {
             <h2 className="text-xl font-medium text-gray-900">Credit Notes</h2>
             <p className="text-sm text-gray-500 mt-1">
               Showing {filteredCreditNotes.length} of {creditNotes.length} credit notes
+              {(startDate || endDate) && (
+                <span className="ml-2 text-blue-600">
+                  {startDate && endDate 
+                    ? ` (${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()})`
+                    : startDate 
+                    ? ` (from ${new Date(startDate).toLocaleDateString()})`
+                    : ` (until ${new Date(endDate).toLocaleDateString()})`
+                  }
+                </span>
+              )}
             </p>
           </div>
 
@@ -675,17 +842,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </button>
-                              <button
-                                onClick={() => {
-                                  // TODO: Implement edit functionality
-                                  alert(`Edit credit note ${note.credit_note_number || note.id || 'Unknown'}`);
-                                }}
-                                className="text-green-600 hover:text-green-900 flex items-center"
-                                title="Edit"
-                              >
-                                <FileText className="h-4 w-4 mr-1" />
-                                Edit
-                              </button>
+                               
                           </div>
                         </td>
                       </tr>
