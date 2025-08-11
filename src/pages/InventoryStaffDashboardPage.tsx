@@ -74,6 +74,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
     pendingReceiving: 0,
     received: 0
   });
+  const [approvedOrdersCount, setApprovedOrdersCount] = useState(0);
 
   useEffect(() => {
     fetchDashboardData();
@@ -153,6 +154,10 @@ const InventoryStaffDashboardPage: React.FC = () => {
         const totalSales = orders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         const totalOrders = orders.length;
         const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+        
+        // Calculate approved orders count (my_status = 1)
+        const approvedOrders = orders.filter((order: any) => order.my_status === 1).length;
+        setApprovedOrdersCount(approvedOrders);
         
         // Get top selling products (simplified - in real app you'd get this from sales_order_items)
         const topSellingProducts = await fetchTopSellingProducts();
@@ -431,6 +436,9 @@ const InventoryStaffDashboardPage: React.FC = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+          <Link
+                to="/financial/customer-orders"
+                 >
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -440,10 +448,11 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Orders</p>
-                <p className="text-2xl font-bold text-gray-900">{formatNumber(inventoryStats.totalProducts)}</p>
+                <p className="text-sm font-medium text-gray-600">Approved Orders</p>
+                <p className="text-2xl font-bold text-gray-900">{formatNumber(approvedOrdersCount)}</p>
               </div>
             </div>
+            </Link>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
