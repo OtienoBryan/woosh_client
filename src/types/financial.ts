@@ -142,6 +142,9 @@ export interface User {
     rider_contact?: string;
     assigned_at?: string;
     customer_balance?: string;
+    received_by?: number;
+    returned_at?: string;
+    received_by_name?: string;
   }
   
   export interface SalesOrderItem {

@@ -1091,6 +1091,14 @@ const CustomerOrdersPage: React.FC = () => {
                         }`}>
                           {getMyStatusText(order.my_status)}
                         </span>
+                        {order.my_status === 6 && order.returned_at && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            Returned: {formatDateTime(order.returned_at)}
+                            {order.received_by_name && (
+                              <span> by {order.received_by_name}</span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {order.rider_name ? (
