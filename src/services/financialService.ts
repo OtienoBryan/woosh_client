@@ -534,6 +534,20 @@ export const journalEntriesService = {
   post: async (id: number): Promise<ApiResponse<void>> => {
     const response = await axios.patch(`${API_BASE_URL}/financial/journal-entries/${id}/post`);
     return response.data;
+  },
+
+  getByAccount: async (accountId: number): Promise<ApiResponse<any[]>> => {
+    console.log('Calling API for account ID:', accountId);
+    console.log('API URL:', `${API_BASE_URL}/financial/journal-entries?account_id=${accountId}`);
+    
+    try {
+      const response = await axios.get(`${API_BASE_URL}/financial/journal-entries?account_id=${accountId}`);
+      console.log('API response received:', response);
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
 }; 
 

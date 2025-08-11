@@ -12,11 +12,13 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
-  Info
+  Info,
+  FileText as FileTextIcon
 } from 'lucide-react';
+import JournalEntriesModal from '../components/JournalEntriesModal';
 
 interface Account {
-  id?: string;
+  id: number;
   account_code: string;
   account_name: string;
   account_type: number;
@@ -110,6 +112,8 @@ const BalanceSheetReportPage: React.FC = () => {
     ratios: false
   });
   const [showDrillDown, setShowDrillDown] = useState<string | null>(null);
+  const [showJournalEntriesModal, setShowJournalEntriesModal] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
   useEffect(() => {
     fetchBalanceSheetReport();
@@ -159,6 +163,18 @@ const BalanceSheetReportPage: React.FC = () => {
     setShowDrillDown(prev => prev === section ? null : section);
   };
 
+  const handleAccountClick = (account: Account) => {
+    console.log('Account clicked:', account);
+    setSelectedAccount(account);
+    setShowJournalEntriesModal(true);
+    console.log('Modal state updated:', { selectedAccount: account, showJournalEntriesModal: true });
+  };
+
+  const closeJournalEntriesModal = () => {
+    setShowJournalEntriesModal(false);
+    setSelectedAccount(null);
+  };
+
   const getChangeColor = (change: number) => {
     if (change > 0) return 'text-green-600';
     if (change < 0) return 'text-red-600';
@@ -172,10 +188,22 @@ const BalanceSheetReportPage: React.FC = () => {
   };
 
   const renderAccountRow = (account: Account, showComparative = false) => (
-    <div key={account.account_code || account.id} className="flex justify-between items-center py-1 hover:bg-gray-50">
+    <div 
+      key={account.account_code || account.id} 
+      className="flex justify-between items-center py-2 hover:bg-blue-50 cursor-pointer group border-l-2 border-transparent hover:border-blue-500 transition-all rounded-r px-2 bg-white hover:shadow-md"
+      onClick={() => {
+        console.log('Account row clicked:', account);
+        handleAccountClick(account);
+      }}
+      title={`Click to view journal entries for ${account.account_name}`}
+      style={{ cursor: 'pointer' }}
+    >
       <div className="flex items-center space-x-2">
         <span className="text-sm text-gray-600 w-16">{account.account_code}</span>
-        <span className="text-sm text-gray-700 flex-1">{account.account_name}</span>
+        <span className="text-sm text-gray-700 flex-1 group-hover:text-blue-600 transition-colors font-medium">
+          {account.account_name}
+        </span>
+        <FileTextIcon className="w-4 h-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       <div className="flex items-center space-x-4">
         {showComparative && account.comparative_balance !== undefined && (
@@ -296,6 +324,7 @@ const BalanceSheetReportPage: React.FC = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Export PDF
               </button>
+               
             </div>
           </div>
         </div>
@@ -597,6 +626,13 @@ const BalanceSheetReportPage: React.FC = () => {
           </div>
         ) : null}
       </div>
+
+      {/* Journal Entries Modal */}
+      <JournalEntriesModal
+        isOpen={showJournalEntriesModal}
+        onClose={closeJournalEntriesModal}
+        account={selectedAccount}
+      />
     </div>
   );
 };
