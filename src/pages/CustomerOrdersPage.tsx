@@ -623,11 +623,11 @@ const CustomerOrdersPage: React.FC = () => {
                 <span>Home</span>
               </button>
               <button
-                onClick={() => navigate('/sales-orders')}
+                onClick={() => navigate('/financial/create-customer-order')}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center space-x-2"
               >
                 <Eye className="h-4 w-4" />
-                <span>View All Orders</span>
+                <span>Add Order</span>
               </button>
             </div>
           </div>
