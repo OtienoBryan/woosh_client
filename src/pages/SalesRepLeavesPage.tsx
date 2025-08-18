@@ -2,6 +2,19 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { salesService, SalesRep } from '../services/salesService';
 import { saveAs } from 'file-saver';
+import { 
+  Calendar, 
+  User, 
+  Clock, 
+  FileText, 
+  Paperclip,
+  Filter,
+  Download,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock as ClockSolid
+} from 'lucide-react';
 
 interface Leave {
   id: number;
@@ -62,7 +75,7 @@ const SalesRepLeavesPage: React.FC = () => {
 
   const handleUpdateStatus = async (leaveId: number, newStatus: number) => {
     try {
-      await axios.patch(`/api/sales-rep-leaves/sales-rep-leaves/${leaveId}/status`, { status: newStatus });
+      await axios.patch(`/api/sales-rep-leaves/${leaveId}/status`, { status: newStatus });
       setLeaves((prev) => prev.map(l => l.id === leaveId ? { ...l, status: String(newStatus) } : l));
     } catch (err) {
       alert('Failed to update status');
@@ -76,6 +89,7 @@ const SalesRepLeavesPage: React.FC = () => {
     setPendingSelectedRep(selectedRep);
     setFilterModalOpen(true);
   };
+
   const applyFilters = () => {
     setStatusFilter(pendingStatusFilter);
     setStartDateFilter(pendingStartDate);
@@ -83,6 +97,7 @@ const SalesRepLeavesPage: React.FC = () => {
     setSelectedRep(pendingSelectedRep);
     setFilterModalOpen(false);
   };
+
   const clearFilters = () => {
     setPendingStatusFilter('0');
     setPendingStartDate('');
@@ -116,192 +131,449 @@ const SalesRepLeavesPage: React.FC = () => {
     saveAs(blob, 'sales_rep_leaves.csv');
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case '1':
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Approved
+          </span>
+        );
+      case '3':
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="h-4 w-4 mr-1" />
+            Declined
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <ClockSolid className="h-4 w-4 mr-1" />
+            Pending
+          </span>
+        );
+    }
+  };
+
+  const getLeaveTypeColor = (leaveType: string) => {
+    const colors = {
+      'Annual Leave': 'bg-blue-100 text-blue-800',
+      'Sick Leave': 'bg-red-100 text-red-800',
+      'Personal Leave': 'bg-purple-100 text-purple-800',
+      'Maternity Leave': 'bg-pink-100 text-pink-800',
+      'Paternity Leave': 'bg-indigo-100 text-indigo-800',
+      'Other': 'bg-gray-100 text-gray-800'
+    };
+    return colors[leaveType as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const calculateLeaveDuration = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1;
+  };
+
   return (
-    <div className="w-full py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Sales Rep Leaves</h1>
-      </div>
-      <div className="mb-4 flex items-center gap-4">
-        <button
-          className="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow hover:bg-gray-200"
-          onClick={openFilterModal}
-        >
-          Filter
-        </button>
-        <button
-          className="bg-green-500 text-white px-4 py-2 rounded shadow hover:bg-green-600"
-          onClick={exportToCSV}
-        >
-          Export to CSV
-        </button>
-      </div>
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{error}</div>
-      )}
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading leaves...</p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Rep Leaves</h1>
+          <p className="text-gray-600">Manage and review leave requests from sales representatives</p>
         </div>
-      ) : (
-        <div className="bg-white shadow overflow-x-auto w-full">
-          <table className="min-w-full w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales Rep</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">Reason</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attachment</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredLeaves.map(leave => {
-                const rep = salesReps.find(r => r.id === leave.userId);
-                return (
-                  <tr key={leave.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{rep ? rep.name : leave.userId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{leave.leaveType}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{new Date(leave.startDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{new Date(leave.endDate).toLocaleDateString()}</td>
-                    <td
-                      className="px-6 py-4 whitespace-nowrap max-w-xs truncate cursor-pointer text-blue-600 hover:underline"
-                      onClick={() => {
-                        setSelectedReason(leave.reason);
-                        setReasonModalOpen(true);
-                      }}
-                      title={leave.reason}
-                    >
-                      {leave.reason}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {leave.attachment ? (
-                        <a href={leave.attachment} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
-                      ) : (
-                        <span className="text-gray-400">None</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap flex gap-2">
-                      {String(leave.status) !== '1' && (
-                        <>
-                          <button
-                            className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 text-xs"
-                            onClick={() => handleUpdateStatus(leave.id, 1)}
-                          >
-                            Approve
-                          </button>
-                          {String(leave.status) !== '3' && (
-                            <button
-                              className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-xs"
-                              onClick={() => handleUpdateStatus(leave.id, 3)}
-                            >
-                              Decline
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </td>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Total Leaves</p>
+                <p className="text-2xl font-semibold text-gray-900">{leaves.length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-yellow-100 rounded-md flex items-center justify-center">
+                  <ClockSolid className="h-5 w-5 text-yellow-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Pending</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {leaves.filter(l => l.status === '0').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Approved</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {leaves.filter(l => l.status === '1').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-100 rounded-md flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-red-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Declined</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {leaves.filter(l => l.status === '3').length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <button
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={openFilterModal}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </button>
+          <button
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={exportToCSV}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export to CSV
+          </button>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6 flex items-center">
+            <XCircle className="h-5 w-5 mr-2" />
+            {error}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <p className="mt-4 text-gray-600">Loading leaves...</p>
+          </div>
+        ) : (
+          /* Leaves Table */
+          <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sales Representative
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Leave Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Dates
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
+                      Reason
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Attachment
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                );
-              })}
-              {filteredLeaves.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">No leaves found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {filterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
-            <h2 className="text-lg font-bold mb-4">Filter Leaves</h2>
-            <div className="mb-4 flex flex-col gap-4">
-              <div>
-                <label htmlFor="statusFilter" className="text-sm font-medium">Status:</label>
-                <select
-                  id="statusFilter"
-                  className="border rounded px-2 py-1 w-full"
-                  value={pendingStatusFilter}
-                  onChange={e => setPendingStatusFilter(e.target.value)}
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredLeaves.map(leave => {
+                    const rep = salesReps.find(r => r.id === leave.userId);
+                    const duration = calculateLeaveDuration(leave.startDate, leave.endDate);
+                    
+                    return (
+                      <tr key={leave.id} className="hover:bg-gray-50 transition-colors duration-150">
+                        {/* Sales Representative */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">
+                                {rep ? rep.name : `User ${leave.userId}`}
+                              </div>
+                              <div className="text-sm text-gray-500">Sales Rep</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Leave Type */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLeaveTypeColor(leave.leaveType)}`}>
+                            {leave.leaveType}
+                          </span>
+                        </td>
+
+                        {/* Duration */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 font-medium">
+                            {duration} day{duration !== 1 ? 's' : ''}
+                          </div>
+                        </td>
+
+                        {/* Dates */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                              <span>{new Date(leave.startDate).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center mt-1">
+                              <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                              <span>{new Date(leave.endDate).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Reason */}
+                        <td className="px-6 py-4 max-w-xs">
+                          <div className="text-sm text-gray-900">
+                            <div className="line-clamp-2 mb-2">{leave.reason}</div>
+                            <button
+                              className="text-green-600 hover:text-green-700 text-xs font-medium inline-flex items-center"
+                              onClick={() => {
+                                setSelectedReason(leave.reason);
+                                setReasonModalOpen(true);
+                              }}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View full reason
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Attachment */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {leave.attachment ? (
+                            <a 
+                              href={leave.attachment} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="inline-flex items-center text-green-600 hover:text-green-700 text-sm font-medium"
+                            >
+                              <Paperclip className="h-4 w-4 mr-1" />
+                              Download
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 text-sm">None</span>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(leave.status)}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {String(leave.status) !== '1' && (
+                            <div className="flex gap-2">
+                              <button
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                                onClick={() => handleUpdateStatus(leave.id, 1)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </button>
+                              {String(leave.status) !== '3' && (
+                                <button
+                                  className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                  onClick={() => handleUpdateStatus(leave.id, 3)}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Decline
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Empty State */}
+            {filteredLeaves.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No leaves found</h3>
+                <p className="text-gray-500">Try adjusting your filters or check back later.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Filter Modal */}
+        {filterModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Filter Leaves</h2>
+                <button
+                  onClick={() => setFilterModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <option value="">All</option>
-                  <option value="1">Approved</option>
-                  <option value="3">Declined</option>
-                  <option value="0">Pending</option>
-                </select>
+                  <XCircle className="h-6 w-6" />
+                </button>
               </div>
-              <div>
-                <label htmlFor="startDate" className="text-sm font-medium">Start Date:</label>
-                <input
-                  id="startDate"
-                  type="date"
-                  className="border rounded px-2 py-1 w-full"
-                  value={pendingStartDate}
-                  onChange={e => setPendingStartDate(e.target.value)}
-                />
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    id="statusFilter"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    value={pendingStatusFilter}
+                    onChange={e => setPendingStatusFilter(e.target.value)}
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="0">Pending</option>
+                    <option value="1">Approved</option>
+                    <option value="3">Declined</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    id="startDate"
+                    type="date"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    value={pendingStartDate}
+                    onChange={e => setPendingStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    id="endDate"
+                    type="date"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    value={pendingEndDate}
+                    onChange={e => setPendingEndDate(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="repFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Sales Representative
+                  </label>
+                  <select
+                    id="repFilter"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    value={pendingSelectedRep}
+                    onChange={e => setPendingSelectedRep(e.target.value)}
+                  >
+                    <option value="">All Representatives</option>
+                    {salesReps.map(rep => (
+                      <option key={rep.id} value={String(rep.id)}>
+                        {rep.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label htmlFor="endDate" className="text-sm font-medium">End Date:</label>
-                <input
-                  id="endDate"
-                  type="date"
-                  className="border rounded px-2 py-1 w-full"
-                  value={pendingEndDate}
-                  onChange={e => setPendingEndDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="repFilter" className="text-sm font-medium">Sales Rep:</label>
-                <select
-                  id="repFilter"
-                  className="border rounded px-2 py-1 w-full"
-                  value={pendingSelectedRep}
-                  onChange={e => setPendingSelectedRep(e.target.value)}
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  onClick={clearFilters}
                 >
-                  <option value="">All</option>
-                  {salesReps.map(rep => (
-                    <option key={rep.id} value={String(rep.id)}>
-                      {rep.name}
-                    </option>
-                  ))}
-                </select>
+                  Clear
+                </button>
+                <button
+                  className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  onClick={applyFilters}
+                >
+                  Apply Filters
+                </button>
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-                onClick={clearFilters}
-              >
-                Clear
-              </button>
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                onClick={applyFilters}
-              >
-                Apply
-              </button>
+          </div>
+        )}
+
+        {/* Reason Modal */}
+        {reasonModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Leave Reason</h2>
+                <button
+                  onClick={() => setReasonModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="bg-gray-50 rounded-md p-4 mb-6">
+                <p className="text-gray-800 whitespace-pre-line leading-relaxed">{selectedReason}</p>
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  onClick={() => setReasonModalOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {reasonModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
-            <h2 className="text-lg font-bold mb-4">Full Reason</h2>
-            <div className="mb-6 text-gray-800 whitespace-pre-line">{selectedReason}</div>
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              onClick={() => setReasonModalOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
