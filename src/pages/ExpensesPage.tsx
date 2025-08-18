@@ -12,12 +12,26 @@ interface Expense {
   entry_date: string;
 }
 
+// Helper function to get current month date range
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
+  return {
+    startDate: firstDay.toISOString().split('T')[0],
+    endDate: lastDay.toISOString().split('T')[0]
+  };
+};
+
 const ExpensesPage: React.FC = () => {
+  const { startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
+  
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
   const [accountNameFilter, setAccountNameFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
