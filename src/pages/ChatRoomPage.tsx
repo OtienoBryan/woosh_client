@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Pencil, Trash2, Plus, ChevronLeft, Check, X } from 'lucide-react';
+import { DateTime } from 'luxon';
 
 import { API_BASE_URL, SOCKET_URL } from '../config/api';
 
@@ -28,6 +29,118 @@ interface Staff {
   id: number;
   name: string;
 }
+
+// Utility function to format time consistently using Luxon
+const formatTime = (timeString: string): string => {
+  if (!timeString) return 'N/A';
+  
+  try {
+    // Parse the time string using Luxon
+    let dt: DateTime;
+    
+    // Handle different time string formats
+    if (timeString.includes('T') && timeString.includes('Z')) {
+      // ISO format like "2025-08-19T11:34:26.649Z"
+      dt = DateTime.fromISO(timeString, { zone: 'utc' });
+    } else if (timeString.includes(' ')) {
+      // Local format like "2025-08-19 12:18:24.046"
+      dt = DateTime.fromFormat(timeString, 'yyyy-MM-dd HH:mm:ss.SSS', { zone: 'utc' });
+      if (!dt.isValid) {
+        // Try without milliseconds
+        dt = DateTime.fromFormat(timeString, 'yyyy-MM-dd HH:mm:ss', { zone: 'utc' });
+      }
+    } else {
+      // Fallback to ISO parsing
+      dt = DateTime.fromISO(timeString, { zone: 'utc' });
+    }
+    
+    // Check if the date is valid
+    if (!dt.isValid) {
+      console.error('Invalid date:', dt.invalidReason, dt.invalidExplanation);
+      return 'N/A';
+    }
+    
+    // Format the date and time consistently
+    const formatted = dt.toFormat('MMM dd, yyyy, HH:mm');
+    
+    // Debug logging (remove in production)
+    console.log('Room time formatting:', {
+      original: timeString,
+      parsed: dt.toISO(),
+      formatted: formatted
+    });
+    
+    return formatted;
+  } catch (error) {
+    console.error('Error formatting time with Luxon:', error);
+    return 'N/A';
+  }
+};
+
+// Utility function to format time in a more compact way for chat messages
+const formatMessageTime = (timeString: string): string => {
+  if (!timeString) return 'N/A';
+  
+  try {
+    // Parse the time string using Luxon
+    let dt: DateTime;
+    
+    // Handle different time string formats
+    if (timeString.includes('T') && timeString.includes('Z')) {
+      // ISO format like "2025-08-19T11:34:26.649Z"
+      dt = DateTime.fromISO(timeString, { zone: 'utc' });
+    } else if (timeString.includes(' ')) {
+      // Local format like "2025-08-19 12:18:24.046"
+      dt = DateTime.fromFormat(timeString, 'yyyy-MM-dd HH:mm:ss.SSS', { zone: 'utc' });
+      if (!dt.isValid) {
+        // Try without milliseconds
+        dt = DateTime.fromFormat(timeString, 'yyyy-MM-dd HH:mm:ss', { zone: 'utc' });
+      }
+    } else {
+      // Fallback to ISO parsing
+      dt = DateTime.fromISO(timeString, { zone: 'utc' });
+    }
+    
+    // Check if the date is valid
+    if (!dt.isValid) {
+      console.error('Invalid date:', dt.invalidReason, dt.invalidExplanation);
+      return 'N/A';
+    }
+    
+    // Check if it's today, yesterday, or another date
+    const now = DateTime.now();
+    const diffInDays = now.diff(dt, 'days').days;
+    
+    let formatted: string;
+    
+    if (diffInDays < 1) {
+      // Today - show only time
+      formatted = dt.toFormat('HH:mm');
+    } else if (diffInDays < 2) {
+      // Yesterday - show "Yesterday" and time
+      formatted = `Yesterday, ${dt.toFormat('HH:mm')}`;
+    } else if (diffInDays < 7) {
+      // Within a week - show day and time
+      formatted = dt.toFormat('EEE, HH:mm');
+    } else {
+      // Older - show date and time
+      formatted = dt.toFormat('MMM dd, HH:mm');
+    }
+    
+    // Debug logging (remove in production)
+    console.log('Message time formatting:', {
+      original: timeString,
+      parsed: dt.toISO(),
+      diffInDays: diffInDays,
+      formatted: formatted
+    });
+    
+    return formatted;
+  } catch (error) {
+    console.error('Error formatting message time with Luxon:', error);
+    return 'N/A';
+  }
+};
 
 const ChatRoomPage: React.FC = () => {
   const { user } = useAuth();
@@ -274,13 +387,7 @@ const ChatRoomPage: React.FC = () => {
                   {room.is_group ? `${room.name ? 'Group' : 'Direct'} chat` : 'One-to-one conversation'}
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  {room.created_at && new Date(room.created_at).toLocaleString([], { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
+                  {room.created_at && formatTime(room.created_at)}
                 </div>
               </div>
             </div>
@@ -372,13 +479,7 @@ const ChatRoomPage: React.FC = () => {
                             <>
                               <div className="text-sm">{msg.message}</div>
                               <div className={`text-xs mt-1 flex items-center justify-end ${msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'}`}>
-                                {msg.sent_at && new Date(msg.sent_at).toLocaleString([], { 
-                                  year: 'numeric', 
-                                  month: 'short', 
-                                  day: 'numeric',
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
-                                })}
+                                {msg.sent_at && formatMessageTime(msg.sent_at)}
                                 {canEditOrDelete && (
                                   <div className="ml-2 flex gap-1">
                                     <button 
