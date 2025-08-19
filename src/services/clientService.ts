@@ -118,7 +118,7 @@ export const clientService = {
 
   // Create a new payment for a customer
   createCustomerPayment: async (customerId: string | number, data: any) => {
-    const response = await api.post(`/customers/${customerId}/payments`, { ...data, customer_id: customerId });
+    const response = await api.post(`/financial/receivables/payment`, { ...data, customer_id: customerId });
     return response.data;
   },
 

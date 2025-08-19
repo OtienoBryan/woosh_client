@@ -278,9 +278,17 @@ const ClientDetailsPage: React.FC = () => {
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
               <div className="flex flex-col gap-2">
-                <button onClick={() => setIsPaymentModalOpen(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Record Payment</button>
+                <button 
+                  onClick={() => {
+                    setSelectedInvoice(null); // Clear any previously selected invoice
+                    setIsPaymentModalOpen(true);
+                  }} 
+                  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm hidden"
+                >
+                  Record General Payment
+                </button>
                 <button onClick={() => navigate(`/customers/${client.id}/ledger`)} className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-black text-sm">View Ledger</button>
-                <button onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"><FileText className="w-4 h-4 mr-2"/>Create Credit Note</button>
+                <button onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"><FileText className="w-4 h-4 mr-1"/>Create Credit Note</button>
               </div>
             </div>
           </div>
@@ -434,7 +442,15 @@ const ClientDetailsPage: React.FC = () => {
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Unconfirmed Payments</h2>
-          <button onClick={() => setIsPaymentModalOpen(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Record Payment</button>
+          <button 
+            onClick={() => {
+              setSelectedInvoice(null); // Clear any previously selected invoice
+              setIsPaymentModalOpen(true);
+            }} 
+            className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            Record General Payment
+          </button>
         </div>
         {unconfirmedPaymentsLoading ? (
           <div className="p-4 text-gray-600">Loading unconfirmed payments...</div>
