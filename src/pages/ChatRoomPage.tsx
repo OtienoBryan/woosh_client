@@ -140,7 +140,7 @@ const ChatRoomPage: React.FC = () => {
     });
     // Save to backend
     const token = localStorage.getItem('token');
-    await axios.post(`${API_URL}/chat/rooms/${selectedRoom.id}/messages`, { roomId: selectedRoom.id, message: newMessage }, {
+    await axios.post(`${API_BASE_URL}/chat/rooms/${selectedRoom.id}/messages`, { roomId: selectedRoom.id, message: newMessage }, {
       headers: { Authorization: `Bearer ${token}` }
     });
     setNewMessage('');
@@ -154,7 +154,7 @@ const ChatRoomPage: React.FC = () => {
     e.preventDefault();
     if (!groupName.trim() || selectedStaff.length === 0) return;
     const token = localStorage.getItem('token');
-    const res = await axios.post(`${API_URL}/chat/rooms`, {
+    const res = await axios.post(`${API_BASE_URL}/chat/rooms`, {
       name: groupName,
       is_group: true,
       memberIds: selectedStaff,
@@ -168,7 +168,7 @@ const ChatRoomPage: React.FC = () => {
     await fetchRooms();
     // Find the new room by id (from response) or by name
     const newRoomId = res.data.roomId;
-    const newRoom = rooms.find(r => r.id === newRoomId) || (await axios.get(`${API_URL}/chat/my-rooms`, { headers: { Authorization: `Bearer ${token}` } })).data.find((r: any) => r.id === newRoomId);
+    const newRoom = rooms.find(r => r.id === newRoomId) || (await axios.get(`${API_BASE_URL}/chat/my-rooms`, { headers: { Authorization: `Bearer ${token}` } })).data.find((r: any) => r.id === newRoomId);
     if (newRoom) setSelectedRoom(newRoom);
     // Show toast notification
     setToast('Group chat created!');
@@ -183,7 +183,7 @@ const ChatRoomPage: React.FC = () => {
 
   const handleEditMessageSave = async (msg: Message) => {
     const token = localStorage.getItem('token');
-    await axios.patch(`${API_URL}/chat/messages/${msg.id}`, { message: editMessageText }, {
+    await axios.patch(`${API_BASE_URL}/chat/messages/${msg.id}`, { message: editMessageText }, {
       headers: { Authorization: `Bearer ${token}` }
     });
     setMessages((prev) => prev.map(m => m.id === msg.id ? { ...m, message: editMessageText } : m));
@@ -200,7 +200,7 @@ const ChatRoomPage: React.FC = () => {
   const handleDeleteMessage = async (msg: Message) => {
     if (!window.confirm('Are you sure you want to delete this message?')) return;
     const token = localStorage.getItem('token');
-    await axios.delete(`${API_URL}/chat/messages/${msg.id}`, {
+    await axios.delete(`${API_BASE_URL}/chat/messages/${msg.id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     setMessages((prev) => prev.filter(m => m.id !== msg.id));
@@ -272,6 +272,15 @@ const ChatRoomPage: React.FC = () => {
                 </div>
                 <div className="text-xs text-gray-500">
                   {room.is_group ? `${room.name ? 'Group' : 'Direct'} chat` : 'One-to-one conversation'}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {room.created_at && new Date(room.created_at).toLocaleString([], { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
                 </div>
               </div>
             </div>
@@ -363,7 +372,13 @@ const ChatRoomPage: React.FC = () => {
                             <>
                               <div className="text-sm">{msg.message}</div>
                               <div className={`text-xs mt-1 flex items-center justify-end ${msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'}`}>
-                                {msg.sent_at && new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {msg.sent_at && new Date(msg.sent_at).toLocaleString([], { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
                                 {canEditOrDelete && (
                                   <div className="ml-2 flex gap-1">
                                     <button 
