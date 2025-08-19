@@ -24,20 +24,54 @@ const convertToEAT = (utcTimeString: string): string => {
       return 'N/A';
     }
     
-    // Format to East Africa Time consistently across all environments
-    // Use explicit timezone to avoid local environment differences
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-      timeZone: 'Africa/Nairobi'
-    };
+    // Get UTC components to avoid timezone conversion issues
+    const utcYear = date.getUTCFullYear();
+    const utcMonth = date.getUTCMonth();
+    const utcDay = date.getUTCDate();
+    const utcHours = date.getUTCHours();
+    const utcMinutes = date.getUTCMinutes();
+    const utcSeconds = date.getUTCSeconds();
     
-    return date.toLocaleString('en-US', options);
+    // Manually add 3 hours for East Africa Time (UTC+3)
+    let eatHours = utcHours + 3;
+    let eatDay = utcDay;
+    let eatMonth = utcMonth;
+    let eatYear = utcYear;
+    
+    // Handle day overflow (when adding 3 hours pushes to next day)
+    if (eatHours >= 24) {
+      eatHours -= 24;
+      eatDay += 1;
+      
+      // Handle month overflow
+      const daysInMonth = new Date(eatYear, eatMonth + 1, 0).getDate();
+      if (eatDay > daysInMonth) {
+        eatDay = 1;
+        eatMonth += 1;
+        
+        // Handle year overflow
+        if (eatMonth >= 12) {
+          eatMonth = 0;
+          eatYear += 1;
+        }
+      }
+    }
+    
+    // Format the date and time
+    const monthStr = String(eatMonth + 1).padStart(2, '0');
+    const dayStr = String(eatDay).padStart(2, '0');
+    const hoursStr = String(eatHours).padStart(2, '0');
+    const minutesStr = String(utcMinutes).padStart(2, '0');
+    const secondsStr = String(utcSeconds).padStart(2, '0');
+    
+    // Debug logging (remove in production)
+    console.log('Time conversion:', {
+      original: utcTimeString,
+      utc: `${utcYear}-${String(utcMonth + 1).padStart(2, '0')}-${String(utcDay).padStart(2, '0')} ${String(utcHours).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')}:${String(utcSeconds).padStart(2, '0')}`,
+      eat: `${monthStr}/${dayStr}/${eatYear}, ${hoursStr}:${minutesStr}:${secondsStr}`
+    });
+    
+    return `${monthStr}/${dayStr}/${eatYear}, ${hoursStr}:${minutesStr}:${secondsStr}`;
   } catch (error) {
     console.error('Error converting to EAT:', error);
     return 'N/A';
