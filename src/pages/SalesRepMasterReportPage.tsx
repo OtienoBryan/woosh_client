@@ -11,7 +11,7 @@ interface SalesRepData {
   country?: string;
 }
 
-// Utility function to consistently display time in East Africa Time (EAT)
+// Utility function to display time consistently across all environments
 const convertToEAT = (utcTimeString: string): string => {
   if (!utcTimeString) return 'N/A';
   
@@ -24,54 +24,29 @@ const convertToEAT = (utcTimeString: string): string => {
       return 'N/A';
     }
     
-    // Get UTC components to avoid timezone conversion issues
-    const utcYear = date.getUTCFullYear();
-    const utcMonth = date.getUTCMonth();
-    const utcDay = date.getUTCDate();
-    const utcHours = date.getUTCHours();
-    const utcMinutes = date.getUTCMinutes();
-    const utcSeconds = date.getUTCSeconds();
+    // Get local time components to preserve the original time
+    const localYear = date.getFullYear();
+    const localMonth = date.getMonth();
+    const localDay = date.getDate();
+    const localHours = date.getHours();
+    const localMinutes = date.getMinutes();
+    const localSeconds = date.getSeconds();
     
-    // Manually add 3 hours for East Africa Time (UTC+3)
-    let eatHours = utcHours + 3;
-    let eatDay = utcDay;
-    let eatMonth = utcMonth;
-    let eatYear = utcYear;
-    
-    // Handle day overflow (when adding 3 hours pushes to next day)
-    if (eatHours >= 24) {
-      eatHours -= 24;
-      eatDay += 1;
-      
-      // Handle month overflow
-      const daysInMonth = new Date(eatYear, eatMonth + 1, 0).getDate();
-      if (eatDay > daysInMonth) {
-        eatDay = 1;
-        eatMonth += 1;
-        
-        // Handle year overflow
-        if (eatMonth >= 12) {
-          eatMonth = 0;
-          eatYear += 1;
-        }
-      }
-    }
-    
-    // Format the date and time
-    const monthStr = String(eatMonth + 1).padStart(2, '0');
-    const dayStr = String(eatDay).padStart(2, '0');
-    const hoursStr = String(eatHours).padStart(2, '0');
-    const minutesStr = String(utcMinutes).padStart(2, '0');
-    const secondsStr = String(utcSeconds).padStart(2, '0');
+    // Use local time directly without any conversion
+    const monthStr = String(localMonth + 1).padStart(2, '0');
+    const dayStr = String(localDay).padStart(2, '0');
+    const hoursStr = String(localHours).padStart(2, '0');
+    const minutesStr = String(localMinutes).padStart(2, '0');
+    const secondsStr = String(localSeconds).padStart(2, '0');
     
     // Debug logging (remove in production)
     console.log('Time conversion:', {
       original: utcTimeString,
-      utc: `${utcYear}-${String(utcMonth + 1).padStart(2, '0')}-${String(utcDay).padStart(2, '0')} ${String(utcHours).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')}:${String(utcSeconds).padStart(2, '0')}`,
-      eat: `${monthStr}/${dayStr}/${eatYear}, ${hoursStr}:${minutesStr}:${secondsStr}`
+      local: `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')} ${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}:${String(localSeconds).padStart(2, '0')}`,
+      display: `${monthStr}/${dayStr}/${localYear}, ${hoursStr}:${minutesStr}:${secondsStr}`
     });
     
-    return `${monthStr}/${dayStr}/${eatYear}, ${hoursStr}:${minutesStr}:${secondsStr}`;
+    return `${monthStr}/${dayStr}/${localYear}, ${hoursStr}:${minutesStr}:${secondsStr}`;
   } catch (error) {
     console.error('Error converting to EAT:', error);
     return 'N/A';
@@ -714,7 +689,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 Journey Details - {selectedSalesRep.name}
               </h2>
               <p className="text-sm text-gray-600">
-                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | Times shown as raw data from server
+                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | Times shown in local timezone
               </p>
             </div>
 
@@ -736,10 +711,10 @@ const SalesRepMasterReportPage: React.FC = () => {
                         Outlet
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check In Time (EAT)
+                        Check In Time (Local)
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check Out Time (EAT)
+                        Check Out Time (Local)
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Time Spent
