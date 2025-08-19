@@ -127,6 +127,7 @@ import CreditNotesPage from './pages/CreditNotesPage';
 import CreateCreditNotePage from './pages/CreateCreditNotePage';
 import ClientCreditNotePage from './pages/ClientCreditNotePage';
 import CreditNoteSummaryPage from './pages/CreditNoteSummaryPage';
+import CreditNoteDetailsPage from './pages/CreditNoteDetailsPage';
 
 // Protected route wrapper
 const ProtectedRoute = () => {
@@ -382,6 +383,11 @@ const App = () => {
             <Route path="/credit-note-summary" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <CreditNoteSummaryPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/credit-note-details/:id" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
+                <CreditNoteDetailsPage />
               </RoleBasedRoute>
             } />
             <Route path="/add-expense" element={

@@ -187,7 +187,8 @@ const ClientDetailsPage: React.FC = () => {
             Balance: <span className="font-semibold">{formatKES(totals.currentBalance)}</span>
           </div>
           <button onClick={() => navigate(`/customers/${client.id}/ledger`)} className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-black text-sm">View Ledger</button>
-          <button onClick={() => navigate(`/customers/${client.id}/payments`)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Payments</button>
+          {/* <button onClick={() => navigate(`/customers/${client.id}/payments`)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Payments</button>
+           */}
           <button onClick={() => navigate(`/create-credit-note?customerId=${client.id}`)} className="px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center">
             <FileText className="w-4 h-4 mr-2" /> Credit Note
           </button>

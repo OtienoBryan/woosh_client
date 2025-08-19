@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Search, Download, Eye, Calendar, DollarSign, Building, X, Package, Receipt, ArrowLeft, CheckSquare, Info } from 'lucide-react';
 import { creditNoteService } from '../services/creditNoteService';
 import { storeService } from '../services/storeService';
@@ -64,6 +65,7 @@ interface CreditNoteDetails {
 }
 
 const CreditNoteSummaryPage: React.FC = () => {
+  const navigate = useNavigate();
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -782,7 +784,12 @@ const CreditNoteSummaryPage: React.FC = () => {
                       <tr key={note.id || `note-${Math.random()}`} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
-                            {note.credit_note_number || 'N/A'}
+                            <button
+                              onClick={() => navigate(`/credit-note-details/${note.id}`)}
+                              className="text-blue-600 hover:text-blue-900 hover:underline"
+                            >
+                              {note.credit_note_number || 'N/A'}
+                            </button>
                           </div>
                           <div className="text-sm text-gray-500">ID: {note.id || 'N/A'}</div>
                         </td>
@@ -834,7 +841,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                                                                                      <button
+                            <button
                               onClick={() => handleViewDetails(note)}
                               className="text-blue-600 hover:text-blue-900 flex items-center"
                               title="View Details"
@@ -842,7 +849,14 @@ const CreditNoteSummaryPage: React.FC = () => {
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </button>
-                               
+                            <button
+                              onClick={() => navigate(`/credit-note-details/${note.id}`)}
+                              className="text-green-600 hover:text-green-900 flex items-center"
+                              title="View Full Details"
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Details
+                            </button>
                           </div>
                         </td>
                       </tr>
