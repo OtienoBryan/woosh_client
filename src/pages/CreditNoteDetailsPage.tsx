@@ -63,6 +63,7 @@ const CreditNoteDetailsPage: React.FC = () => {
   const [creditNote, setCreditNote] = useState<CreditNote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -142,7 +143,35 @@ const CreditNoteDetailsPage: React.FC = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Convert the credit note content to PDF
+    const element = document.querySelector('.a4-credit-note-print') as HTMLElement;
+    if (element) {
+      setGeneratingPdf(true);
+      
+      // Use html2pdf library to convert to PDF
+      const opt = {
+        margin: 0,
+        filename: `credit-note-${creditNote?.credit_note_number}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      // Dynamically import html2pdf to avoid bundle size issues
+      import('html2pdf.js').then((html2pdf) => {
+        html2pdf.default().set(opt).from(element).save().then(() => {
+          setGeneratingPdf(false);
+        }).catch((error) => {
+          console.error('Error saving PDF:', error);
+          setGeneratingPdf(false);
+        });
+      }).catch((error) => {
+        console.error('Error generating PDF:', error);
+        setGeneratingPdf(false);
+        // Fallback to print if PDF generation fails
+        window.print();
+      });
+    }
   };
 
   if (loading) {
@@ -200,13 +229,23 @@ const CreditNoteDetailsPage: React.FC = () => {
           </div>
           
           <div className="flex space-x-3">
-            <button
-              onClick={handlePrint}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center space-x-2"
-            >
-              <Download className="h-4 w-4" />
-              <span>Print</span>
-            </button>
+                         <button
+               onClick={handlePrint}
+               disabled={generatingPdf}
+               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               {generatingPdf ? (
+                 <>
+                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                   <span>Generating PDF...</span>
+                 </>
+               ) : (
+                 <>
+                   <Download className="h-4 w-4" />
+                   <span>Download PDF</span>
+                 </>
+               )}
+             </button>
           </div>
         </div>
 
@@ -252,8 +291,8 @@ const CreditNoteDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Bill To Section */}
-          <div className="bill-to-section mb-6">
+                     {/* Bill To Section */}
+           <div className="bill-to-section mb-4">
             <div className="flex justify-between">
               <div className="bill-to">
                 <h3 className="section-title">To:</h3>
@@ -294,8 +333,8 @@ const CreditNoteDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Items Table */}
-          <div className="items-section mb-6">
+                     {/* Items Table */}
+           <div className="items-section mb-4">
             {creditNote.items && creditNote.items.length > 0 ? (
               <table className="credit-note-table">
                 <thead>
@@ -389,60 +428,62 @@ const CreditNoteDetailsPage: React.FC = () => {
       </div>
 
       <style>{`
-        .a4-credit-note-print {
-          width: 1200px;
-          min-height: 1123px;
-          background: #fff;
-          margin: 0 auto;
-          padding: 16px 12px;
-          box-sizing: border-box;
-          position: relative;
-        }
+                 .a4-credit-note-print {
+           width: 210mm;
+           background: #fff;
+           margin: 0 auto;
+           padding: 20mm 15mm;
+           box-sizing: border-box;
+           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+         }
         
-        .credit-note-header {
-          border-bottom: 2px solid #e5e7eb;
-          padding-bottom: 20px;
-        }
+                 .credit-note-header {
+           border-bottom: 2px solid #e5e7eb;
+           padding-bottom: 15px;
+           margin-bottom: 15px;
+         }
         
-        .company-name {
-          font-size: 24px;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 8px;
-        }
-        
-        .company-address, .company-tax {
-          color: #6b7280;
-          margin-bottom: 4px;
-        }
-        
-        .credit-note-title {
-          font-size: 28px;
-          font-weight: bold;
-          color: #dc2626;
-          margin-bottom: 16px;
-        }
+                 .company-name {
+           font-size: 14px;
+           font-weight: bold;
+           color: #1f2937;
+           margin-bottom: 4px;
+         }
+         
+         .company-address, .company-tax {
+           color: #6b7280;
+           margin-bottom: 2px;
+           font-size: 10px;
+         }
+         
+         .credit-note-title {
+           font-size: 18px;
+           font-weight: bold;
+           color: #dc2626;
+           margin-bottom: 8px;
+         }
         
         .credit-note-meta p {
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           color: #374151;
+          font-size: 10px;
         }
         
-        .section-title {
-          font-size: 18px;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 12px;
-          border-bottom: 1px solid #e5e7eb;
-          padding-bottom: 4px;
-        }
-        
-        .section-subtitle {
-          font-size: 16px;
-          font-weight: bold;
-          color: #374151;
-          margin-bottom: 8px;
-        }
+                 .section-title {
+           font-size: 12px;
+           font-weight: bold;
+           color: #1f2937;
+           margin-bottom: 6px;
+           border-bottom: 1px solid #e5e7eb;
+           padding-bottom: 2px;
+         }
+         
+         .section-subtitle {
+           font-size: 10px;
+           font-weight: bold;
+           color: #374151;
+           margin-bottom: 4px;
+         }
         
         .customer-name {
           font-weight: bold;
@@ -473,99 +514,107 @@ const CreditNoteDetailsPage: React.FC = () => {
           margin-bottom: 20px;
         }
         
-        .credit-note-table th {
-          background: #f9fafb;
-          border: 1px solid #e5e7eb;
-          padding: 12px 8px;
-          text-align: left;
-          font-weight: bold;
-          color: #374151;
-        }
-        
-        .credit-note-table td {
-          border: 1px solid #e5e7eb;
-          padding: 12px 8px;
-          color: #374151;
-        }
-        
-        .item-col { width: 35%; }
-        .invoice-col { width: 15%; }
-        .qty-col { width: 10%; }
-        .price-col { width: 20%; }
-        .total-col { width: 20%; }
+                 .credit-note-table th {
+           background: #f9fafb;
+           border: 1px solid #e5e7eb;
+           padding: 6px 4px;
+           text-align: left;
+           font-weight: bold;
+           color: #374151;
+           font-size: 9px;
+         }
+         
+         .credit-note-table td {
+           border: 1px solid #e5e7eb;
+           padding: 6px 4px;
+           color: #374151;
+           font-size: 9px;
+         }
+         
+         .item-col { width: 40%; }
+         .invoice-col { width: 20%; }
+         .qty-col { width: 15%; }
+         .price-col { width: 12.5%; }
+         .total-col { width: 12.5%; }
         
         .totals-table {
           border-collapse: collapse;
         }
         
-        .totals-table td {
-          padding: 8px 16px;
-          border: none;
-        }
+                 .totals-table td {
+           padding: 4px 8px;
+           border: none;
+           font-size: 9px;
+         }
+         
+         .totals-table .label {
+           text-align: right;
+           font-weight: bold;
+           color: #374151;
+         }
+         
+         .totals-table .amount {
+           text-align: right;
+           color: #1f2937;
+         }
+         
+         .total-row {
+           border-top: 2px solid #e5e7eb;
+         }
+         
+         .total-row .label, .total-row .amount {
+           font-size: 11px;
+           font-weight: bold;
+           color: #dc2626;
+         }
         
-        .totals-table .label {
-          text-align: right;
-          font-weight: bold;
-          color: #374151;
-        }
-        
-        .totals-table .amount {
-          text-align: right;
-          color: #1f2937;
-        }
-        
-        .total-row {
-          border-top: 2px solid #e5e7eb;
-        }
-        
-        .total-row .label, .total-row .amount {
-          font-size: 18px;
-          font-weight: bold;
-          color: #dc2626;
-        }
-        
-        .credit-note-footer {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          padding: 20px 0;
-          border-top: 2px solid #e5e7eb;
-        }
+                 .credit-note-footer {
+           width: 100%;
+           padding: 15px 0;
+           border-top: 2px solid #e5e7eb;
+           margin-top: 20px;
+         }
         
         .footer-content {
           padding: 0 16px;
         }
         
-        .payment-info p, .terms p {
-          margin-bottom: 4px;
-          color: #6b7280;
-        }
+                 .payment-info p, .terms p {
+           margin-bottom: 2px;
+           color: #6b7280;
+           font-size: 8px;
+         }
+         
+         .footer-message {
+           text-align: center;
+           margin-top: 15px;
+           padding-top: 15px;
+           border-top: 1px solid #e5e7eb;
+         }
+         
+         .footer-message p {
+           color: #6b7280;
+           margin-bottom: 2px;
+           font-size: 8px;
+         }
         
-        .footer-message {
-          text-align: center;
-          margin-top: 20px;
-          padding-top: 20px;
-          border-top: 1px solid #e5e7eb;
-        }
-        
-        .footer-message p {
-          color: #6b7280;
-          margin-bottom: 4px;
-        }
-        
-        @media print {
-          body { background: #fff !important; }
-          .a4-credit-note-print { box-shadow: none !important; }
-          .a4-credit-note-print table { table-layout: fixed; width: 100%; }
-          .a4-credit-note-print th, .a4-credit-note-print td { 
-            word-break: break-word; 
-            overflow-wrap: break-word; 
-            padding: 4px 6px; 
-            font-size: 12px; 
-          }
-          .a4-credit-note-print tr, .a4-credit-note-print table { page-break-inside: avoid; }
-        }
+                 @media print {
+           body { background: #fff !important; }
+                       .a4-credit-note-print { 
+             box-shadow: none !important; 
+             width: 210mm !important;
+             margin: 0 !important;
+             padding: 15mm !important;
+           }
+           .a4-credit-note-print table { table-layout: fixed; width: 100%; }
+                       .a4-credit-note-print th, .a4-credit-note-print td { 
+             word-break: break-word; 
+             overflow-wrap: break-word; 
+             padding: 2px 3px; 
+             font-size: 8px; 
+           }
+           .a4-credit-note-print tr, .a4-credit-note-print table { page-break-inside: avoid; }
+         }
       `}</style>
     </div>
   );
