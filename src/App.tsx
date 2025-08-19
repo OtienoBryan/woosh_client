@@ -265,6 +265,11 @@ const App = () => {
             } />
             <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
             <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailsPage />} />
+            <Route path="/create-purchase-order" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <PurchaseOrderPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/supplier-invoice/:id" element={<SupplierInvoicePage />} />
             <Route path="/suppliers/:supplierId/ledger" element={<SupplierLedgerPage />} />
             <Route path="/receive-items/:purchaseOrderId" element={<ReceiveItemsPage />} />
