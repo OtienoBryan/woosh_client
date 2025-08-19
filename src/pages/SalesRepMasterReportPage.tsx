@@ -680,7 +680,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 Journey Details - {selectedSalesRep.name}
               </h2>
               <p className="text-sm text-gray-600">
-                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | All times converted to East Africa Time (EAT) for consistency
+                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | Times shown as raw data from server
               </p>
             </div>
 
