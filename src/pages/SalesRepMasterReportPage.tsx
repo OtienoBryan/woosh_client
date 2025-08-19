@@ -11,30 +11,15 @@ interface SalesRepData {
   country?: string;
 }
 
-// Utility function to display time without conversion (raw data)
+// Utility function to display time without any conversion (pure raw data)
 const convertToEAT = (utcTimeString: string): string => {
   if (!utcTimeString) return 'N/A';
   
   try {
-    const utcDate = new Date(utcTimeString);
-    
-    // Check if the date is valid
-    if (isNaN(utcDate.getTime())) {
-      return 'N/A';
-    }
-    
-    // Return raw time without timezone conversion
-    return utcDate.toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
+    // Return the original string as-is, no Date object manipulation
+    return utcTimeString;
   } catch (error) {
-    console.error('Error formatting time:', error);
+    console.error('Error displaying time:', error);
     return 'N/A';
   }
 };
