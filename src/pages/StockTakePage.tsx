@@ -3,11 +3,22 @@ import { storeService } from '../services/storeService';
 import { productsService } from '../services/financialService';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
 
 const StockTakePage: React.FC = () => {
   const [stores, setStores] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState<number | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [inventory, setInventory] = useState<any[]>([]);
   const [counts, setCounts] = useState<{ [productId: number]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -18,6 +29,7 @@ const StockTakePage: React.FC = () => {
   useEffect(() => {
     fetchStores();
     fetchProducts();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -36,6 +48,26 @@ const StockTakePage: React.FC = () => {
     const res = await productsService.getAll();
     if (res.success) setProducts(res.data || []);
   };
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/financial/categories');
+      const data = await res.json();
+      if (data.success) setCategories(data.data || []);
+    } catch {
+      setCategories([]);
+    }
+  };
+
+  const getFilteredInventory = () => {
+    if (selectedCategory === 'all') {
+      return inventory;
+    }
+    return inventory.filter(item => {
+      const product = products.find(p => p.id === item.product_id);
+      return product && product.category === selectedCategory;
+    });
+  };
+
   const fetchInventory = async (storeId: number) => {
     setLoading(true);
     setError(null);
@@ -93,6 +125,82 @@ const StockTakePage: React.FC = () => {
     }
   };
 
+  const exportToPDF = () => {
+    try {
+      console.log('Starting PDF export...');
+      const doc = new jsPDF();
+      
+      // Initialize autoTable plugin
+      autoTable(doc, {
+        head: [["Product", "System Qty", "Counted Qty", "Difference", "Count"]],
+        body: getFilteredInventory().map((item: any) => [
+          products.find((p: any) => p.id === item.product_id)?.product_name || item.product_id,
+          item.quantity,
+          counts[item.product_id] || item.quantity,
+          (counts[item.product_id] || item.quantity) - item.quantity,
+          '' // Empty Count column for manual annotations
+        ]),
+        startY: 60,
+        styles: {
+          fontSize: 10,
+          cellPadding: 3
+        },
+        headStyles: {
+          fillColor: [66, 139, 202],
+          textColor: 255
+        }
+      });
+      
+      const store = stores.find(s => s.id === selectedStore);
+      const storeName = store ? store.store_name : `Store ${selectedStore}`;
+      const currentDate = new Date().toISOString().slice(0, 10);
+      
+      console.log('Store:', storeName, 'Date:', currentDate);
+      
+      // Add title and store info
+      doc.setFontSize(20);
+      doc.text('Stock Take Report', 14, 22);
+      doc.setFontSize(12);
+      doc.text(`Store: ${storeName}`, 14, 32);
+      doc.text(`Date: ${currentDate}`, 14, 40);
+      doc.text(`Category: ${selectedCategory === 'all' ? 'All Categories' : selectedCategory}`, 14, 48);
+      
+      console.log('Table data prepared and added to PDF');
+      
+      // Add summary
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      const totalItems = getFilteredInventory().length;
+      const totalSystemQty = getFilteredInventory().reduce((sum, item) => sum + item.quantity, 0);
+      const totalCountedQty = getFilteredInventory().reduce((sum, item) => sum + (Number(counts[item.product_id]) || item.quantity), 0);
+      
+      doc.setFontSize(12);
+      doc.text(`Total Items: ${totalItems}`, 14, finalY);
+      doc.text(`Total System Quantity: ${totalSystemQty}`, 14, finalY + 8);
+      doc.text(`Total Counted Quantity: ${totalCountedQty}`, 14, finalY + 16);
+      
+      console.log('Saving PDF...');
+      doc.save(`stock_take_${storeName.replace(/\s+/g, '_')}_${currentDate}.pdf`);
+      console.log('PDF exported successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('Failed to export PDF. Please try again. Check console for details.');
+    }
+  };
+
+  const testPDF = () => {
+    try {
+      console.log('Testing simple PDF export...');
+      const doc = new jsPDF();
+      doc.text('Test PDF Export', 20, 20);
+      doc.text('This is a test to verify PDF generation works', 20, 30);
+      doc.save('test_export.pdf');
+      console.log('Test PDF created successfully!');
+    } catch (error) {
+      console.error('Test PDF error:', error);
+      alert('Test PDF failed. Check console for details.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -103,6 +211,20 @@ const StockTakePage: React.FC = () => {
           >
             View Stock Take History
           </Link>
+          <button
+            onClick={testPDF}
+            className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+          >
+            Test PDF
+          </button>
+          {selectedStore && getFilteredInventory().length > 0 && (
+            <button
+              onClick={exportToPDF}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            >
+              Export to PDF
+            </button>
+          )}
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Stock Take</h1>
         <div className="mb-6">
@@ -119,12 +241,41 @@ const StockTakePage: React.FC = () => {
           </select>
         </div>
         {selectedStore && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
+            <select
+              className="border rounded px-3 py-2"
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">All Categories</option>
+              {categories.map((category: any) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {selectedStore && (
           <form onSubmit={handleSubmit}>
+            {/* Filter Indicators */}
+            {(selectedCategory !== 'all') && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
+                  Category: {selectedCategory}
+                </span>
+              </div>
+            )}
             <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
               {loading ? (
                 <div className="text-center py-8">Loading...</div>
-              ) : inventory.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No inventory found for this store.</div>
+              ) : getFilteredInventory().length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {selectedCategory !== 'all' 
+                    ? `No inventory found for category "${selectedCategory}".` 
+                    : 'No inventory found for this store.'}
+                </div>
               ) : (
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
@@ -133,10 +284,11 @@ const StockTakePage: React.FC = () => {
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">System Qty</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Counted Qty</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Difference</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Count</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {inventory.map((item: any) => {
+                    {getFilteredInventory().map((item: any) => {
                       const counted = counts[item.product_id] !== undefined ? Number(counts[item.product_id]) : item.quantity;
                       const diff = counted - item.quantity;
                       const product = products.find((p: any) => p.id === item.product_id);
@@ -153,6 +305,7 @@ const StockTakePage: React.FC = () => {
                             />
                           </td>
                           <td className={`px-4 py-2 whitespace-nowrap text-sm font-semibold ${diff === 0 ? 'text-gray-700' : diff > 0 ? 'text-green-700' : 'text-red-700'}`}>{diff}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300"></td>
                         </tr>
                       );
                     })}
