@@ -225,6 +225,7 @@ const InventorySalesPage: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rider</th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Outstanding Balance</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
@@ -239,6 +240,7 @@ const InventorySalesPage: React.FC = () => {
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{getProgressStatus(order.my_status)}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{order.rider_name ? `${order.rider_name} (${order.rider_contact})` : '-'}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-right">{number_format(order.total_amount)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-right">{number_format((order as any).customer_balance || 0)}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{order.notes || '-'}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm">
                       {order.my_status === 1 && (

@@ -13,6 +13,7 @@ interface SalesOrderRow {
   status: string;
   my_status: number;
   total_amount: number;
+  outstanding_balance: number;
 }
 
 const AllOrdersPage: React.FC = () => {
@@ -58,14 +59,15 @@ const AllOrdersPage: React.FC = () => {
       console.log('Response success:', soRes.success);
       console.log('Response error:', soRes.error);
       
-      const soRows: SalesOrderRow[] = (soRes.data || []).map((so: SalesOrder & { customer_name?: string }) => ({
+      const soRows: SalesOrderRow[] = (soRes.data || []).map((so: SalesOrder & { customer_name?: string; customer_balance?: number }) => ({
         id: so.id,
         order_number: so.so_number,
         customer: (so.customer_name || so.customer?.company_name || 'N/A'),
         order_date: so.order_date,
         status: so.status,
         my_status: so.my_status || 0,
-        total_amount: so.total_amount
+        total_amount: so.total_amount,
+        outstanding_balance: so.customer_balance || 0
       }));
       
       console.log('Processed sales orders:', soRows);
@@ -273,6 +275,7 @@ const AllOrdersPage: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outstanding Balance</th>
                   <th className="px-6 py-3"></th>
                 </tr>
               </thead>
@@ -293,6 +296,7 @@ const AllOrdersPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatCurrency(order.total_amount)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatCurrency(getAmountPaid(order.id))}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatCurrency(order.total_amount - getAmountPaid(order.id))}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatCurrency(order.outstanding_balance)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link to={`/sales-orders/${order.id}`} className="text-blue-600 hover:text-blue-900">View</Link>
                     </td>
