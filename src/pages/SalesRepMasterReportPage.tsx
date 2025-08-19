@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DateTime } from 'luxon';
 
 interface SalesRepData {
   id: number;
@@ -11,44 +12,50 @@ interface SalesRepData {
   country?: string;
 }
 
-// Utility function to display time consistently across all environments
+// Utility function to display time consistently using Luxon
 const convertToEAT = (utcTimeString: string): string => {
   if (!utcTimeString) return 'N/A';
   
   try {
-    // Create a date object from the UTC string
-    const date = new Date(utcTimeString);
+    // Parse the time string using Luxon
+    let dt: DateTime;
+    
+    // Handle different time string formats
+    if (utcTimeString.includes('T') && utcTimeString.includes('Z')) {
+      // ISO format like "2025-08-19T11:34:26.649Z"
+      dt = DateTime.fromISO(utcTimeString, { zone: 'utc' });
+    } else if (utcTimeString.includes(' ')) {
+      // Local format like "2025-08-19 12:18:24.046"
+      dt = DateTime.fromFormat(utcTimeString, 'yyyy-MM-dd HH:mm:ss.SSS', { zone: 'utc' });
+      if (!dt.isValid) {
+        // Try without milliseconds
+        dt = DateTime.fromFormat(utcTimeString, 'yyyy-MM-dd HH:mm:ss', { zone: 'utc' });
+      }
+    } else {
+      // Fallback to ISO parsing
+      dt = DateTime.fromISO(utcTimeString, { zone: 'utc' });
+    }
     
     // Check if the date is valid
-    if (isNaN(date.getTime())) {
+    if (!dt.isValid) {
+      console.error('Invalid date:', dt.invalidReason, dt.invalidExplanation);
       return 'N/A';
     }
     
-    // Get local time components to preserve the original time
-    const localYear = date.getFullYear();
-    const localMonth = date.getMonth();
-    const localDay = date.getDate();
-    const localHours = date.getHours();
-    const localMinutes = date.getMinutes();
-    const localSeconds = date.getSeconds();
-    
-    // Use local time directly without any conversion
-    const monthStr = String(localMonth + 1).padStart(2, '0');
-    const dayStr = String(localDay).padStart(2, '0');
-    const hoursStr = String(localHours).padStart(2, '0');
-    const minutesStr = String(localMinutes).padStart(2, '0');
-    const secondsStr = String(localSeconds).padStart(2, '0');
+    // Format the date and time without timezone conversion
+    const formatted = dt.toFormat('MM/dd/yyyy, HH:mm:ss');
     
     // Debug logging (remove in production)
-    console.log('Time conversion:', {
+    console.log('Time conversion with Luxon:', {
       original: utcTimeString,
-      local: `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')} ${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}:${String(localSeconds).padStart(2, '0')}`,
-      display: `${monthStr}/${dayStr}/${localYear}, ${hoursStr}:${minutesStr}:${secondsStr}`
+      parsed: dt.toISO(),
+      utc: dt.toFormat('yyyy-MM-dd HH:mm:ss'),
+      display: formatted
     });
     
-    return `${monthStr}/${dayStr}/${localYear}, ${hoursStr}:${minutesStr}:${secondsStr}`;
+    return formatted;
   } catch (error) {
-    console.error('Error converting to EAT:', error);
+    console.error('Error converting time with Luxon:', error);
     return 'N/A';
   }
 };
@@ -689,7 +696,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 Journey Details - {selectedSalesRep.name}
               </h2>
               <p className="text-sm text-gray-600">
-                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | Times shown in local timezone
+                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | Times displayed as stored in database using Luxon
               </p>
             </div>
 
@@ -711,10 +718,10 @@ const SalesRepMasterReportPage: React.FC = () => {
                         Outlet
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check In Time (Local)
+                        Check In Time (Raw)
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check Out Time (Local)
+                        Check Out Time (Raw)
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Time Spent
