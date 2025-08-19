@@ -245,6 +245,25 @@ export interface User {
     message?: string;
     error?: string;
   }
+
+  // Stock Transfer Error Response (for insufficient quantities)
+  export interface StockTransferErrorResponse {
+    success: false;
+    error: string;
+    message: string;
+    details: Array<{
+      product_id: string | number;
+      product_name: string;
+      product_code: string;
+      requested: number;
+      available: number;
+      shortfall: number;
+    }>;
+    summary: {
+      total_products_affected: number;
+      total_shortfall: number;
+    };
+  }
   
   export interface PaginatedResponse<T> {
     success: boolean;
