@@ -211,12 +211,12 @@ const StockTakePage: React.FC = () => {
           >
             View Stock Take History
           </Link>
-          <button
+          {/* <button
             onClick={testPDF}
             className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
           >
             Test PDF
-          </button>
+          </button> */}
           {selectedStore && getFilteredInventory().length > 0 && (
             <button
               onClick={exportToPDF}
