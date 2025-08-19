@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { stockTransferService } from '../services/financialService';
-import { StockTransferErrorResponse } from '../types/financial';
 import axios from 'axios';
 
 interface StockTransferPageProps {
@@ -24,7 +23,6 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<any[] | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,7 +59,6 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setErrorDetails(null);
     setSuccess(null);
     setLoading(true);
     try {
@@ -72,37 +69,33 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
           quantity: Number(item.quantity)
         }))
       };
-      
-      const res = await stockTransferService.transfer(data);
-      
+      // Add details?: any[] to the local response type
+      const res: typeof stockTransferService.transfer extends (data: any) => Promise<infer R> ? R & { details?: any[] } : any = await stockTransferService.transfer(data);
       if (res.success) {
         setSuccess('Stock transfer recorded successfully!');
         setForm({ ...form, reference: '', notes: '', items: [{ product_id: '', quantity: '' }] });
         if (onSuccess) onSuccess();
       } else {
-        // Check for insufficient quantity error with enhanced details
-        if ('details' in res && Array.isArray((res as StockTransferErrorResponse).details)) {
-          const errorResponse = res as StockTransferErrorResponse;
-          setError(errorResponse.message || 'Insufficient quantity for one or more products');
-          setErrorDetails(errorResponse.details);
+        // Check for insufficient quantity error
+        if (
+          res &&
+          typeof res === 'object' &&
+          'details' in res &&
+          Array.isArray((res as any).details)
+        ) {
+          const details = (res as any).details;
+          const idToName = Object.fromEntries(products.map((p: any) => [String(p.id), p.product_name]));
+          const msg = details.map((d: any) => {
+            const name = idToName[String(d.product_id)] || `Product ID ${d.product_id}`;
+            return `${name}: requested ${d.requested}, available ${d.available}`;
+          }).join('\n');
+          setError(`Insufficient quantity for:\n${msg}`);
         } else {
           setError(res.error || 'Failed to record stock transfer');
         }
       }
-    } catch (err: any) {
-      // Handle axios error responses
-      if (err.response && err.response.data) {
-        const errorData = err.response.data;
-        if ('details' in errorData && Array.isArray(errorData.details)) {
-          const errorResponse = errorData as StockTransferErrorResponse;
-          setError(errorResponse.message || 'Insufficient quantity for one or more products');
-          setErrorDetails(errorResponse.details);
-        } else {
-          setError(errorData.error || 'Failed to record stock transfer');
-        }
-      } else {
-        setError('Failed to record stock transfer');
-      }
+    } catch (err) {
+      setError('Failed to record stock transfer');
     } finally {
       setLoading(false);
     }
@@ -165,46 +158,7 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
             {loading ? 'Transferring...' : 'Transfer Stock'}
           </button>
           {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <div className="text-red-800 font-medium mb-2">{error}</div>
-              
-              {errorDetails && errorDetails.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-sm text-red-700 mb-2">
-                    <strong>Summary:</strong> {errorDetails.length} product(s) have insufficient stock
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-red-100">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-red-800 font-medium">Product</th>
-                          <th className="px-3 py-2 text-left text-red-800 font-medium">Code</th>
-                          <th className="px-3 py-2 text-right text-red-800 font-medium">Requested</th>
-                          <th className="px-3 py-2 text-right text-red-800 font-medium">Available</th>
-                          <th className="px-3 py-2 text-right text-red-800 font-medium">Shortfall</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {errorDetails.map((item, index) => (
-                          <tr key={index} className="border-b border-red-200">
-                            <td className="px-3 py-2 text-red-700">{item.product_name}</td>
-                            <td className="px-3 py-2 text-red-600 font-mono">{item.product_code}</td>
-                            <td className="px-3 py-2 text-right text-red-700">{item.requested.toLocaleString()}</td>
-                            <td className="px-3 py-2 text-right text-red-700">{item.available.toLocaleString()}</td>
-                            <td className="px-3 py-2 text-right text-red-800 font-semibold">{item.shortfall.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="mt-3 text-sm text-red-600">
-                    <strong>Action Required:</strong> Please reduce the requested quantities or restock the source store before attempting the transfer again.
-                  </div>
-                </div>
-              )}
-            </div>
+            <div className="mt-2 text-red-600 whitespace-pre-line">{error}</div>
           )}
           {success && <div className="mt-2 text-green-600">{success}</div>}
         </form>

@@ -11,6 +11,39 @@ interface SalesRepData {
   country?: string;
 }
 
+// Utility function to convert UTC time to East Africa Time (EAT)
+const convertToEAT = (utcTimeString: string): string => {
+  if (!utcTimeString) return 'N/A';
+  
+  try {
+    const utcDate = new Date(utcTimeString);
+    
+    // Check if the date is valid
+    if (isNaN(utcDate.getTime())) {
+      return 'N/A';
+    }
+    
+    // Format to East Africa Time with date and time
+    const dateStr = utcDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'Africa/Nairobi'
+    });
+    
+    const timeStr = utcDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Africa/Nairobi'
+    });
+    
+    return `${dateStr} at ${timeStr}`;
+  } catch (error) {
+    console.error('Error converting time to EAT:', error);
+    return 'N/A';
+  }
+};
+
 const SalesRepMasterReportPage: React.FC = () => {
   const navigate = useNavigate();
   const [salesReps, setSalesReps] = useState<SalesRepData[]>([]);
@@ -132,6 +165,7 @@ const SalesRepMasterReportPage: React.FC = () => {
     if (!checkInTime || !checkOutTime) return 'N/A';
     
     try {
+      // Create dates and convert to East Africa Time for accurate calculation
       const checkIn = new Date(checkInTime);
       const checkOut = new Date(checkOutTime);
       
@@ -139,6 +173,7 @@ const SalesRepMasterReportPage: React.FC = () => {
         return 'N/A';
       }
       
+      // Calculate difference in milliseconds (this will be accurate regardless of timezone)
       const diffMs = checkOut.getTime() - checkIn.getTime();
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -645,7 +680,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 Journey Details - {selectedSalesRep.name}
               </h2>
               <p className="text-sm text-gray-600">
-                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}%
+                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | All times shown in East Africa Time (EAT)
               </p>
             </div>
 
@@ -667,10 +702,10 @@ const SalesRepMasterReportPage: React.FC = () => {
                         Outlet
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check In Time
+                        Check In Date & Time
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check Out Time
+                        Check Out Date & Time
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Time Spent
@@ -689,11 +724,11 @@ const SalesRepMasterReportPage: React.FC = () => {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
                           {journey.outlet_name || 'N/A'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                          {journey.checkInTime ? new Date(journey.checkInTime).toLocaleTimeString() : 'N/A'}
+                        <td className="px-3 py-4 text-sm text-gray-900">
+                          {journey.checkInTime ? convertToEAT(journey.checkInTime) : 'N/A'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                          {journey.checkOutTime ? new Date(journey.checkOutTime).toLocaleTimeString() : 'N/A'}
+                        <td className="px-3 py-4 text-sm text-gray-900">
+                          {journey.checkOutTime ? convertToEAT(journey.checkOutTime) : 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
                           <span className="font-medium text-blue-600">
