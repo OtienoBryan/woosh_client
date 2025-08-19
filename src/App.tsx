@@ -436,17 +436,17 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/all-orders" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <AllOrdersPage />
               </RoleBasedRoute>
             } />
             <Route path="/sales-orders/:id" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'sales']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'sales', 'stock']} fallbackPath="/sales-dashboard">
                 <SalesOrderDetailsPage />
               </RoleBasedRoute>
             } />
             <Route path="/delivery-note/:id" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'sales']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'sales', 'stock']} fallbackPath="/sales-dashboard">
                 <DeliveryNoteDetailsPage />
               </RoleBasedRoute>
             } />
