@@ -1,5 +1,5 @@
-import React from 'react';
-import { MenuIcon, BellIcon, SearchIcon, Home } from 'lucide-react';
+import React, { useState } from 'react';
+import { MenuIcon, BellIcon, SearchIcon, Home, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,75 +10,185 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    setShowProfileMenu(false);
+  };
 
   return (
-    <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm">
-      <button
-        type="button"
-        className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 md:hidden"
-        onClick={() => setSidebarOpen(true)}
-      >
-        <span className="sr-only">Open sidebar</span>
-        <MenuIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
-      <div className="flex-1 px-4 flex justify-between">
-        <div className="flex-1 flex">
-          <div className="w-full flex md:ml-0">
+    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side - Mobile menu and Home button */}
+          <div className="flex items-center space-x-4">
+            {/* Mobile menu button */}
+            <button
+              type="button"
+              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-500 transition-all duration-200"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <span className="sr-only">Open sidebar</span>
+              <MenuIcon className="h-6 w-6" aria-hidden="true" />
+            </button>
+
+            {/* Home button */}
             <button
               onClick={() => navigate('/')}
-              className="mr-4 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center space-x-2"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               <Home className="h-4 w-4" />
-              <span>Home</span>
+              <span className="font-medium">Home</span>
             </button>
-            <label htmlFor="search-field" className="sr-only">
-              Search
-            </label>
-            {/* <div className="relative w-full text-gray-400 focus-within:text-gray-600">
-              <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
-                <SearchIcon className="h-5 w-5" aria-hidden="true" />
+
+            {/* Search bar - hidden on mobile */}
+            <div className="hidden md:block relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
               </div>
               <input
-                id="search-field"
-                className="block w-full h-full pl-8 pr-3 py-2 border-transparent text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-transparent sm:text-sm"
-                placeholder="Search clients, policies..."
                 type="search"
-                name="search"
+                placeholder="Search..."
+                className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
               />
-            </div> */}
+            </div>
           </div>
-        </div>
-        <div className="ml-4 flex items-center md:ml-6">
-          <button
-            type="button"
-            className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            <span className="sr-only">View notifications</span>
-            <BellIcon className="h-6 w-6" aria-hidden="true" />
-          </button>
-          {/* Profile dropdown */}
-          <div className="ml-3 relative">
-            <div className="flex items-center">
-              <div className="ml-3">
-                <div className="text-base font-medium text-gray-800">
-                  {user?.username}
-                </div>
-                <div className="text-sm font-medium text-gray-500">
-                  {user?.email}
-                </div>
-              </div>
+
+          {/* Right side - Notifications and Profile */}
+          <div className="flex items-center space-x-4">
+            {/* Notifications */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={logout}
-                className="ml-3 text-sm font-medium text-red-600 hover:text-red-800 mx-4"
+                className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 relative"
+                onClick={() => setShowNotifications(!showNotifications)}
               >
-                Logout
+                <span className="sr-only">View notifications</span>
+                <BellIcon className="h-6 w-6" aria-hidden="true" />
+                {/* Notification badge */}
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  3
+                </span>
               </button>
+
+              {/* Notifications dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                      <p className="text-sm text-gray-900">New order received</p>
+                      <p className="text-xs text-gray-500 mt-1">2 minutes ago</p>
+                    </div>
+                    <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                      <p className="text-sm text-gray-900">Payment confirmed</p>
+                      <p className="text-xs text-gray-500 mt-1">1 hour ago</p>
+                    </div>
+                    <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                      <p className="text-sm text-gray-900">Inventory low alert</p>
+                      <p className="text-xs text-gray-500 mt-1">3 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 border-t border-gray-200">
+                    <button className="text-sm text-green-600 hover:text-green-700 font-medium">
+                      View all notifications
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                className="flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                <div className="hidden md:block text-left">
+                  <div className="text-sm font-medium text-gray-900">{user?.username}</div>
+                  <div className="text-xs text-gray-500">{user?.email}</div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </button>
+
+              {/* Profile menu dropdown */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <div className="text-sm font-medium text-gray-900">{user?.username}</div>
+                    <div className="text-sm text-gray-500">{user?.email}</div>
+                  </div>
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        // Navigate to profile page if exists
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                    >
+                      <User className="h-4 w-4 mr-3 text-gray-400" />
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        // Navigate to settings page if exists
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                    >
+                      <Settings className="h-4 w-4 mr-3 text-gray-400" />
+                      Settings
+                    </button>
+                  </div>
+                  <div className="border-t border-gray-200 py-1">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Mobile search bar */}
+      <div className="lg:hidden border-t border-gray-200 px-4 py-3">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          </div>
+          <input
+            type="search"
+            placeholder="Search..."
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+          />
+        </div>
+      </div>
+
+      {/* Click outside to close dropdowns */}
+      {(showProfileMenu || showNotifications) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setShowProfileMenu(false);
+            setShowNotifications(false);
+          }}
+        />
+      )}
+    </header>
   );
 };
 
