@@ -11,15 +11,35 @@ interface SalesRepData {
   country?: string;
 }
 
-// Utility function to display time without any conversion (pure raw data)
+// Utility function to consistently display time in East Africa Time (EAT)
 const convertToEAT = (utcTimeString: string): string => {
   if (!utcTimeString) return 'N/A';
   
   try {
-    // Return the original string as-is, no Date object manipulation
-    return utcTimeString;
+    // Create a date object from the UTC string
+    const date = new Date(utcTimeString);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return 'N/A';
+    }
+    
+    // Format to East Africa Time consistently across all environments
+    // Use explicit timezone to avoid local environment differences
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Africa/Nairobi'
+    };
+    
+    return date.toLocaleString('en-US', options);
   } catch (error) {
-    console.error('Error displaying time:', error);
+    console.error('Error converting to EAT:', error);
     return 'N/A';
   }
 };
@@ -660,7 +680,7 @@ const SalesRepMasterReportPage: React.FC = () => {
                 Journey Details - {selectedSalesRep.name}
               </h2>
               <p className="text-sm text-gray-600">
-                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | Times shown as raw data from server
+                Date Range: {startDate} to {endDate} | Total Journeys: {selectedSalesRep.total_journeys} | Completion Rate: {Number(selectedSalesRep.completion_rate).toFixed(1)}% | All times converted to East Africa Time (EAT) for consistency
               </p>
             </div>
 
@@ -682,10 +702,10 @@ const SalesRepMasterReportPage: React.FC = () => {
                         Outlet
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check In Time (Raw)
+                        Check In Time (EAT)
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Check Out Time (Raw)
+                        Check Out Time (EAT)
                       </th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Time Spent
