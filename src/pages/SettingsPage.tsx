@@ -30,6 +30,7 @@ const SettingsPage: React.FC = () => {
 
   const [theme, setTheme] = useState<string>(localStorage.getItem('appTheme') || 'system');
   const [prefSuccess, setPrefSuccess] = useState('');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -117,14 +118,18 @@ const SettingsPage: React.FC = () => {
     const formData = new FormData();
     formData.append('avatar', e.target.files[0]);
     try {
-      const res = await fetch(API_CONFIG.getUrl(`/staff/staff/${user?.id}/avatar`), {
+      const res = await fetch(API_CONFIG.getUrl(`/staff/${user?.id}/avatar`), {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: formData,
       });
-      if (!res.ok) throw new Error('Failed to upload avatar');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || `Upload failed with status: ${res.status}`;
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       setAvatarUrl(data.url);
       setAvatarSuccess('Profile picture updated!');
@@ -195,7 +200,8 @@ const SettingsPage: React.FC = () => {
                     ref={imgRef}
                     src={user?.avatar_url || avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name)}&background=2563eb&color=fff&size=128`}
                     alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover border-2 border-blue-200"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-blue-200 cursor-pointer hover:scale-105 transition-transform duration-200"
+                    onClick={() => setShowAvatarModal(true)}
                   />
                   <label className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full px-2 py-1 cursor-pointer hover:bg-blue-700 transition text-xs">
                     <input
@@ -341,6 +347,32 @@ const SettingsPage: React.FC = () => {
                 {prefSuccess && <span className="text-green-600 text-sm">{prefSuccess}</span>}
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Avatar Modal */}
+        {showAvatarModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Profile Picture</h3>
+                <button
+                  onClick={() => setShowAvatarModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 flex justify-center">
+                <img
+                  src={user?.avatar_url || avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name)}&background=2563eb&color=fff&size=400`}
+                  alt="Profile"
+                  className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

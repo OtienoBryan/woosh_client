@@ -23,6 +23,7 @@ interface Message {
   sender_name?: string;
   message: string;
   sent_at?: string;
+  is_read?: boolean;
 }
 
 interface Staff {
@@ -159,6 +160,8 @@ const ChatRoomPage: React.FC = () => {
   const [toast, setToast] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [staffError, setStaffError] = useState<string | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<{ [roomId: number]: number }>({});
+  const [lastReadTimestamps, setLastReadTimestamps] = useState<{ [roomId: number]: string }>({});
 
   // Fetch chat rooms for user
   const fetchRooms = async () => {
@@ -176,6 +179,140 @@ const ChatRoomPage: React.FC = () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     setMessages(res.data);
+    
+    // Mark messages as read immediately when room is opened
+    markRoomAsRead(roomId);
+  };
+
+  // Check for new messages in all rooms
+  const checkForNewMessages = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(`${API_BASE_URL}/chat/my-rooms`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const newUnreadCounts: { [roomId: number]: number } = {};
+      let hasNewMessages = false;
+      
+      for (const room of res.data) {
+        const lastRead = lastReadTimestamps[room.id] || room.created_at;
+        const messagesRes = await axios.get(`${API_BASE_URL}/chat/rooms/${room.id}/messages`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const unreadMessages = messagesRes.data.filter((msg: Message) => 
+          msg.sent_at && new Date(msg.sent_at) > new Date(lastRead) && msg.sender_id !== user?.id
+        );
+        
+        newUnreadCounts[room.id] = unreadMessages.length;
+        
+        // Check if there are new unread messages
+        if (unreadMessages.length > 0) {
+          hasNewMessages = true;
+        }
+      }
+      
+      console.log('Checking for new messages:', {
+        lastReadTimestamps,
+        newUnreadCounts,
+        hasNewMessages
+      });
+      
+      setUnreadCounts(newUnreadCounts);
+      
+      // Show toast if there are new messages
+      if (hasNewMessages) {
+        const totalNew = Object.values(newUnreadCounts).reduce((total, count) => total + count, 0);
+        setToast(`You have ${totalNew} new message${totalNew > 1 ? 's' : ''}!`);
+        setTimeout(() => setToast(null), 3000);
+      }
+    } catch (error) {
+      console.error('Error checking for new messages:', error);
+    }
+  };
+
+  // Mark a room as read
+  const markRoomAsRead = (roomId: number) => {
+    const now = new Date().toISOString();
+    console.log(`Marking room ${roomId} as read at ${now}`);
+    
+    // Update both states immediately and synchronously
+    setLastReadTimestamps(prev => {
+      const newTimestamps = { ...prev, [roomId]: now };
+      console.log('Updated last read timestamps:', newTimestamps);
+      return newTimestamps;
+    });
+    
+    setUnreadCounts(prev => {
+      const newCounts = { ...prev };
+      newCounts[roomId] = 0;
+      console.log(`Room ${roomId} unread count reset to 0`);
+      console.log(`Updated unread counts:`, newCounts);
+      return newCounts;
+    });
+    
+    // Force immediate re-render
+    setTimeout(() => {
+      console.log(`Forcing re-render for room ${roomId}`);
+      setUnreadCounts(current => ({ ...current }));
+    }, 10);
+  };
+
+  // Check for new messages periodically
+  useEffect(() => {
+    if (!user) return;
+    
+    // Check immediately
+    checkForNewMessages();
+    
+    // Check every 30 seconds
+    const interval = setInterval(checkForNewMessages, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user]); // Removed lastReadTimestamps dependency to prevent infinite loops
+
+  // Get total unread count for dashboard badge
+  const getTotalUnreadCount = (): number => {
+    return Object.values(unreadCounts).reduce((total, count) => total + count, 0);
+  };
+
+  // Expose unread count to parent components (for dashboard badge)
+  useEffect(() => {
+    const totalUnread = getTotalUnreadCount();
+    // You can emit this to parent components or store in localStorage
+    localStorage.setItem('chat_total_unread', totalUnread.toString());
+    
+    console.log('Total unread count updated:', totalUnread);
+  }, [unreadCounts]);
+
+  // Function to mark all rooms as read
+  const markAllRoomsAsRead = () => {
+    const now = new Date().toISOString();
+    const newLastReadTimestamps: { [roomId: number]: string } = {};
+    const newUnreadCounts: { [roomId: number]: number } = {};
+    
+    rooms.forEach(room => {
+      newLastReadTimestamps[room.id] = now;
+      newUnreadCounts[room.id] = 0;
+    });
+    
+    setLastReadTimestamps(newLastReadTimestamps);
+    setUnreadCounts(newUnreadCounts);
+    
+    console.log('Marked all rooms as read');
+    setToast('All messages marked as read!');
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  // Debug function to show current state
+  const debugUnreadCounts = () => {
+    console.log('=== DEBUG: Current State ===');
+    console.log('Unread Counts:', unreadCounts);
+    console.log('Last Read Timestamps:', lastReadTimestamps);
+    console.log('Selected Room:', selectedRoom?.id);
+    console.log('Total Unread:', getTotalUnreadCount());
+    console.log('===========================');
   };
 
   // Fetch all staff for group creation
@@ -208,6 +345,14 @@ const ChatRoomPage: React.FC = () => {
       if (msg.room_id === selectedRoom.id) {
         setMessages((prev) => [...prev, msg]);
       }
+      
+      // Update unread count for other rooms
+      if (msg.room_id !== selectedRoom.id && msg.sender_id !== user?.id) {
+        setUnreadCounts(prev => ({
+          ...prev,
+          [msg.room_id]: (prev[msg.room_id] || 0) + 1
+        }));
+      }
     });
     return () => {
       socketRef.current?.emit('leaveRoom', selectedRoom.id);
@@ -221,20 +366,52 @@ const ChatRoomPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => { fetchRooms(); fetchStaff(); }, []);
+  useEffect(() => { 
+    fetchRooms(); 
+    fetchStaff(); 
+  }, []);
 
-  // Mark chat last visited for dashboard badge
+  // Initialize unread counts when rooms are loaded
+  useEffect(() => {
+    if (rooms.length > 0 && user) {
+      // Initialize last read timestamps for rooms that don't have them
+      const newLastReadTimestamps = { ...lastReadTimestamps };
+      let hasChanges = false;
+      
+      rooms.forEach(room => {
+        if (!newLastReadTimestamps[room.id]) {
+          newLastReadTimestamps[room.id] = room.created_at;
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        setLastReadTimestamps(newLastReadTimestamps);
+        console.log('Initialized last read timestamps:', newLastReadTimestamps);
+      }
+      
+      // Check for new messages after initialization
+      setTimeout(() => checkForNewMessages(), 1000);
+    }
+  }, [rooms, user]);
+
+  // Mark chat last visited for dashboard badge and check for new messages
   useEffect(() => {
     // When page mounts or user interacts, update last visited timestamp
     const markVisited = () => {
       localStorage.setItem('chat_last_visited_ts', String(Date.now()));
+      // Check for new messages when user becomes active
+      checkForNewMessages();
     };
     markVisited();
     const onVisibility = () => { if (!document.hidden) markVisited(); };
-    window.addEventListener('focus', markVisited);
+    const onFocus = () => markVisited();
+    
+    window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
+    
     return () => {
-      window.removeEventListener('focus', markVisited);
+      window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
@@ -330,16 +507,54 @@ const ChatRoomPage: React.FC = () => {
       {/* Sidebar: Room List */}
       <div className={`w-full md:w-80 bg-white border-r ${selectedRoom ? 'hidden md:block' : 'block'}`}>
         <div className="p-4 border-b">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Messages</h2>
-            <button 
-              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
-              onClick={() => setShowCreateModal(true)}
-              title="Create group"
-            >
-              <Plus size={18} />
-            </button>
-          </div>
+                     <div className="flex justify-between items-center mb-4">
+             <div className="flex items-center gap-2">
+               <h2 className="text-xl font-bold text-gray-800">Messages</h2>
+               {getTotalUnreadCount() > 0 && (
+                 <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                   {getTotalUnreadCount()}
+                 </div>
+               )}
+             </div>
+                           <div className="flex gap-2">
+                <button 
+                  className="bg-gray-600 text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
+                  onClick={checkForNewMessages}
+                  title="Refresh messages"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button 
+                  className="bg-yellow-600 text-white p-2 rounded-full hover:bg-yellow-700 transition-colors"
+                  onClick={debugUnreadCounts}
+                  title="Debug unread counts"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+                {getTotalUnreadCount() > 0 && (
+                  <button 
+                    className="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition-colors"
+                    onClick={markAllRoomsAsRead}
+                    title="Mark all as read"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                )}
+                <button 
+                  className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+                  onClick={() => setShowCreateModal(true)}
+                  title="Create group"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+           </div>
           <div className="relative">
             <input
               type="text"
@@ -371,7 +586,9 @@ const ChatRoomPage: React.FC = () => {
               className={`p-3 flex items-center border-b cursor-pointer hover:bg-gray-50 ${
                 selectedRoom?.id === room.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
               }`}
-              onClick={() => setSelectedRoom(room)}
+                             onClick={() => {
+                 setSelectedRoom(room);
+               }}
             >
               <div className="bg-blue-100 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center mr-3">
                 {room.is_group ? 
@@ -379,17 +596,24 @@ const ChatRoomPage: React.FC = () => {
                   <span className="font-medium">P</span>
                 }
               </div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-800">
-                  {room.is_group ? (room.name || 'Group Chat') : 'Private Chat'}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {room.is_group ? `${room.name ? 'Group' : 'Direct'} chat` : 'One-to-one conversation'}
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {room.created_at && formatTime(room.created_at)}
-                </div>
-              </div>
+                             <div className="flex-1">
+                 <div className="flex items-center justify-between">
+                   <div className="font-medium text-gray-800">
+                     {room.is_group ? (room.name || 'Group Chat') : 'Private Chat'}
+                   </div>
+                   {unreadCounts[room.id] > 0 && (
+                     <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                       {unreadCounts[room.id]}
+                     </div>
+                   )}
+                 </div>
+                 <div className="text-xs text-gray-500">
+                   {room.is_group ? `${room.name ? 'Group' : 'Direct'} chat` : 'One-to-one conversation'}
+                 </div>
+                 <div className="text-xs text-gray-400 mt-1">
+                   {room.created_at && formatTime(room.created_at)}
+                 </div>
+               </div>
             </div>
           ))}
           {filteredRooms.length === 0 && (

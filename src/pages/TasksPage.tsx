@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
 
 interface Task {
   id: number;
@@ -9,6 +9,7 @@ interface Task {
   date: string;
   status: 'Pending' | 'In Progress' | 'Completed';
   assigned_to: string;
+  assigned_sales_reps?: SalesRep[]; // New field for multiple assignments
 }
 
 interface SalesRep { id: number; name: string; email?: string; }
@@ -19,12 +20,13 @@ const TasksPage: React.FC = () => {
   const [filterUser, setFilterUser] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
-  const [form, setForm] = useState<Omit<Task, 'id'>>({
+  const [form, setForm] = useState<Omit<Task, 'id'> & { selectedSalesReps: number[] }>({
     title: '',
     description: '',
     date: '',
     status: 'Pending',
     assigned_to: '',
+    selectedSalesReps: [], // New field for multiple selection
   });
   const [submitting, setSubmitting] = useState(false);
   const [month, setMonth] = useState(() => {
@@ -61,7 +63,14 @@ const TasksPage: React.FC = () => {
   );
 
   const handleAdd = () => {
-    setForm({ title: '', description: '', date: '', status: 'Pending', assigned_to: '' });
+    setForm({ 
+      title: '', 
+      description: '', 
+      date: '', 
+      status: 'Pending', 
+      assigned_to: '',
+      selectedSalesReps: []
+    });
     setEditTask(null);
     setModalOpen(true);
   };
@@ -73,6 +82,7 @@ const TasksPage: React.FC = () => {
       date: task.date,
       status: task.status,
       assigned_to: task.assigned_to,
+      selectedSalesReps: task.assigned_sales_reps?.map(rep => rep.id) || []
     });
     setEditTask(task);
     setModalOpen(true);
@@ -88,14 +98,40 @@ const TasksPage: React.FC = () => {
     }
   };
 
+  const handleSalesRepToggle = (salesRepId: number) => {
+    setForm(prev => ({
+      ...prev,
+      selectedSalesReps: prev.selectedSalesReps.includes(salesRepId)
+        ? prev.selectedSalesReps.filter(id => id !== salesRepId)
+        : [...prev.selectedSalesReps, salesRepId]
+    }));
+  };
+
+  const removeSelectedSalesRep = (salesRepId: number) => {
+    setForm(prev => ({
+      ...prev,
+      selectedSalesReps: prev.selectedSalesReps.filter(id => id !== salesRepId)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const selectedSalesRepNames = salesReps
+        .filter(rep => form.selectedSalesReps.includes(rep.id))
+        .map(rep => rep.name)
+        .join(', ');
+
+      const formData = {
+        ...form,
+        assigned_to: selectedSalesRepNames || 'Unassigned'
+      };
+
       if (editTask) {
-        await axios.put(`/api/calendar-tasks/${editTask.id}`, form);
+        await axios.put(`/api/calendar-tasks/${editTask.id}`, formData);
       } else {
-        await axios.post('/api/calendar-tasks', form);
+        await axios.post('/api/calendar-tasks', formData);
       }
       setModalOpen(false);
       fetchTasks();
@@ -103,6 +139,10 @@ const TasksPage: React.FC = () => {
       setError(err.message || 'Failed to save task');
     }
     setSubmitting(false);
+  };
+
+  const getSelectedSalesReps = () => {
+    return salesReps.filter(rep => form.selectedSalesReps.includes(rep.id));
   };
 
   return (
@@ -237,32 +277,70 @@ const TasksPage: React.FC = () => {
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
                     <select
                       required
-                      value={form.assigned_to}
-                      onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
+                      value={form.status}
+                      onChange={e => setForm(f => ({ ...f, status: e.target.value as Task['status'] }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">Select sales rep</option>
-                      {salesReps.map(rep => (
-                        <option key={rep.id} value={rep.name}>{rep.name}</option>
-                      ))}
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
                     </select>
                   </div>
                 </div>
+                
+                {/* Multiple Sales Rep Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign to Sales Reps *</label>
+                  
+                  {/* Selected Sales Reps Display */}
+                  {form.selectedSalesReps.length > 0 && (
+                    <div className="mb-3 p-3 bg-gray-50 rounded-md">
+                      <div className="text-sm font-medium text-gray-700 mb-2">Selected Sales Reps:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {getSelectedSalesReps().map(rep => (
+                          <span
+                            key={rep.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                          >
+                            {rep.name}
+                            <button
+                              type="button"
+                              onClick={() => removeSelectedSalesRep(rep.id)}
+                              className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                            >
+                              <FiX size={12} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Sales Rep Selection Dropdown */}
                   <select
-                    required
-                    value={form.status}
-                    onChange={e => setForm(f => ({ ...f, status: e.target.value as Task['status'] }))}
+                    value=""
+                    onChange={e => {
+                      const selectedId = parseInt(e.target.value);
+                      if (selectedId && !form.selectedSalesReps.includes(selectedId)) {
+                        handleSalesRepToggle(selectedId);
+                      }
+                      e.target.value = ''; // Reset selection
+                    }}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
+                    <option value="">Select sales rep to add</option>
+                    {salesReps
+                      .filter(rep => !form.selectedSalesReps.includes(rep.id))
+                      .map(rep => (
+                        <option key={rep.id} value={rep.id}>{rep.name}</option>
+                      ))}
                   </select>
+                  <p className="mt-1 text-sm text-gray-500">
+                    You can select multiple sales reps. Click on a selected rep to remove them.
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-8">
@@ -275,7 +353,7 @@ const TasksPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || form.selectedSalesReps.length === 0}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : (editTask ? 'Save' : 'Add')}
