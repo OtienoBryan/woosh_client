@@ -127,17 +127,15 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                     <div className="text-sm text-gray-500">{user?.email}</div>
                   </div>
                   <div className="py-1">
+
                     <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        // Navigate to profile page if exists
-                      }}
+                      onClick={() => navigate('/settings')}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
                     >
                       <User className="h-4 w-4 mr-3 text-gray-400" />
                       Profile
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => {
                         setShowProfileMenu(false);
                         // Navigate to settings page if exists
@@ -146,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                     >
                       <Settings className="h-4 w-4 mr-3 text-gray-400" />
                       Settings
-                    </button>
+                    </button> */}
                   </div>
                   <div className="border-t border-gray-200 py-1">
                     <button
