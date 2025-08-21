@@ -326,12 +326,12 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/receivables" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <ReceivablesPage />
               </RoleBasedRoute>
             } />
             <Route path="/receivables/customer/:customerId" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock'	]} fallbackPath="/sales-dashboard">
                 <ReceivablesCustomerPage />
               </RoleBasedRoute>
             } />

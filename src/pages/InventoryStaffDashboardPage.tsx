@@ -8,16 +8,16 @@ import { StoreInventory, StoreInventorySummary } from '../types/financial';
 import { CreditNote } from '../services/creditNoteService';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
   Cell,
   LineChart,
   Line
@@ -92,7 +92,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all data in parallel
       const [
         inventoryResponse,
@@ -120,14 +120,14 @@ const InventoryStaffDashboardPage: React.FC = () => {
       if (inventoryResponse.success) {
         const inventory = inventoryResponse.data || [];
         setStoreInventory(inventory);
-        
+
         // Calculate inventory stats
         const totalProducts = new Set(inventory.map(item => item.product_id)).size;
         const totalItems = inventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
         const totalValue = inventory.reduce((sum, item) => sum + (item.inventory_value || 0), 0);
         const lowStockItems = inventory.filter(item => (item.quantity || 0) <= 10).length;
         const outOfStockItems = inventory.filter(item => (item.quantity || 0) === 0).length;
-        
+
         setInventoryStats({
           totalProducts,
           totalItems,
@@ -143,7 +143,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
           const current = categoryMap.get(category) || 0;
           categoryMap.set(category, current + (item.quantity || 0));
         });
-        
+
         const categoryData = Array.from(categoryMap.entries()).map(([name, value]) => ({
           name,
           value
@@ -157,14 +157,14 @@ const InventoryStaffDashboardPage: React.FC = () => {
         const totalSales = orders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
         const totalOrders = orders.length;
         const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
-        
+
         // Calculate approved orders count (my_status = 1)
         const approvedOrders = orders.filter((order: any) => order.my_status === 1).length;
         setApprovedOrdersCount(approvedOrders);
-        
+
         // Get top selling products (simplified - in real app you'd get this from sales_order_items)
         const topSellingProducts = await fetchTopSellingProducts();
-        
+
         setSalesSummary({
           totalSales,
           totalOrders,
@@ -222,11 +222,11 @@ const InventoryStaffDashboardPage: React.FC = () => {
       if (creditNotesResponse.success) {
         const creditNotes = creditNotesResponse.data || [];
         setCreditNotes(creditNotes);
-        
+
         const totalCreditNotes = creditNotes.length;
         const pendingReceiving = creditNotes.filter(note => note.my_status !== 1).length;
         const received = creditNotes.filter(note => note.my_status === 1).length;
-        
+
         setCreditNoteStats({
           totalCreditNotes,
           pendingReceiving,
@@ -269,7 +269,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
         const totalValue = inventory.reduce((sum, item) => sum + (item.inventory_value || 0), 0);
         const lowStockItems = inventory.filter(item => (item.quantity || 0) <= 10).length;
         const outOfStockItems = inventory.filter(item => (item.quantity || 0) === 0).length;
-        
+
         setInventoryStats({
           totalProducts,
           totalItems,
@@ -323,26 +323,26 @@ const InventoryStaffDashboardPage: React.FC = () => {
     if (!stockSummaryData || !stockSummaryData.products) {
       return [];
     }
-    
+
     let filteredProducts = stockSummaryData.products;
-    
+
     // Apply category filter
     if (stockSummaryCategoryFilter !== 'all') {
-      filteredProducts = filteredProducts.filter((product: any) => 
+      filteredProducts = filteredProducts.filter((product: any) =>
         product.category === stockSummaryCategoryFilter
       );
     }
-    
+
     // Apply search filter
     if (stockSummarySearchTerm.trim()) {
       const searchLower = stockSummarySearchTerm.toLowerCase();
-      filteredProducts = filteredProducts.filter((product: any) => 
+      filteredProducts = filteredProducts.filter((product: any) =>
         product.product_name?.toLowerCase().includes(searchLower) ||
         product.product_code?.toLowerCase().includes(searchLower) ||
         product.category?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     // Sort products by category alphabetically
     return filteredProducts.sort((a: any, b: any) => {
       const categoryA = a.category || '';
@@ -394,15 +394,15 @@ const InventoryStaffDashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Inventory Dashboard</h1>
-              
+
             </div>
-            
+
             {/* Quick Action Buttons */}
             <div className="flex flex-wrap gap-3">
               <Link
@@ -426,7 +426,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
                   Assets
                 </Link>
               )}
-              
+
               <Link
                 to="/inventory-transactions"
                 className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
@@ -436,7 +436,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 </svg>
                 View Inventory
               </Link>
-              
+
               <Link
                 to="/stock-take"
                 className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
@@ -457,6 +457,18 @@ const InventoryStaffDashboardPage: React.FC = () => {
                   Vendors
                 </Link>
               )}
+
+              {user?.id === 4 && (
+                <Link
+                  to="/receivables"
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  Debts
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -464,22 +476,22 @@ const InventoryStaffDashboardPage: React.FC = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
-          <Link
-                to="/financial/customer-orders"
-                 >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
+            <Link
+              to="/financial/customer-orders"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Approved Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatNumber(approvedOrdersCount)}</p>
                 </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Approved Orders</p>
-                <p className="text-2xl font-bold text-gray-900">{formatNumber(approvedOrdersCount)}</p>
-              </div>
-            </div>
             </Link>
           </div>
 
@@ -531,26 +543,26 @@ const InventoryStaffDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
-          <Link
-                to="/credit-note-summary"
-                 >
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+            <Link
+              to="/credit-note-summary"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Credit Notes Summary</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatNumber(creditNoteStats.pendingReceiving)}</p>
                 </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Credit Notes Summary</p>
-                <p className="text-2xl font-bold text-gray-900">{formatNumber(creditNoteStats.pendingReceiving)}</p>
-              </div>
-            </div>
             </Link>
           </div>
         </div>
- 
+
 
         {/* Stock Summary Table */}
         {selectedStore === 'all' && stockSummaryData && stockSummaryData.products.length > 0 && (
@@ -560,9 +572,9 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">Stock Summary Across All Stores</h2>
-                    
+
                   </div>
-                  
+
                   {/* Search and Filters */}
                   <div className="flex flex-col sm:flex-row gap-4">
                     {/* Search Bar */}
@@ -596,7 +608,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Category Filter */}
                     <div className="flex-shrink-0">
                       <label htmlFor="stock-summary-category-filter" className="block text-sm font-medium text-gray-700 mb-2">
@@ -658,10 +670,10 @@ const InventoryStaffDashboardPage: React.FC = () => {
                     {stockSummarySearchTerm.trim() && stockSummaryCategoryFilter !== 'all'
                       ? `No products found for search "${stockSummarySearchTerm}" in category "${stockSummaryCategoryFilter}".`
                       : stockSummarySearchTerm.trim()
-                      ? `No products found for search "${stockSummarySearchTerm}".`
-                      : stockSummaryCategoryFilter !== 'all'
-                      ? `No products found for category "${stockSummaryCategoryFilter}".`
-                      : 'No products found in the stock summary.'}
+                        ? `No products found for search "${stockSummarySearchTerm}".`
+                        : stockSummaryCategoryFilter !== 'all'
+                          ? `No products found for category "${stockSummaryCategoryFilter}".`
+                          : 'No products found in the stock summary.'}
                   </p>
                 </div>
               ) : (
@@ -690,7 +702,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
                         const totalStock = stockSummaryData.stores.reduce((total: number, store: any) => {
                           return total + (product.store_quantities[store.id] || 0);
                         }, 0);
-                        
+
                         return (
                           <tr key={product.id} className="hover:bg-gray-50 transition-colors duration-150">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
@@ -708,13 +720,12 @@ const InventoryStaffDashboardPage: React.FC = () => {
                               const quantity = product.store_quantities[store.id] || 0;
                               return (
                                 <td key={store.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                    quantity <= 10 
-                                      ? 'bg-red-100 text-red-800' 
-                                      : quantity <= 50 
-                                      ? 'bg-yellow-100 text-yellow-800' 
-                                      : 'bg-green-100 text-green-800'
-                                  }`}>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${quantity <= 10
+                                      ? 'bg-red-100 text-red-800'
+                                      : quantity <= 50
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-green-100 text-green-800'
+                                    }`}>
                                     {formatNumber(quantity)}
                                   </span>
                                 </td>
@@ -732,7 +743,7 @@ const InventoryStaffDashboardPage: React.FC = () => {
         )}
 
         {/* Quick Actions Grid */}
-         
+
       </div>
     </div>
   );

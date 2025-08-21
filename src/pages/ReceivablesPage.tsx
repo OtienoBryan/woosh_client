@@ -51,11 +51,24 @@ const ReceivablesPage: React.FC = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/financial/receivables/aging`);
       if (res.data.success) {
-        setReceivables(res.data.data);
+        // Validate and clean the data
+        const validatedData = res.data.data.map((item: any) => ({
+          ...item,
+          current: Number(item.current) || 0,
+          days_1_30: Number(item.days_1_30) || 0,
+          days_31_60: Number(item.days_31_60) || 0,
+          days_61_90: Number(item.days_61_90) || 0,
+          days_90_plus: Number(item.days_90_plus) || 0,
+          total_receivable: Number(item.total_receivable) || 0
+        }));
+        
+        console.log('Receivables data:', validatedData);
+        setReceivables(validatedData);
       } else {
         setError(res.data.error || 'Failed to fetch receivables');
       }
     } catch (err: any) {
+      console.error('Error fetching receivables:', err);
       setError(err.message || 'Failed to fetch receivables');
     } finally {
       setLoading(false);
@@ -99,9 +112,69 @@ const ReceivablesPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-full mx-auto px-8 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Aging Receivables</h1>
-        <div className="mb-6 text-xl font-semibold text-right text-blue-700">
-          Total Receivables: {formatCurrency(receivables.reduce((sum, r) => sum + r.total_receivable, 0))}
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">Total Receivables</div>
+            <div className="text-lg font-bold text-blue-600">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.total_receivable || 0), 0))}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">Current (0 days)</div>
+            <div className="text-lg font-bold text-green-600">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.current || 0), 0))}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">1-30 Days</div>
+            <div className="text-lg font-bold text-yellow-600">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_1_30 || 0), 0))}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">31-60 Days</div>
+            <div className="text-lg font-bold text-orange-600">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_31_60 || 0), 0))}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">61-90 Days</div>
+            <div className="text-lg font-bold text-red-600">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_61_90 || 0), 0))}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">90+ Days</div>
+            <div className="text-lg font-bold text-red-700">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_90_plus || 0), 0))}
+            </div>
+          </div>
+          {/* <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-xs font-medium text-gray-500">Overdue (31+ Days)</div>
+            <div className="text-lg font-bold text-red-800">
+              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_31_60 || 0) + (r.days_61_90 || 0) + (r.days_90_plus || 0), 0))}
+            </div>
+          </div> */}
         </div>
+        
+       
+        {/* No Data Message */}
+        {receivables.length === 0 && (
+          <div className="bg-white shadow rounded-lg p-8 text-center">
+            <div className="text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Receivables Found</h3>
+              <p className="text-gray-500">There are currently no outstanding receivables to display.</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Receivables Table - Only show if there's data */}
+        {receivables.length > 0 && (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -130,6 +203,7 @@ const ReceivablesPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );
