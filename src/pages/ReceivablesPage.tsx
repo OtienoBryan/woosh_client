@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 interface AgingReceivable {
   customer_id: number;
@@ -40,6 +41,13 @@ const ReceivablesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchReceivables();
@@ -77,6 +85,25 @@ const ReceivablesPage: React.FC = () => {
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES' }).format(amount);
+
+  // Pagination logic
+  const totalPages = Math.ceil(receivables.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  
+  // Filter receivables based on search term
+  const filteredReceivables = receivables.filter(r =>
+    r.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Apply pagination to filtered results
+  const totalFilteredPages = Math.ceil(filteredReceivables.length / itemsPerPage);
+  const currentReceivables = filteredReceivables.slice(startIndex, endIndex);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   if (loading) {
   return (
@@ -118,63 +145,90 @@ const ReceivablesPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">Total Receivables</div>
             <div className="text-lg font-bold text-blue-600">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.total_receivable || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.total_receivable || 0), 0))}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">Current (0 days)</div>
             <div className="text-lg font-bold text-green-600">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.current || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.current || 0), 0))}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">1-30 Days</div>
             <div className="text-lg font-bold text-yellow-600">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_1_30 || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.days_1_30 || 0), 0))}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">31-60 Days</div>
             <div className="text-lg font-bold text-orange-600">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_31_60 || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.days_31_60 || 0), 0))}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">61-90 Days</div>
             <div className="text-lg font-bold text-red-600">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_61_90 || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.days_61_90 || 0), 0))}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">90+ Days</div>
             <div className="text-lg font-bold text-red-700">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_90_plus || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.days_90_plus || 0), 0))}
             </div>
           </div>
           {/* <div className="bg-white rounded-lg shadow p-4">
             <div className="text-xs font-medium text-gray-500">Overdue (31+ Days)</div>
             <div className="text-lg font-bold text-red-800">
-              {formatCurrency(receivables.reduce((sum, r) => sum + (r.days_31_60 || 0) + (r.days_61_90 || 0) + (r.days_90_plus || 0), 0))}
+              {formatCurrency(filteredReceivables.reduce((sum, r) => sum + (r.days_31_60 || 0) + (r.days_61_90 || 0) + (r.days_90_plus || 0), 0))}
             </div>
           </div> */}
         </div>
         
+        {/* Search Bar */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="max-w-md">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search customers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {searchTerm && (
+              <div className="mt-2 text-sm text-gray-600">
+                Found {filteredReceivables.length} customer{filteredReceivables.length !== 1 ? 's' : ''} matching "{searchTerm}"
+              </div>
+            )}
+          </div>
+        </div>
        
         {/* No Data Message */}
-        {receivables.length === 0 && (
+        {filteredReceivables.length === 0 && (
           <div className="bg-white shadow rounded-lg p-8 text-center">
             <div className="text-gray-500">
               <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Receivables Found</h3>
-              <p className="text-gray-500">There are currently no outstanding receivables to display.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {searchTerm ? 'No Customers Found' : 'No Receivables Found'}
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm 
+                  ? `No customers found matching "${searchTerm}". Try adjusting your search.`
+                  : 'There are currently no outstanding receivables to display.'
+                }
+              </p>
             </div>
           </div>
         )}
         
         {/* Receivables Table - Only show if there's data */}
-        {receivables.length > 0 && (
+        {filteredReceivables.length > 0 && (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -189,7 +243,7 @@ const ReceivablesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {receivables.map((r) => (
+              {currentReceivables.map((r) => (
                 <tr key={r.customer_id} onClick={() => navigate(`/receivables/customer/${r.customer_id}`)} className="cursor-pointer hover:bg-blue-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{r.client_name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700 text-right">{formatCurrency(r.current)}</td>
@@ -202,6 +256,94 @@ const ReceivablesPage: React.FC = () => {
               ))}
             </tbody>
           </table>
+          
+          {/* Pagination Controls */}
+          {totalFilteredPages > 1 && (
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Show:</label>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span className="text-sm text-gray-600">per page</span>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600">
+                    Showing {startIndex + 1}-{Math.min(endIndex, filteredReceivables.length)} of {filteredReceivables.length} customers
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-lg transition-colors ${
+                      currentPage === 1
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                    }`}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalFilteredPages }, (_, i) => i + 1).map(page => {
+                      // Show first page, last page, current page, and pages around current
+                      if (
+                        page === 1 ||
+                        page === totalFilteredPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              page === currentPage
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="px-2 text-gray-400">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
+                    disabled={currentPage === totalFilteredPages}
+                    className={`p-2 rounded-lg transition-colors ${
+                      currentPage === totalFilteredPages
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                    }`}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         )}
       </div>

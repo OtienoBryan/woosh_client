@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, DollarSign, Calendar, User, AlertCircle, CheckCircle, Clock, CreditCard } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, User, AlertCircle, CheckCircle, Clock, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -27,6 +28,7 @@ const paymentMethods = [
 
 const ReceivablesCustomerPage: React.FC = () => {
   const { customerId } = useParams<{ customerId: string }>();
+  const { user } = useAuth();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,10 @@ const ReceivablesCustomerPage: React.FC = () => {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'overdue'>('all');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     if (customerId) {
@@ -133,6 +139,17 @@ const ReceivablesCustomerPage: React.FC = () => {
     return matchesSearch;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentInvoices = filteredInvoices.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
   const totalOutstanding = filteredInvoices.reduce((sum, inv) => {
     const balance = inv.total_amount - (inv.amount_paid || 0);
     return sum + balance;
@@ -228,25 +245,37 @@ const ReceivablesCustomerPage: React.FC = () => {
                   <div className="text-sm text-gray-500 mb-1">Total Outstanding</div>
                   <div className="text-3xl font-bold text-red-600">{formatCurrency(totalOutstanding)}</div>
                 </div>
-                <button
-                  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-all ${
-                    selectedInvoices.length === 0 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl transform hover:-translate-y-0.5'
-                  }`}
-                  disabled={selectedInvoices.length === 0}
-                  onClick={() => setShowBulkModal(true)}
-                >
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Bulk Payment
-                    {selectedInvoices.length > 0 && (
-                      <span className="bg-white text-blue-600 px-2 py-1 rounded-full text-sm font-bold">
-                        {selectedInvoices.length}
+                {user?.role === 'admin' ? (
+                  <button
+                    className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-all ${
+                      selectedInvoices.length === 0 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl transform hover:-translate-y-0.5'
+                    }`}
+                    disabled={selectedInvoices.length === 0}
+                    onClick={() => setShowBulkModal(true)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Bulk Payment
+                      {selectedInvoices.length > 0 && (
+                        <span className="bg-white text-blue-600 px-2 py-1 rounded-full text-sm font-bold">
+                          {selectedInvoices.length}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ) : (
+                  <div className="px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5" />
+                      Admin Access Required
+                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                        Admin Only
                       </span>
-                    )}
+                    </div>
                   </div>
-                </button>
+                )}
               </div>
             </div>
           </div>
@@ -337,7 +366,7 @@ const ReceivablesCustomerPage: React.FC = () => {
                     <th className="px-6 py-4">
                       <input
                         type="checkbox"
-                        checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
+                        checked={selectedInvoices.length === currentInvoices.length && currentInvoices.length > 0}
                         onChange={handleSelectAll}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         aria-label="Select all invoices"
@@ -352,7 +381,7 @@ const ReceivablesCustomerPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {filteredInvoices.map(inv => {
+                  {currentInvoices.map(inv => {
                     const status = getInvoiceStatus(inv);
                     const balance = inv.total_amount - (inv.amount_paid || 0);
                     
@@ -416,6 +445,94 @@ const ReceivablesCustomerPage: React.FC = () => {
               </table>
             </div>
             
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600">Show:</label>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => {
+                          setItemsPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                      </select>
+                      <span className="text-sm text-gray-600">per page</span>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600">
+                      Showing {startIndex + 1}-{Math.min(endIndex, filteredInvoices.length)} of {filteredInvoices.length} invoices
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentPage === 1
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                      }`}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                        // Show first page, last page, current page, and pages around current
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                page === currentPage
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (
+                          page === currentPage - 2 ||
+                          page === currentPage + 2
+                        ) {
+                          return <span key={page} className="px-2 text-gray-400">...</span>;
+                        }
+                        return null;
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentPage === totalPages
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                      }`}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Summary Footer */}
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
@@ -428,7 +545,7 @@ const ReceivablesCustomerPage: React.FC = () => {
                   )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Showing {filteredInvoices.length} of {invoices.length} invoices
+                  Page {currentPage} of {totalPages} • {filteredInvoices.length} invoices
                 </div>
               </div>
             </div>
@@ -436,17 +553,20 @@ const ReceivablesCustomerPage: React.FC = () => {
         )}
       </div>
 
-      {/* Bulk Payment Modal */}
-      <BulkPaymentModal
-        open={showBulkModal}
-        onClose={() => setShowBulkModal(false)}
-        invoices={invoices.filter(inv => selectedInvoices.includes(inv.id))}
-        customerId={customerId}
-        onSuccess={() => {
-          fetchPendingInvoices(customerId || '');
-          setSelectedInvoices([]);
-        }}
-      />
+      {/* Bulk Payment Modal - Only show for admin users */}
+      {user?.role === 'admin' && (
+        <BulkPaymentModal
+          open={showBulkModal}
+          onClose={() => setShowBulkModal(false)}
+          invoices={invoices.filter(inv => selectedInvoices.includes(inv.id))}
+          customerId={customerId}
+          userRole={user?.role}
+          onSuccess={() => {
+            fetchPendingInvoices(customerId || '');
+            setSelectedInvoices([]);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -457,8 +577,9 @@ const BulkPaymentModal: React.FC<{
   onClose: () => void;
   invoices: any[];
   customerId?: string;
+  userRole?: string;
   onSuccess: () => void;
-}> = ({ open, onClose, invoices, customerId, onSuccess }) => {
+}> = ({ open, onClose, invoices, customerId, userRole, onSuccess }) => {
   const [amounts, setAmounts] = useState<{ [id: string]: number }>({});
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
@@ -499,6 +620,12 @@ const BulkPaymentModal: React.FC<{
   const total = Object.values(amounts).reduce((sum, v) => sum + (Number(v) || 0), 0);
 
   const handleSubmit = async () => {
+    // Check if user has admin role
+    if (userRole !== 'admin') {
+      setError('Access denied. Admin role required to post payments.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -535,7 +662,12 @@ const BulkPaymentModal: React.FC<{
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Bulk Payment Assignment</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold">Bulk Payment Assignment</h2>
+              <span className="bg-yellow-400 text-blue-900 px-2 py-1 rounded-full text-xs font-bold">
+                Admin Only
+              </span>
+            </div>
             <button 
               className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white hover:bg-opacity-20"
               onClick={onClose}
