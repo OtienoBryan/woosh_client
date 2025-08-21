@@ -7,6 +7,7 @@ import { StockSummaryData } from '../services/storeService';
 import { StoreInventory, StoreInventorySummary } from '../types/financial';
 import { CreditNote } from '../services/creditNoteService';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   BarChart, 
   Bar, 
@@ -44,6 +45,7 @@ interface SalesSummary {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const InventoryStaffDashboardPage: React.FC = () => {
+  const { user } = useAuth();
   const [inventoryStats, setInventoryStats] = useState<InventoryStats>({
     totalProducts: 0,
     totalItems: 0,
@@ -413,15 +415,17 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 Post Receipt
               </Link>
 
-              <Link
-                to="/my-assets"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Assets
-              </Link>
+              {user?.id === 4 && (
+                <Link
+                  to="/my-assets"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Assets
+                </Link>
+              )}
               
               <Link
                 to="/inventory-transactions"
@@ -442,15 +446,17 @@ const InventoryStaffDashboardPage: React.FC = () => {
                 </svg>
                 Stock Take
               </Link>
-              <Link
-                to="/financial/suppliers"
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Vendors
-              </Link>
+              {user?.id === 4 && (
+                <Link
+                  to="/financial/suppliers"
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  Vendors
+                </Link>
+              )}
             </div>
           </div>
         </div>
