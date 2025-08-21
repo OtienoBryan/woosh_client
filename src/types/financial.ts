@@ -499,3 +499,42 @@ export interface User {
     product_name?: string;
     product_code?: string;
   }
+
+  export interface MerchandiseCategory {
+    id: number;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+  }
+
+  export interface Merchandise {
+  id: number;
+  name: string;
+  category_id: number;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  category?: MerchandiseCategory;
+}
+
+export interface MerchandiseStock {
+  id: number;
+  merchandise_id: number;
+  store_id: number;
+  quantity: number;
+  received_date: string;
+  received_by?: number;
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  merchandise?: Merchandise;
+  store?: {
+    id: number;
+    store_name: string;
+    store_code: string;
+  };
+}

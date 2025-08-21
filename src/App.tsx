@@ -111,6 +111,7 @@ import MyAssetsPage from './pages/MyAssetsPage';
 import PostFaultyProductsPage from './pages/PostFaultyProductsPage';
 import ViewFaultyReportsPage from './pages/ViewFaultyReportsPage';
 import InventoryStaffDashboardPage from './pages/InventoryStaffDashboardPage';
+import MerchandisePage from './pages/MerchandisePage';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import UploadDocumentPage from './pages/UploadDocumentPage';
 import EmployeeDocumentsPage from './pages/EmployeeDocumentsPage';
@@ -280,6 +281,14 @@ const App = () => {
               element={
                 <RoleBasedRoute allowedRoles={['stock']} fallbackPath="/">
                   <InventoryStaffDashboardPage />
+                </RoleBasedRoute>
+              } 
+            />
+            <Route 
+              path="/merchandise" 
+              element={
+                <RoleBasedRoute allowedRoles={['stock', 'admin']} fallbackPath="/">
+                  <MerchandisePage />
                 </RoleBasedRoute>
               } 
             />

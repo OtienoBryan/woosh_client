@@ -1,0 +1,91 @@
+import axios from 'axios';
+import { Merchandise, MerchandiseCategory, ApiResponse, PaginatedResponse } from '../types/financial';
+import { API_BASE_URL } from '../config/api';
+
+// Add request interceptor to include auth token
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Merchandise Categories Service
+export const merchandiseCategoriesService = {
+  getAll: async (): Promise<ApiResponse<MerchandiseCategory[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/merchandise/categories`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<ApiResponse<MerchandiseCategory>> => {
+    const response = await axios.get(`${API_BASE_URL}/merchandise/categories/${id}`);
+    return response.data;
+  },
+
+  create: async (category: Partial<MerchandiseCategory>): Promise<ApiResponse<MerchandiseCategory>> => {
+    const response = await axios.post(`${API_BASE_URL}/merchandise/categories`, category);
+    return response.data;
+  },
+
+  update: async (id: number, category: Partial<MerchandiseCategory>): Promise<ApiResponse<void>> => {
+    const response = await axios.put(`${API_BASE_URL}/merchandise/categories/${id}`, category);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    const response = await axios.delete(`${API_BASE_URL}/merchandise/categories/${id}`);
+    return response.data;
+  }
+};
+
+// Merchandise Service
+export const merchandiseService = {
+  getAll: async (page = 1, limit = 10, search = '', categoryId?: number): Promise<PaginatedResponse<Merchandise>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(categoryId && { category_id: categoryId.toString() })
+    });
+    const response = await axios.get(`${API_BASE_URL}/merchandise?${params}`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<ApiResponse<Merchandise>> => {
+    const response = await axios.get(`${API_BASE_URL}/merchandise/${id}`);
+    return response.data;
+  },
+
+  create: async (merchandise: Partial<Merchandise>): Promise<ApiResponse<Merchandise>> => {
+    const response = await axios.post(`${API_BASE_URL}/merchandise`, merchandise);
+    return response.data;
+  },
+
+  update: async (id: number, merchandise: Partial<Merchandise>): Promise<ApiResponse<void>> => {
+    const response = await axios.put(`${API_BASE_URL}/merchandise/${id}`, merchandise);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    const response = await axios.delete(`${API_BASE_URL}/merchandise/${id}`);
+    return response.data;
+  },
+
+  // Stock operations
+  addStock: async (stockData: Partial<MerchandiseStock>): Promise<ApiResponse<MerchandiseStock>> => {
+    const response = await axios.post(`${API_BASE_URL}/merchandise/stock`, stockData);
+    return response.data;
+  },
+
+  getStockHistory: async (merchandiseId?: number): Promise<ApiResponse<MerchandiseStock[]>> => {
+    const params = merchandiseId ? `?merchandise_id=${merchandiseId}` : '';
+    const response = await axios.get(`${API_BASE_URL}/merchandise/stock${params}`);
+    return response.data;
+  }
+};

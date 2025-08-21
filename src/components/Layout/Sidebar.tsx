@@ -177,6 +177,12 @@ const navigation = [
     href: '/inventory-staff-dashboard',
     icon: BoxIcon,
     roles: ['stock', 'admin']
+  },
+  {
+    name: 'Merchandise',
+    href: '/merchandise',
+    icon: BoxIcon,
+    roles: ['stock', 'admin']
   }
 ];
 
