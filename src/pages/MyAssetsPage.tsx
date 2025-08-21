@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Save, X, Calendar, DollarSign, Tag } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Save, X, Calendar, DollarSign, Tag, FileText } from 'lucide-react';
 import { suppliersService, myAssetsService } from '../services/financialService';
 
 interface MyAsset {
@@ -212,21 +212,6 @@ const MyAssetsPage: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-red-100 text-red-800';
-      case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'disposed':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
-    }
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
       style: 'currency',
@@ -267,7 +252,7 @@ const MyAssetsPage: React.FC = () => {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">My Assets Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Assets Management</h1>
             </div>
             <button
               onClick={handleAddAsset}
@@ -280,7 +265,7 @@ const MyAssetsPage: React.FC = () => {
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -288,13 +273,12 @@ const MyAssetsPage: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search assets by name, code, type, location, or assigned person..."
+                placeholder="Search assets by name, code, type, location, or supplier..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
-
           </div>
         </div>
 
@@ -315,10 +299,10 @@ const MyAssetsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Assets Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Assets Table */}
+        <div className="bg-white shadow overflow-hidden sm:rounded-md">
           {filteredAssets.length === 0 ? (
-            <div className="col-span-full text-center py-12">
+            <div className="text-center py-12">
               <div className="text-gray-500">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -330,87 +314,112 @@ const MyAssetsPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            filteredAssets.map((asset) => (
-              <div key={asset.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{asset.asset_name}</h3>
-                    <span className="text-sm text-gray-500">#{asset.asset_code}</span>
-                  </div>
-                  
-                  <div className="text-sm text-gray-600 mb-3">
-                    <span className="font-medium">Type:</span> {asset.asset_type}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="flex items-center text-sm">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-gray-600">Purchased: {formatDate(asset.purchase_date)}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Tag className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-gray-600">Location: {asset.location}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-gray-600">Price: {formatCurrency(asset.price)}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-600">Quantity: {asset.quantity}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-600">Total: {formatCurrency(asset.price * asset.quantity)}</span>
-                    </div>
-                    {asset.supplier_name && (
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-600">Supplier: {asset.supplier_name}</span>
-                      </div>
-                    )}
-                    {asset.document_url && (
-                      <div className="flex items-center text-sm">
-                        <a
-                          href={asset.document_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 flex items-center"
-                        >
-                          <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                          </svg>
-                          View Document
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="border-t pt-4 space-y-2">
-                    {asset.location && (
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-700">Location:</span> {asset.location}
-                      </div>
-                    )}
-
-                  </div>
-                  
-                  <div className="flex items-center justify-end space-x-2 mt-4 pt-4 border-t">
-                    <button
-                      onClick={() => handleEditAsset(asset)}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="Edit asset"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAsset(asset.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete asset"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Asset Details
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Purchase Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Supplier
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Qty
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Value
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Document
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAssets.map((asset) => (
+                    <tr key={asset.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{asset.asset_name}</div>
+                          <div className="text-sm text-gray-500">#{asset.asset_code}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {asset.asset_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {asset.location}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(asset.purchase_date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {asset.supplier_name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {formatCurrency(asset.price)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                        {asset.quantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                        {formatCurrency(asset.price * asset.quantity)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {asset.document_url ? (
+                          <a
+                            href={asset.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-900"
+                            title="View Document"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleEditAsset(asset)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Edit asset"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAsset(asset.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete asset"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
