@@ -21,6 +21,13 @@ const MerchandisePage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [stores, setStores] = useState<{ id: number; store_name: string; store_code: string }[]>([]);
+  const [currentStock, setCurrentStock] = useState<{ merchandise_id: number; store_id: number; quantity: number; merchandise_name: string; store_name: string }[]>([]);
+  const [showCurrentStock, setShowCurrentStock] = useState(false);
+  const [selectedStockStore, setSelectedStockStore] = useState<number | 'all'>('all');
+  const [ledger, setLedger] = useState<{ id: number; merchandise_id: number; store_id: number; transaction_type: string; quantity: number; balance_after: number; reference_type: string; notes?: string; created_at: string; merchandise_name: string; store_name: string }[]>([]);
+  const [showLedgerModal, setShowLedgerModal] = useState(false);
+  const [selectedLedgerStore, setSelectedLedgerStore] = useState<number | 'all'>('all');
+  const [selectedLedgerType, setSelectedLedgerType] = useState<string | 'all'>('all');
 
   // Form states
   const [form, setForm] = useState({
@@ -35,10 +42,9 @@ const MerchandisePage: React.FC = () => {
   });
 
   const [stockForm, setStockForm] = useState({
-    merchandise_id: '',
     store_id: '',
-    quantity: '',
-    notes: ''
+    items: [{ merchandise_id: '', quantity: '', notes: '' }],
+    general_notes: ''
   });
 
   useEffect(() => {
@@ -48,30 +54,82 @@ const MerchandisePage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('Fetching data...', { currentPage, searchTerm, selectedCategory });
+      
       const [merchandiseResponse, categoriesResponse, storesResponse] = await Promise.all([
         merchandiseService.getAll(currentPage, 10, searchTerm, selectedCategory === 'all' ? undefined : selectedCategory),
         merchandiseCategoriesService.getAll(),
         storeService.getAllStores()
       ]);
 
+      console.log('API Responses:', { merchandiseResponse, categoriesResponse, storesResponse });
+
       if (merchandiseResponse.success) {
         setMerchandise(merchandiseResponse.data);
         setTotalPages(merchandiseResponse.totalPages || 1);
         setTotalItems(merchandiseResponse.total || 0);
+        console.log('Merchandise data set:', merchandiseResponse.data);
       }
 
       if (categoriesResponse.success) {
         setCategories(categoriesResponse.data);
+        console.log('Categories data set:', categoriesResponse.data);
       }
 
       if (storesResponse.success) {
         setStores(storesResponse.data);
+        console.log('Stores data set:', storesResponse.data);
       }
     } catch (err: any) {
+      console.error('Error fetching data:', err);
       setError(err.response?.data?.error || 'Failed to fetch data');
     } finally {
       setLoading(false);
+      console.log('Loading finished, current state:', { merchandise: merchandise.length, categories: categories.length, stores: stores.length });
     }
+  };
+
+  const fetchCurrentStock = async () => {
+    try {
+      const response = await merchandiseService.getCurrentStock();
+      if (response.success) {
+        setCurrentStock(response.data);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch current stock');
+    }
+  };
+
+  const getFilteredCurrentStock = () => {
+    if (selectedStockStore === 'all') {
+      return currentStock;
+    }
+    return currentStock.filter(item => item.store_id === selectedStockStore);
+  };
+
+  const fetchLedger = async () => {
+    try {
+      const response = await merchandiseService.getLedger();
+      if (response.success) {
+        setLedger(response.data);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch ledger');
+    }
+  };
+
+  const getFilteredLedger = () => {
+    let filtered = ledger;
+    
+    if (selectedLedgerStore !== 'all') {
+      filtered = filtered.filter(item => item.store_id === selectedLedgerStore);
+    }
+    
+    if (selectedLedgerType !== 'all') {
+      filtered = filtered.filter(item => item.transaction_type === selectedLedgerType);
+    }
+    
+    return filtered;
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -84,6 +142,26 @@ const MerchandisePage: React.FC = () => {
 
   const handleStockFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setStockForm({ ...stockForm, [e.target.name]: e.target.value });
+  };
+
+  const handleStockItemChange = (index: number, field: string, value: string) => {
+    const newItems = [...stockForm.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setStockForm({ ...stockForm, items: newItems });
+  };
+
+  const addStockItem = () => {
+    setStockForm({
+      ...stockForm,
+      items: [...stockForm.items, { merchandise_id: '', quantity: '', notes: '' }]
+    });
+  };
+
+  const removeStockItem = (index: number) => {
+    if (stockForm.items.length > 1) {
+      const newItems = stockForm.items.filter((_, i) => i !== index);
+      setStockForm({ ...stockForm, items: newItems });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,14 +203,27 @@ const MerchandisePage: React.FC = () => {
   const handleStockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Filter out empty items
+      const validItems = stockForm.items.filter(item => 
+        item.merchandise_id && item.quantity
+      );
+
+      if (validItems.length === 0) {
+        setError('Please add at least one merchandise item');
+        return;
+      }
+
       const payload = {
-        ...stockForm,
-        merchandise_id: Number(stockForm.merchandise_id),
         store_id: Number(stockForm.store_id),
-        quantity: Number(stockForm.quantity)
+        items: validItems.map(item => ({
+          merchandise_id: Number(item.merchandise_id),
+          quantity: Number(item.quantity),
+          notes: item.notes || undefined
+        })),
+        general_notes: stockForm.general_notes || undefined
       };
 
-      await merchandiseService.addStock(payload);
+      await merchandiseService.addBulkStock(payload);
       setShowStockModal(false);
       resetStockForm();
       fetchData();
@@ -172,10 +263,9 @@ const MerchandisePage: React.FC = () => {
 
   const resetStockForm = () => {
     setStockForm({
-      merchandise_id: '',
       store_id: '',
-      quantity: '',
-      notes: ''
+      items: [{ merchandise_id: '', quantity: '', notes: '' }],
+      general_notes: ''
     });
   };
 
@@ -194,6 +284,11 @@ const MerchandisePage: React.FC = () => {
     setShowEditModal(false);
     setShowCategoryModal(false);
     setShowStockModal(false);
+    setShowCurrentStock(false);
+    setShowLedgerModal(false);
+    setSelectedStockStore('all');
+    setSelectedLedgerStore('all');
+    setSelectedLedgerType('all');
     setEditingItem(null);
     resetForm();
     resetStockForm();
@@ -231,6 +326,11 @@ const MerchandisePage: React.FC = () => {
             </button>
           </div>
         )}
+
+        {/* Debug Info */}
+        <div className="mb-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
+          <p>Debug: Loading: {loading.toString()}, Merchandise: {merchandise.length}, Categories: {categories.length}, Stores: {stores.length}</p>
+        </div>
 
         {/* Controls */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
@@ -272,8 +372,46 @@ const MerchandisePage: React.FC = () => {
             >
               Receive Stock
             </button>
+                         <button
+               onClick={() => {
+                 setShowCurrentStock(!showCurrentStock);
+                 if (!showCurrentStock) {
+                   fetchCurrentStock();
+                 }
+               }}
+               className={`px-4 py-2 rounded-md transition-colors ${
+                 showCurrentStock 
+                   ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                   : 'bg-purple-600 text-white hover:bg-purple-700'
+               }`}
+             >
+               {showCurrentStock ? 'Hide' : 'View'} Current Stock
+             </button>
+             <button
+               onClick={() => {
+                 setShowLedgerModal(!showLedgerModal);
+                 if (!showLedgerModal) {
+                   fetchLedger();
+                 }
+               }}
+               className={`px-4 py-2 rounded-md transition-colors ${
+                 showLedgerModal 
+                   ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                   : 'bg-orange-600 text-white hover:bg-orange-700'
+               }`}
+             >
+               {showLedgerModal ? 'Hide' : 'View'} Ledger
+             </button>
           </div>
         </div>
+
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="mb-4 flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mr-2"></div>
+            <span className="text-sm text-gray-600">Loading merchandise...</span>
+          </div>
+        )}
 
         {/* Merchandise Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -288,31 +426,51 @@ const MerchandisePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {merchandise.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {categories.find(c => c.id === item.category_id)?.name || 'Unknown'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {item.description || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="text-green-600 hover:text-green-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600 mr-2"></div>
+                        Loading merchandise...
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) : merchandise.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                      <div className="text-center">
+                        <p className="text-gray-500 mb-2">No merchandise found</p>
+                        <p className="text-xs text-gray-400">Click "Add Merchandise" to get started</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  merchandise.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {categories.find(c => c.id === item.category_id)?.name || 'Unknown'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                        {item.description || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-green-600 hover:text-green-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -365,6 +523,8 @@ const MerchandisePage: React.FC = () => {
             </div>
           )}
         </div>
+
+
 
         {/* Add/Edit Merchandise Modal */}
         {(showAddModal || showEditModal) && (
@@ -484,25 +644,10 @@ const MerchandisePage: React.FC = () => {
         {/* Receive Stock Modal */}
         {showStockModal && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
               <div className="mt-3">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Receive Merchandise Stock</h3>
                 <form onSubmit={handleStockSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Merchandise Item</label>
-                    <select
-                      name="merchandise_id"
-                      value={stockForm.merchandise_id}
-                      onChange={handleStockFormChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select merchandise item</option>
-                      {merchandise.map(item => (
-                        <option key={item.id} value={item.id}>{item.name}</option>
-                      ))}
-                    </select>
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Store</label>
                     <select
@@ -518,34 +663,92 @@ const MerchandisePage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={stockForm.quantity}
-                      onChange={handleStockFormChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      min="1"
-                      required
-                    />
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Merchandise Items</label>
+                      <button
+                        type="button"
+                        onClick={addStockItem}
+                        className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+                      >
+                        + Add Item
+                      </button>
+                    </div>
+                    
+                    {stockForm.items.map((item, index) => (
+                      <div key={index} className="border border-gray-200 rounded-md p-3 mb-3">
+                        <div className="flex gap-3 mb-3">
+                          <div className="flex-1">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Item</label>
+                            <select
+                              value={item.merchandise_id}
+                              onChange={(e) => handleStockItemChange(index, 'merchandise_id', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                              required
+                            >
+                              <option value="">Select merchandise item</option>
+                              {merchandise.map(merchItem => (
+                                <option key={merchItem.id} value={merchItem.id}>{merchItem.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="w-24">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => handleStockItemChange(index, 'quantity', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                              min="1"
+                              required
+                            />
+                          </div>
+                          <div className="w-8 flex items-end">
+                            {stockForm.items.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeStockItem(index)}
+                                className="px-2 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+                                title="Remove item"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Item Notes (Optional)</label>
+                          <input
+                            type="text"
+                            value={item.notes}
+                            onChange={(e) => handleStockItemChange(index, 'notes', e.target.value)}
+                            placeholder="Specific notes for this item"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">General Notes (Optional)</label>
                     <textarea
-                      name="notes"
-                      value={stockForm.notes}
+                      name="general_notes"
+                      value={stockForm.general_notes}
                       onChange={handleStockFormChange}
                       rows={3}
+                      placeholder="Notes that apply to all items in this receipt"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                   </div>
+
                   <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
                       className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                     >
-                      Receive Stock
+                      Receive {stockForm.items.length} Item{stockForm.items.length !== 1 ? 's' : ''}
                     </button>
                     <button
                       type="button"
@@ -560,9 +763,232 @@ const MerchandisePage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-};
+
+        {/* Current Stock Modal */}
+        {showCurrentStock && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-10 mx-auto p-6 border w-[1200px] shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                                 <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-lg font-medium text-gray-900">Current Stock Levels</h3>
+                   <button
+                     onClick={() => setShowCurrentStock(false)}
+                     className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                   >
+                     ×
+                   </button>
+                 </div>
+                 <p className="text-sm text-gray-600 mb-4">Real-time inventory across all stores</p>
+                 
+                 {/* Store Filter */}
+                 <div className="mb-4">
+                   <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Store</label>
+                   <select
+                     value={selectedStockStore}
+                     onChange={(e) => setSelectedStockStore(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                     className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                   >
+                     <option value="all">All Stores</option>
+                     {stores.map(store => (
+                       <option key={store.id} value={store.id}>{store.store_name}</option>
+                     ))}
+                   </select>
+                 </div>
+                
+                <div className="overflow-x-auto max-h-[600px]">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchandise</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                                         <tbody className="bg-white divide-y divide-gray-200">
+                       {getFilteredCurrentStock().map((item, index) => (
+                         <tr key={index} className="hover:bg-gray-50">
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             {item.merchandise_name}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             {item.store_name}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                               item.quantity > 10 
+                                 ? 'bg-green-100 text-green-800' 
+                                 : item.quantity > 0 
+                                 ? 'bg-yellow-100 text-yellow-800' 
+                                 : 'bg-red-600 text-red-800'
+                             }`}>
+                               {item.quantity}
+                             </span>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {item.quantity > 10 
+                               ? 'In Stock' 
+                               : item.quantity > 0 
+                               ? 'Low Stock' 
+                               : 'Out of Stock'
+                             }
+                           </td>
+                         </tr>
+                       ))}
+                       {getFilteredCurrentStock().length === 0 && (
+                         <tr>
+                           <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                             {currentStock.length === 0 ? 'No stock records found' : 'No stock records for selected store'}
+                           </td>
+                         </tr>
+                       )}
+                     </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowCurrentStock(false)}
+                    className="px-4 py-4 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+                     </div>
+         )}
+
+         {/* Ledger Modal */}
+         {showLedgerModal && (
+           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+             <div className="relative top-10 mx-auto p-6 border w-[1400px] shadow-lg rounded-md bg-white">
+               <div className="mt-3">
+                 <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-lg font-medium text-gray-900">Merchandise Ledger</h3>
+                   <button
+                     onClick={() => setShowLedgerModal(false)}
+                     className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                   >
+                     ×
+                   </button>
+                 </div>
+                 <p className="text-sm text-gray-600 mb-4">Complete audit trail of all inventory movements</p>
+                 
+                 {/* Filters */}
+                 <div className="mb-4 flex gap-4">
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Store</label>
+                     <select
+                       value={selectedLedgerStore}
+                       onChange={(e) => setSelectedLedgerStore(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                       className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                     >
+                       <option value="all">All Stores</option>
+                       {stores.map(store => (
+                         <option key={store.id} value={store.id}>{store.store_name}</option>
+                       ))}
+                     </select>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Transaction Type</label>
+                     <select
+                       value={selectedLedgerType}
+                       onChange={(e) => setSelectedLedgerType(e.target.value)}
+                       className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                     >
+                       <option value="all">All Types</option>
+                       <option value="RECEIVE">Receive</option>
+                       <option value="ISSUE">Issue</option>
+                       <option value="ADJUSTMENT">Adjustment</option>
+                       <option value="TRANSFER">Transfer</option>
+                     </select>
+                   </div>
+                 </div>
+                 
+                 <div className="overflow-x-auto max-h-[600px]">
+                   <table className="min-w-full divide-y divide-gray-200">
+                     <thead className="bg-gray-50 sticky top-0">
+                       <tr>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchandise</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance After</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                       </tr>
+                     </thead>
+                     <tbody className="bg-white divide-y divide-gray-200">
+                       {getFilteredLedger().map((item, index) => (
+                         <tr key={index} className="hover:bg-gray-50">
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {new Date(item.created_at).toLocaleDateString()}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             {item.merchandise_name}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             {item.store_name}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                               item.transaction_type === 'RECEIVE' 
+                                 ? 'bg-green-100 text-green-800' 
+                                 : item.transaction_type === 'ISSUE'
+                                 ? 'bg-red-100 text-red-800'
+                                 : item.transaction_type === 'ADJUSTMENT'
+                                 ? 'bg-yellow-100 text-yellow-800'
+                                 : 'bg-blue-100 text-blue-800'
+                             }`}>
+                               {item.transaction_type}
+                             </span>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             <span className={`font-medium ${
+                               item.transaction_type === 'RECEIVE' ? 'text-green-600' : 'text-red-600'
+                             }`}>
+                               {item.transaction_type === 'RECEIVE' ? '+' : ''}{item.quantity}
+                             </span>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             <span className="font-medium">{item.balance_after}</span>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {item.reference_type}
+                           </td>
+                           <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                             {item.notes || '-'}
+                           </td>
+                         </tr>
+                       ))}
+                       {getFilteredLedger().length === 0 && (
+                         <tr>
+                           <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                             {ledger.length === 0 ? 'No ledger records found' : 'No ledger records match the selected filters'}
+                           </td>
+                         </tr>
+                       )}
+                     </tbody>
+                   </table>
+                 </div>
+
+                 <div className="mt-6 flex justify-end">
+                   <button
+                     onClick={() => setShowLedgerModal(false)}
+                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                   >
+                     Close
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
+       </div>
+     </div>
+   );
+ };
 
 export default MerchandisePage;

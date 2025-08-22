@@ -83,9 +83,30 @@ export const merchandiseService = {
     return response.data;
   },
 
+  addBulkStock: async (receiptData: MerchandiseStockReceipt): Promise<ApiResponse<MerchandiseStock[]>> => {
+    const response = await axios.post(`${API_BASE_URL}/merchandise/stock/bulk`, receiptData);
+    return response.data;
+  },
+
   getStockHistory: async (merchandiseId?: number): Promise<ApiResponse<MerchandiseStock[]>> => {
     const params = merchandiseId ? `?merchandise_id=${merchandiseId}` : '';
     const response = await axios.get(`${API_BASE_URL}/merchandise/stock${params}`);
+    return response.data;
+  },
+
+  getCurrentStock: async (merchandiseId?: number, storeId?: number): Promise<ApiResponse<{ merchandise_id: number; store_id: number; quantity: number; merchandise_name: string; store_name: string }[]>> => {
+    const params = new URLSearchParams();
+    if (merchandiseId) params.append('merchandise_id', merchandiseId.toString());
+    if (storeId) params.append('store_id', storeId.toString());
+    const response = await axios.get(`${API_BASE_URL}/merchandise/stock/current?${params}`);
+    return response.data;
+  },
+
+  getLedger: async (merchandiseId?: number, storeId?: number): Promise<ApiResponse<MerchandiseLedger[]>> => {
+    const params = new URLSearchParams();
+    if (merchandiseId) params.append('merchandise_id', merchandiseId.toString());
+    if (storeId) params.append('store_id', storeId.toString());
+    const response = await axios.get(`${API_BASE_URL}/merchandise/ledger?${params}`);
     return response.data;
   }
 };

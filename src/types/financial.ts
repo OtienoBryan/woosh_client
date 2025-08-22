@@ -538,3 +538,35 @@ export interface MerchandiseStock {
     store_code: string;
   };
 }
+
+export interface MerchandiseStockItem {
+  merchandise_id: number;
+  quantity: number;
+  notes?: string;
+}
+
+export interface MerchandiseStockReceipt {
+  store_id: number;
+  items: MerchandiseStockItem[];
+  general_notes?: string;
+}
+
+export interface MerchandiseLedger {
+  id: number;
+  merchandise_id: number;
+  store_id: number;
+  transaction_type: 'RECEIVE' | 'ISSUE' | 'ADJUSTMENT' | 'TRANSFER';
+  quantity: number;
+  balance_after: number;
+  reference_id?: number;
+  reference_type: 'STOCK_RECEIPT' | 'STOCK_ISSUE' | 'ADJUSTMENT' | 'TRANSFER';
+  notes?: string;
+  created_by: number;
+  created_at: string;
+  merchandise?: Merchandise;
+  store?: {
+    id: number;
+    store_name: string;
+    store_code: string;
+  };
+}
