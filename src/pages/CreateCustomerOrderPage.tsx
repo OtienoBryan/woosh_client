@@ -34,6 +34,13 @@ interface SalesOrderItem {
   net_price: number;
 }
 
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'KES' 
+  }).format(amount);
+};
+
 const CreateCustomerOrderPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -113,6 +120,7 @@ const CreateCustomerOrderPage: React.FC = () => {
       tax_amount: 0,
       net_price: 0
     };
+    console.log('Adding new item:', newItem);
     setItems([...items, newItem]);
   };
 
@@ -121,14 +129,49 @@ const CreateCustomerOrderPage: React.FC = () => {
   };
 
   const updateItem = (index: number, field: keyof SalesOrderItem, value: any) => {
-    const updatedItems = [...items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    console.log('updateItem called:', { index, field, value, currentItems: items });
     
-    // Calculate prices and tax
-    if (field === 'quantity' || field === 'unit_price' || field === 'tax_type') {
-      const quantity = field === 'quantity' ? value : updatedItems[index].quantity;
-      const unitPrice = field === 'unit_price' ? value : updatedItems[index].unit_price;
-      const taxType = field === 'tax_type' ? value : updatedItems[index].tax_type;
+    const updatedItems = [...items];
+    
+    // Update the field first
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    console.log('Field updated:', { field, newValue: updatedItems[index][field] });
+    
+            // Update product details if product_id changed (do this before price calculations)
+        if (field === 'product_id' && value > 0) {
+          const product = products.find(p => p.id === value);
+          if (product) {
+            console.log('Product found:', product);
+            updatedItems[index].product = product;
+            
+            // Only set unit_price if product has a valid selling_price
+            if (product.selling_price && product.selling_price > 0) {
+              updatedItems[index].unit_price = product.selling_price;
+              console.log('Using product selling price:', product.selling_price);
+            } else {
+              // Reset unit_price to 0 if product has no selling price
+              updatedItems[index].unit_price = 0;
+              console.log('Product has no selling price, unit_price reset to 0');
+            }
+            
+            // Use product's default tax type if available, otherwise keep current
+            if (product.tax_type) {
+              updatedItems[index].tax_type = product.tax_type;
+            }
+            console.log('Product details updated:', { 
+              unit_price: updatedItems[index].unit_price, 
+              tax_type: updatedItems[index].tax_type 
+            });
+          }
+        }
+    
+    // Always recalculate prices after any field update that affects pricing
+    if (field === 'quantity' || field === 'unit_price' || field === 'tax_type' || field === 'product_id') {
+      const quantity = updatedItems[index].quantity;
+      const unitPrice = updatedItems[index].unit_price;
+      const taxType = updatedItems[index].tax_type;
+      
+      console.log('Calculating prices:', { quantity, unitPrice, taxType });
       
       const netPrice = quantity * unitPrice;
       let taxRate = 0;
@@ -142,52 +185,33 @@ const CreateCustomerOrderPage: React.FC = () => {
       const taxAmount = netPrice * taxRate;
       const totalPrice = netPrice + taxAmount;
       
+      console.log('Price calculations:', { netPrice, taxAmount, totalPrice });
+      
       updatedItems[index].net_price = netPrice;
       updatedItems[index].tax_amount = taxAmount;
       updatedItems[index].total_price = totalPrice;
     }
     
-    // Update product details if product_id changed
-    if (field === 'product_id') {
-      const product = products.find(p => p.id === value);
-      if (product) {
-        updatedItems[index].product = product;
-        updatedItems[index].unit_price = product.selling_price;
-        // Use product's default tax type if available, otherwise keep current
-        if (product.tax_type) {
-          updatedItems[index].tax_type = product.tax_type;
-        }
-        
-        // Recalculate prices with new unit price and tax type
-        const netPrice = updatedItems[index].quantity * product.selling_price;
-        let taxRate = 0;
-        
-        if (updatedItems[index].tax_type === '16%') {
-          taxRate = 0.16;
-        }
-        
-        const taxAmount = netPrice * taxRate;
-        const totalPrice = netPrice + taxAmount;
-        
-        updatedItems[index].net_price = netPrice;
-        updatedItems[index].tax_amount = taxAmount;
-        updatedItems[index].total_price = totalPrice;
-      }
-    }
-    
+    console.log('Final updated item:', updatedItems[index]);
     setItems(updatedItems);
   };
 
   const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + item.net_price, 0);
+    const subtotal = items.reduce((sum, item) => sum + item.net_price, 0);
+    console.log('Calculating subtotal:', { items: items.map(i => ({ id: i.product_id, net_price: i.net_price })), subtotal });
+    return subtotal;
   };
 
   const calculateTax = () => {
-    return items.reduce((sum, item) => sum + item.tax_amount, 0);
+    const tax = items.reduce((sum, item) => sum + item.tax_amount, 0);
+    console.log('Calculating tax:', { items: items.map(i => ({ id: i.product_id, tax_amount: i.tax_amount })), tax });
+    return tax;
   };
 
   const calculateTotal = () => {
-    return items.reduce((sum, item) => sum + item.total_price, 0);
+    const total = items.reduce((sum, item) => sum + item.total_price, 0);
+    console.log('Calculating total:', { items: items.map(i => ({ id: i.product_id, total_price: i.total_price })), total });
+    return total;
   };
 
   // Calculate tax breakdown by tax type
@@ -305,21 +329,35 @@ const CreateCustomerOrderPage: React.FC = () => {
       console.log('Notes:', notes);
       console.log('Items:', items);
 
-      const salesOrderData: CreateSalesOrderForm = {
-        customer_id: selectedCustomer as number,
-        order_date: orderDate,
-        expected_delivery_date: expectedDeliveryDate || undefined,
-        notes: notes || undefined,
-        items: items.map(item => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          tax_type: item.tax_type
-        }))
-      };
+                                                       const salesOrderData: CreateSalesOrderForm = {
+          client_id: selectedCustomer as number,
+          order_date: orderDate,
+          expected_delivery_date: expectedDeliveryDate || undefined,
+          notes: notes || undefined,
+          subtotal: calculateSubtotal(),
+          tax_amount: calculateTax(),
+          total_amount: calculateTotal(),
+          items: items.map(item => ({
+            product_id: item.product_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            tax_type: item.tax_type,
+            tax_amount: item.tax_amount
+          }))
+        };
+       
+       console.log('=== ITEMS BEFORE MAPPING ===');
+       console.log('Raw items:', JSON.stringify(items, null, 2));
+               console.log('=== MAPPED ITEMS ===');
+        console.log('Mapped items:', JSON.stringify(salesOrderData.items, null, 2));
+        
+        console.log('=== ORDER TOTALS ===');
+        console.log('Subtotal:', salesOrderData.subtotal);
+        console.log('Tax Amount:', salesOrderData.tax_amount);
+        console.log('Total Amount:', salesOrderData.total_amount);
 
-      console.log('=== SUBMITTING SALES ORDER ===');
-      console.log('Sales order data:', JSON.stringify(salesOrderData, null, 2));
+        console.log('=== SUBMITTING SALES ORDER ===');
+        console.log('Sales order data:', JSON.stringify(salesOrderData, null, 2));
       
       const response = await salesOrdersService.create(salesOrderData);
       console.log('=== SALES ORDER RESPONSE ===');
@@ -591,6 +629,9 @@ const CreateCustomerOrderPage: React.FC = () => {
                               </option>
                             ))}
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Product's selling price will be used as the base unit price (exclusive of tax)
+                        </p>
                       </div>
 
                       <div>
@@ -609,17 +650,44 @@ const CreateCustomerOrderPage: React.FC = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Unit Price *
+                          Unit Price (Exclusive of Tax) *
                         </label>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={item.unit_price}
-                          onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
+                          value={item.unit_price || ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : Number(e.target.value);
+                            console.log('Updating unit price:', { index, value, currentItem: item });
+                            updateItem(index, 'unit_price', value);
+                          }}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+            Enter the base price before tax is added. 
+            {item.product?.selling_price && item.product.selling_price > 0 ? 
+              ` Product base price: ${formatCurrency(item.product.selling_price)}` : 
+              ' Product base price not set - enter your desired base price'
+            }
+          </p>
+          {item.unit_price > 0 && (
+            <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+              <div className="flex justify-between">
+                <span>Base Price:</span>
+                <span>{formatCurrency(item.unit_price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax ({item.tax_type || '16%'}):</span>
+                <span>{formatCurrency(item.tax_amount || 0)}</span>
+              </div>
+              <div className="flex justify-between font-medium border-t pt-1">
+                <span>Total Price:</span>
+                <span>{formatCurrency(item.total_price || 0)}</span>
+              </div>
+            </div>
+          )}
                       </div>
 
                       <div>
@@ -672,11 +740,37 @@ const CreateCustomerOrderPage: React.FC = () => {
 
 
 
-          {/* Order Summary */}
-          {items.length > 0 && (
+                     {/* Debug Information */}
+           {items.length > 0 && (
+             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+               <h4 className="text-sm font-medium text-yellow-800 mb-2">Debug Info (Current Items State)</h4>
+               <pre className="text-xs text-yellow-700 overflow-auto">
+                 {JSON.stringify(items, null, 2)}
+               </pre>
+             </div>
+           )}
+           
+           {/* Order Summary */}
+           {items.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-8 mb-8">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
-                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              
+              {/* Pricing Information Note */}
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <h4 className="text-sm font-medium text-blue-800">Pricing Information</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Unit prices are entered exclusive of tax. Tax is calculated and added automatically based on the selected tax type for each item.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Notes

@@ -468,7 +468,7 @@ const SalesOrderDetailsPage: React.FC = () => {
                       <td className="item-col">{item.product?.product_name || 'N/A'}</td>
                       <td className="qty-col">{item.quantity}</td>
                       <td className="price-col">
-                        {item.net_price ? formatCurrency(item.net_price / item.quantity) : formatCurrency(item.unit_price / 1.16)}
+                        {item.net_price ? formatCurrency(item.net_price / item.quantity) : formatCurrency(item.unit_price)}
                       </td>
                       <td className="tax-col">{formatCurrency(item.tax_amount || 0)}</td>
                       <td className="total-col">{formatCurrency(item.total_price)}</td>

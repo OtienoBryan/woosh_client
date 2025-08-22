@@ -474,7 +474,7 @@ const CustomerOrdersPage: React.FC = () => {
       const unitPriceGross = Number(newItems[index].unit_price) || 0;
       const taxType = (newItems[index].tax_type || '16%') as '16%' | 'zero_rated' | 'exempted';
       const taxRate = taxType === '16%' ? 0.16 : 0;
-      const totalGross = quantity * unitPriceGross; // price is tax-inclusive
+                              const totalGross = quantity * unitPriceGross; // price is tax-exclusive, total includes tax
       newItems[index].total_price = Number(totalGross.toFixed(2));
     }
     
@@ -493,7 +493,7 @@ const CustomerOrdersPage: React.FC = () => {
       const currentItem = newItems[index];
       const quantity = currentItem ? currentItem.quantity : 1;
       const unitPrice = product.selling_price || 0;
-      const totalPrice = quantity * unitPrice; // selling_price assumed tax-inclusive
+                              const totalPrice = quantity * unitPrice; // selling_price is tax-exclusive, total includes tax
       
       newItems[index] = {
         ...newItems[index],
@@ -1036,7 +1036,6 @@ const CustomerOrdersPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
                           <div className="text-sm font-medium text-gray-900">
                             {order.customer_balance ? formatCurrency(parseFloat(order.customer_balance)) : 'N/A'}
                           </div>
@@ -1069,7 +1068,6 @@ const CustomerOrdersPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 text-green-500 mr-1" />
                           <div className="text-sm font-medium text-gray-900">
                             {formatCurrency(order.total_amount)}
                           </div>
@@ -1446,6 +1444,20 @@ const CustomerOrdersPage: React.FC = () => {
                   {isEditing ? (
                     // Edit Mode - Editable Items
                     <div className="space-y-4">
+                      {/* Pricing Information Note */}
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm text-blue-700">
+                              <strong>Note:</strong> Unit prices shown are exclusive of tax. Tax is calculated and added to each item's total price.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
                       {editForm.items.length === 0 ? (
                         <div className="text-center py-8 text-gray-500">
                           <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -1467,7 +1479,7 @@ const CustomerOrdersPage: React.FC = () => {
                                 <tr>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price (Incl. Tax)</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price (Excl. Tax)</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -1598,6 +1610,20 @@ const CustomerOrdersPage: React.FC = () => {
                   ) : (
                     // View Mode - Read-only Items
                     <div className="space-y-4">
+                      {/* Pricing Information Note */}
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm text-blue-700">
+                              <strong>Note:</strong> Unit prices shown are exclusive of tax. Tax is calculated and added to each item's total price.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
                       {selectedOrder.items && selectedOrder.items.length > 0 ? (
                         <>
                           {selectedOrder.items.map((item, index) => (
@@ -1609,7 +1635,7 @@ const CustomerOrdersPage: React.FC = () => {
                                 <div className="text-sm text-gray-500">
                                   Code: {item.product?.product_code || 'No Code'} | 
                                   Qty: {item.quantity} | 
-                                  Price: {formatCurrency(item.unit_price)}
+                                  Price: {formatCurrency(item.unit_price)} (excl. tax)
                                 </div>
                               </div>
                               <div className="text-right">
@@ -1786,7 +1812,7 @@ const CustomerOrdersPage: React.FC = () => {
                               <div className="text-sm text-gray-500">
                                 Code: {item.product?.product_code || 'No Code'} | 
                                 Qty: {item.quantity} | 
-                                Price: {formatCurrency(item.unit_price)}
+                                Price: {formatCurrency(item.unit_price)} (excl. tax)
                               </div>
                             </div>
                             <div className="text-right">

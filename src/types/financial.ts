@@ -311,16 +311,20 @@ export interface User {
   }
   
   export interface CreateSalesOrderForm {
-    customer_id: number;
+    client_id: number;
     sales_rep_id?: number;
     order_date: string;
     expected_delivery_date?: string;
     notes?: string;
+    subtotal: number;
+    tax_amount: number;
+    total_amount: number;
     items: {
       product_id: number;
       quantity: number;
       unit_price: number;
       tax_type?: TaxType;
+      tax_amount: number;
     }[];
   }
   
