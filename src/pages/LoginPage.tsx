@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import axios from 'axios';
+import Popup from '../components/Popup';
 
 import { API_BASE_URL } from '../config/api';
 
@@ -11,6 +12,8 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,55 +37,82 @@ const LoginPage: React.FC = () => {
 
       if (response.data.token) {
         console.log('Login successful, setting auth token');
-        login(response.data.token, response.data.user);
-        if (response.data.user.role === 'sales') {
-          navigate('/sales-dashboard', { replace: true });
-        } else if (response.data.user.role === 'hr') {
-          navigate('/hr-dashboard', { replace: true });
-        } else if (response.data.user.role === 'stock') {
-          navigate('/inventory-staff-dashboard', { replace: true });
-        } else {
-          const from = (location.state as any)?.from?.pathname || '/';
-          // Prevent redirecting to '/' (FinancialDashboard) for sales role
-          if (response.data.user.role === 'sales' && (!from || from === '/')) {
+        setShowSuccessPopup(true);
+        // Delay navigation to show success message
+        setTimeout(() => {
+          login(response.data.token, response.data.user);
+          if (response.data.user.role === 'sales') {
             navigate('/sales-dashboard', { replace: true });
+          } else if (response.data.user.role === 'hr') {
+            navigate('/hr-dashboard', { replace: true });
+          } else if (response.data.user.role === 'stock') {
+            navigate('/inventory-staff-dashboard', { replace: true });
           } else {
-            navigate(from, { replace: true });
+            const from = (location.state as any)?.from?.pathname || '/';
+            // Prevent redirecting to '/' (FinancialDashboard) for sales role
+            if (response.data.user.role === 'sales' && (!from || from === '/')) {
+              navigate('/sales-dashboard', { replace: true });
+            } else {
+              navigate(from, { replace: true });
+            }
           }
-        }
+        }, 1500); // Show success message for 1.5 seconds
       } else {
         console.error('Login response missing token');
         setError('Invalid response from server');
+        setShowErrorPopup(true);
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios error details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-          config: {
-            url: error.config?.url,
-            baseURL: error.config?.baseURL,
-            headers: error.config?.headers
+          } catch (error) {
+        console.error('Login error:', error);
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+            isAxiosError: axios.isAxiosError(error),
+            errorType: typeof error,
+            errorConstructor: error.constructor.name,
+            config: {
+              url: error.config?.url,
+              baseURL: error.config?.baseURL,
+              headers: error.config?.headers
+            }
+          });
+          // Handle different HTTP status codes for authentication errors
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            setError('Incorrect credentials. Please check your username and password.');
+            setShowErrorPopup(true);
+          } else if (error.response?.status === 400) {
+            // Check if the error message contains credential-related text
+            const errorMessage = error.response?.data?.message || '';
+            if (errorMessage.toLowerCase().includes('invalid') || 
+                errorMessage.toLowerCase().includes('credentials') ||
+                errorMessage.toLowerCase().includes('username') ||
+                errorMessage.toLowerCase().includes('password')) {
+              setError('Incorrect credentials. Please check your username and password.');
+            } else {
+              setError(errorMessage || 'Invalid request. Please check your input.');
+            }
+            setShowErrorPopup(true);
+          } else if (error.response?.data?.message) {
+            setError(error.response.data.message);
+            setShowErrorPopup(true);
+          } else if (!error.response) {
+            setError('No response from server. Please check your connection.');
+            setShowErrorPopup(true);
+          } else {
+            setError('An unexpected error occurred');
+            setShowErrorPopup(true);
           }
-        });
-        if (error.response?.status === 401) {
-          setError('Invalid username or password');
-        } else if (error.response?.data?.message) {
-          setError(error.response.data.message);
-        } else if (!error.response) {
-          setError('No response from server. Please check your connection.');
         } else {
+          console.error('Non-Axios error:', error);
           setError('An unexpected error occurred');
+          setShowErrorPopup(true);
         }
-      } else {
-        console.error('Non-Axios error:', error);
-        setError('An unexpected error occurred');
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -98,15 +128,6 @@ const LoginPage: React.FC = () => {
             />
           </div>
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-600 p-4 mb-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                   Username
@@ -174,6 +195,24 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Error Popup */}
+      <Popup
+        isOpen={showErrorPopup}
+        onClose={() => setShowErrorPopup(false)}
+        title="Login Error"
+        message={error}
+        type="error"
+      />
+      
+      {/* Success Popup */}
+      <Popup
+        isOpen={showSuccessPopup}
+        onClose={() => setShowSuccessPopup(false)}
+        title="Login Successful"
+        message="Welcome back! Redirecting to your dashboard..."
+        type="success"
+      />
     </div>
   );
 };

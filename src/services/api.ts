@@ -60,7 +60,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for debugging
+// Add response interceptor for debugging and error handling
 api.interceptors.response.use(
   (response) => {
     console.log('Response received:', response);
@@ -73,7 +73,9 @@ api.interceptors.response.use(
       // that falls out of the range of 2xx
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
-      return Promise.reject(new Error(error.response.data.message || 'An error occurred'));
+      
+      // Don't transform the error, just pass it through to preserve Axios structure
+      return Promise.reject(error);
     } else if (error.request) {
       // The request was made but no response was received
       console.error('No response received:', error.request);
@@ -86,7 +88,7 @@ api.interceptors.response.use(
   }
 );
 
-// Request interceptor
+// Request interceptor for authentication
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
@@ -94,80 +96,11 @@ api.interceptors.request.use(
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('Making request to:', config.url, 'with config:', config);
     return config;
   },
   (error: AxiosError) => {
     console.error('Request error:', error);
     return Promise.reject(error);
-  }
-);
-
-// Response interceptor
-api.interceptors.response.use(
-  (response: AxiosResponse): AxiosResponse<any> => {
-    console.log('Received response:', response.status, response.data);
-    return response as unknown as Response<any>;
-  },
-  async (error: unknown): Promise<never> => {
-    console.error('Response error:', error);
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        const timeoutError = new Error('Request timeout') as ApiError;
-        timeoutError.status = 408;
-        timeoutError.code = 'timeout';
-        (timeoutError as any).details = error.config;
-        throw timeoutError;
-      }
-
-      if (!error.response) {
-        const networkError = new Error(error.message || 'Network error') as ApiError;
-        networkError.status = 0;
-        networkError.code = 'network';
-        throw networkError;
-      }
-
-      const { status, data } = error.response;
-      
-      switch (status) {
-        case 401:
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          break;
-        case 403:
-        case 404:
-        case 500:
-          break;
-      }
-
-      const errorData = new Error(
-        typeof data === 'object' && data !== null && 'message' in data 
-          ? (data as { message: string }).message 
-          : 'An error occurred'
-      ) as ApiError;
-      
-      errorData.status = status;
-      errorData.code = `http-${status}`;
-      (errorData as any).response = error.response;
-      
-      if (typeof data === 'object' && data !== null) {
-        (errorData as any).details = data;
-      }
-      
-      throw errorData;
-    }
-
-    const unknownError = new Error(
-      error instanceof Error ? error.message : 'An unknown error occurred'
-    ) as ApiError;
-    unknownError.status = 500;
-    unknownError.code = 'unknown';
-    
-    if (error instanceof Error) {
-      unknownError.stack = error.stack;
-    }
-    
-    throw unknownError;
   }
 );
 
