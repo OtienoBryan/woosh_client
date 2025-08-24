@@ -1,7 +1,7 @@
 import React, { Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
-import { XIcon, HomeIcon, UsersIcon, CogIcon, ShieldIcon, BoxIcon, ImageIcon, InfoIcon, GroupIcon, Tally4Icon, BellIcon, FileTextIcon, BarChart3, MessageCircleIcon, DollarSign, Clock } from 'lucide-react';
+import { XIcon, HomeIcon, UsersIcon, CogIcon, ShieldIcon, BoxIcon, ImageIcon, InfoIcon, GroupIcon, Tally4Icon, BellIcon, FileTextIcon, BarChart3, MessageCircleIcon, DollarSign, Clock, MapIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
@@ -123,6 +123,12 @@ const navigation = [
                 href: '/products-sale-report',
                 icon: BarChart3,
                 roles: ['admin', 'manager', 'accountant', 'sales']
+              },
+              {
+                name: 'Journey Plans',
+                href: '/dashboard/journey-plans',
+                icon: MapIcon,
+                roles: ['admin', 'manager', 'sales']
               },
   {
     name: 'Balance Sheet',

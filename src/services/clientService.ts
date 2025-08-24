@@ -4,10 +4,18 @@ export interface Client {
   id: number;
   name: string;
   company_name?: string;
-  account_number: string;
   email: string;
-  phone?: string;
   address?: string;
+  contact?: string;
+  tax_pin?: string;
+  credit_limit?: string;
+  payment_terms?: string;
+  country_id?: number;
+  countryId?: number;
+  region_id?: number;
+  route_id?: number;
+  route_id_update?: number;
+  status?: number;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +38,23 @@ export const clientService = {
     } catch (error: any) {
       console.error('Error in getClients:', error);
       throw error; // Let the error propagate up
+    }
+  },
+
+  // Add: Get inactive clients (status = 0)
+  getInactiveClients: async (): Promise<Client[]> => {
+    try {
+      console.log('Attempting to fetch inactive clients...');
+      const response = await api.get<{ data: Client[] }>('/clients?limit=10000');
+      if (response.data && response.data.data) {
+        const inactiveClients = response.data.data.filter((client: Client) => client.status === 0);
+        console.log(`Found ${inactiveClients.length} inactive clients`);
+        return inactiveClients;
+      }
+      return [];
+    } catch (error: any) {
+      console.error('Error in getInactiveClients:', error);
+      throw error;
     }
   },
 

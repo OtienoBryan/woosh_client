@@ -98,6 +98,7 @@ import ManagersPerformancePage from './pages/ManagersPerformancePage';
 import SalesRepPerformanceGraphPage from './pages/SalesRepPerformanceGraphPage';
 import ClientActivityPage from './pages/ClientActivityPage';
 import AssetsPage from './pages/AssetsPage';
+import JourneyPlanPage from './pages/JourneyPlanPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ClientProfilePage from './pages/ClientProfilePage';
 import MasterSalesPage from './pages/MasterSalesPage';
@@ -247,7 +248,8 @@ const App = () => {
             <Route path="/dashboard/reports/product-performance-graph" element={<ProductPerformanceGraphPage />} />
             <Route path="/dashboard/clients/add" element={<AddClientPage />} />
             <Route path="/dashboard/clients/:id/branches" element={<ClientBranchesPage />} />
-            <Route path="/financial/purchase-order" element={<PurchaseOrderPage />} />
+<Route path="/dashboard/journey-plans" element={<JourneyPlanPage />} />
+<Route path="/financial/purchase-order" element={<PurchaseOrderPage />} />
             <Route path="/financial/create-customer-order" element={<CreateCustomerOrderPage />} />
             <Route path="/financial/customer-orders" element={<CustomerOrdersPage />} />
             <Route path="/financial/post-receipt" element={<PostReceiptPage />} />

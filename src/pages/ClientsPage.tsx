@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ClientsTable from '../components/Dashboard/ClientsTable';
-import { Search } from 'lucide-react';
+import InactiveClientsModal from '../components/InactiveClientsModal';
+import CreateClientModal from '../components/CreateClientModal';
+import { Search, AlertTriangle, Building2 } from 'lucide-react';
 
 const ClientsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showInactiveModal, setShowInactiveModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const handleCreateSuccess = () => {
+    // Refresh the clients table
+    window.location.reload();
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8">
@@ -17,13 +26,24 @@ const ClientsPage: React.FC = () => {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          {/* <button
-            type="button"
-            onClick={() => navigate('/dashboard/clients/add')}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
-          >
-            Add Premises
-          </button> */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:w-auto"
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Create New Client
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInactiveModal(true)}
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 sm:w-auto"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              View Inactive Clients
+            </button>
+          </div>
         </div>
       </div>
       
@@ -56,6 +76,19 @@ const ClientsPage: React.FC = () => {
       <div className="mt-8">
         <ClientsTable searchQuery={searchQuery} />
       </div>
+
+      {/* Inactive Clients Modal */}
+      <InactiveClientsModal
+        isOpen={showInactiveModal}
+        onClose={() => setShowInactiveModal(false)}
+      />
+
+      {/* Create New Client Modal */}
+      <CreateClientModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };
