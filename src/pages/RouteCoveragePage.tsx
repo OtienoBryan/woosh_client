@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Calendar, MapPin, User, TrendingUp, CheckCircle, Clock } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface SalesRep {
   id: number;
@@ -56,6 +58,10 @@ const RouteCoveragePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [mapClients, setMapClients] = useState<JourneyPlan[]>([]);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
     if (location.state) {
@@ -220,6 +226,62 @@ const RouteCoveragePage: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+
+  const openMapModal = (clients: JourneyPlan[]) => {
+    setMapClients(clients.filter(client => client.latitude && client.longitude));
+    setIsMapModalOpen(true);
+  };
+
+  const closeMapModal = () => {
+    setIsMapModalOpen(false);
+    setMapClients([]);
+  };
+
+  // Initialize map when modal opens
+  useEffect(() => {
+    if (isMapModalOpen && mapRef.current && mapClients.length > 0) {
+      // Initialize map
+      const map = L.map(mapRef.current).setView([0, 0], 2);
+      mapInstanceRef.current = map;
+
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Add markers for each client
+      const bounds = L.latLngBounds([]);
+      mapClients.forEach((client, index) => {
+        if (client.latitude && client.longitude) {
+          const marker = L.marker([client.latitude, client.longitude])
+            .addTo(map)
+            .bindPopup(`
+              <div class="p-2">
+                <h3 class="font-semibold text-sm">${client.client_name || client.client_company_name || `Client ID: ${client.clientId}`}</h3>
+                <p class="text-xs text-gray-600">${client.route_name || 'No route'}</p>
+                <p class="text-xs text-blue-600">${client.latitude.toFixed(6)}, ${client.longitude.toFixed(6)}</p>
+                ${client.status === 3 ? '<span class="text-xs text-green-600">✓ Completed</span>' : ''}
+              </div>
+            `);
+          
+          bounds.extend([client.latitude, client.longitude]);
+        }
+      });
+
+      // Fit map to show all markers
+      if (bounds.getNorthEast().lat !== bounds.getSouthWest().lat || bounds.getNorthEast().lng !== bounds.getSouthWest().lng) {
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
+
+      // Cleanup function
+      return () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+      };
+    }
+  }, [isMapModalOpen, mapClients]);
 
   const calculateTimeSpent = (checkInTime: string, checkoutTime: string): string => {
     try {
@@ -618,10 +680,21 @@ const RouteCoveragePage: React.FC = () => {
                                {/* All Journey Plans Section */}
                 {selectedDayPerformance.allPlans.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-blue-600" />
-                      All Journey Plans ({selectedDayPerformance.allPlans.length})
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-blue-600" />
+                        All Journey Plans ({selectedDayPerformance.allPlans.length})
+                      </h3>
+                      {selectedDayPerformance.allPlans.some(plan => plan.latitude && plan.longitude) && (
+                        <button
+                          onClick={() => openMapModal(selectedDayPerformance.allPlans)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        >
+                          <MapPin className="h-4 w-4" />
+                          View on Map
+                        </button>
+                      )}
+                    </div>
                     
                                          {/* Journey Plans Table */}
                      <div className="overflow-x-auto max-h-96 overflow-y-auto">
@@ -755,9 +828,12 @@ const RouteCoveragePage: React.FC = () => {
                                {/* Coordinates */}
                                <td className="px-4 py-4 whitespace-nowrap text-center">
                                  {plan.latitude && plan.longitude ? (
-                                   <span className="text-sm text-gray-600">
+                                   <button
+                                     onClick={() => openMapModal([plan])}
+                                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                   >
                                      {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
-                                   </span>
+                                   </button>
                                  ) : (
                                    <span className="text-sm text-gray-400">Not available</span>
                                  )}
@@ -791,9 +867,78 @@ const RouteCoveragePage: React.FC = () => {
              </div>
            </div>
          </div>
-       )}
-     </div>
-   );
- };
+               )}
+
+        {/* Map Modal */}
+        {isMapModalOpen && mapClients.length > 0 && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white w-full h-full flex flex-col overflow-hidden">
+              {/* Map Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Client Locations Map
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {mapClients.length} client{mapClients.length > 1 ? 's' : ''} with coordinates
+                  </p>
+                </div>
+                <button
+                  onClick={closeMapModal}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Map Content */}
+              <div className="flex-1 p-6">
+                <div className="w-full h-full rounded-lg border border-gray-200 overflow-hidden">
+                  {/* Interactive Map */}
+                  <div ref={mapRef} className="w-full h-full" style={{ minHeight: '500px' }}></div>
+                </div>
+                
+                {/* Client List Below Map */}
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Client Locations ({mapClients.length})
+                  </h4>
+                  <div className="max-h-48 overflow-y-auto">
+                    <div className="space-y-2">
+                      {mapClients.map((client, index) => (
+                        <div key={client.id} className="bg-gray-50 rounded p-3 border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h5 className="font-medium text-gray-900 text-sm">
+                                {client.client_name || client.client_company_name || `Client ID: ${client.clientId}`}
+                              </h5>
+                              <p className="text-xs text-gray-600">
+                                {client.route_name || 'No route'}
+                              </p>
+                              <p className="text-xs text-blue-600">
+                                {client.latitude?.toFixed(6)}, {client.longitude?.toFixed(6)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">#{index + 1}</span>
+                              {client.status === 3 && (
+                                <span className="text-xs text-green-600">✓ Completed</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
 export default RouteCoveragePage;
