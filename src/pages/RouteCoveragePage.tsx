@@ -228,7 +228,7 @@ const RouteCoveragePage: React.FC = () => {
   };
 
   const openMapModal = (clients: JourneyPlan[]) => {
-    setMapClients(clients.filter(client => client.latitude && client.longitude));
+    setMapClients(clients.filter(client => client.latitude && client.longitude && client.status === 3));
     setIsMapModalOpen(true);
   };
 
@@ -241,12 +241,32 @@ const RouteCoveragePage: React.FC = () => {
   useEffect(() => {
     if (isMapModalOpen && mapRef.current && mapClients.length > 0) {
       // Initialize map
-      const map = L.map(mapRef.current).setView([0, 0], 2);
+      const map = L.map(mapRef.current, {
+        zoomControl: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        keyboard: true,
+        dragging: true
+      }).setView([0, 0], 2);
       mapInstanceRef.current = map;
 
       // Add OpenStreetMap tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Add zoom control with custom position
+      L.control.zoom({
+        position: 'topright'
+      }).addTo(map);
+
+      // Add scale bar
+      L.control.scale({
+        position: 'bottomleft',
+        metric: true,
+        imperial: true,
+        maxWidth: 200
       }).addTo(map);
 
       // Add markers for each client
@@ -260,6 +280,22 @@ const RouteCoveragePage: React.FC = () => {
                 <h3 class="font-semibold text-sm">${client.client_name || client.client_company_name || `Client ID: ${client.clientId}`}</h3>
                 <p class="text-xs text-gray-600">${client.route_name || 'No route'}</p>
                 <p class="text-xs text-blue-600">${client.latitude.toFixed(6)}, ${client.longitude.toFixed(6)}</p>
+                <div class="mt-2 space-y-1">
+                  <p class="text-xs text-gray-600">
+                    <span class="font-medium">Check-in:</span> 
+                    ${client.checkInTime ? new Date(client.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Not checked in'}
+                  </p>
+                  <p class="text-xs text-gray-600">
+                    <span class="font-medium">Check-out:</span> 
+                    ${client.checkoutTime ? new Date(client.checkoutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Not checked out'}
+                  </p>
+                  ${client.checkInTime && client.checkoutTime ? `
+                    <p class="text-xs text-purple-600">
+                      <span class="font-medium">Time Spent:</span> 
+                      ${calculateTimeSpent(client.checkInTime, client.checkoutTime)}
+                    </p>
+                  ` : ''}
+                </div>
                 ${client.status === 3 ? '<span class="text-xs text-green-600">✓ Completed</span>' : ''}
               </div>
             `);
@@ -271,6 +307,16 @@ const RouteCoveragePage: React.FC = () => {
       // Fit map to show all markers
       if (bounds.getNorthEast().lat !== bounds.getSouthWest().lat || bounds.getNorthEast().lng !== bounds.getSouthWest().lng) {
         map.fitBounds(bounds, { padding: [20, 20] });
+        
+        // Set minimum zoom level to prevent over-zooming
+        map.setMinZoom(3);
+        map.setMaxZoom(18);
+      } else if (mapClients.length === 1) {
+        // If only one client, center on it with appropriate zoom
+        const client = mapClients[0];
+        if (client.latitude && client.longitude) {
+          map.setView([client.latitude, client.longitude], 15);
+        }
       }
 
       // Cleanup function
@@ -685,7 +731,7 @@ const RouteCoveragePage: React.FC = () => {
                         <BarChart3 className="h-5 w-5 text-blue-600" />
                         All Journey Plans ({selectedDayPerformance.allPlans.length})
                       </h3>
-                      {selectedDayPerformance.allPlans.some(plan => plan.latitude && plan.longitude) && (
+                      {selectedDayPerformance.allPlans.some(plan => plan.latitude && plan.longitude && plan.status === 3) && (
                         <button
                           onClick={() => openMapModal(selectedDayPerformance.allPlans)}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
@@ -827,13 +873,17 @@ const RouteCoveragePage: React.FC = () => {
                                
                                {/* Coordinates */}
                                <td className="px-4 py-4 whitespace-nowrap text-center">
-                                 {plan.latitude && plan.longitude ? (
+                                 {plan.latitude && plan.longitude && plan.status === 3 ? (
                                    <button
                                      onClick={() => openMapModal([plan])}
                                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                                    >
                                      {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
                                    </button>
+                                 ) : plan.latitude && plan.longitude ? (
+                                   <span className="text-sm text-gray-500">
+                                     {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
+                                   </span>
                                  ) : (
                                    <span className="text-sm text-gray-400">Not available</span>
                                  )}
@@ -920,6 +970,46 @@ const RouteCoveragePage: React.FC = () => {
                               <p className="text-xs text-blue-600">
                                 {client.latitude?.toFixed(6)}, {client.longitude?.toFixed(6)}
                               </p>
+                              {/* Check-in/Check-out Times */}
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <div>
+                                  <span className="text-xs font-medium text-gray-600">Check-in:</span>
+                                  {client.checkInTime ? (
+                                    <span className="text-xs text-green-600 ml-1">
+                                      {new Date(client.checkInTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400 ml-1">Not checked in</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-xs font-medium text-gray-600">Check-out:</span>
+                                  {client.checkoutTime ? (
+                                    <span className="text-xs text-green-600 ml-1">
+                                      {new Date(client.checkoutTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400 ml-1">Not checked out</span>
+                                  )}
+                                </div>
+                              </div>
+                              {/* Time Spent */}
+                              {client.checkInTime && client.checkoutTime && (
+                                <div className="mt-1">
+                                  <span className="text-xs font-medium text-gray-600">Time Spent:</span>
+                                  <span className="text-xs text-purple-600 ml-1">
+                                    {calculateTimeSpent(client.checkInTime, client.checkoutTime)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-gray-500">#{index + 1}</span>
