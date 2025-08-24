@@ -1,0 +1,589 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, BarChart3, Calendar, MapPin, User, TrendingUp, CheckCircle, Clock } from 'lucide-react';
+
+interface SalesRep {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  status: number;
+  route_id_update?: number;
+  route_name?: string;
+}
+
+interface JourneyPlan {
+  id: number;
+  date: string;
+  time: string;
+  userId: number;
+  clientId: number;
+  status: number;
+  checkInTime?: string;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  notes?: string;
+  checkoutLatitude?: number;
+  checkoutLongitude?: number;
+  checkoutTime?: string;
+  showUpdateLocation: boolean;
+  routeId?: number;
+  user_name?: string;
+  client_name?: string;
+  client_company_name?: string;
+  route_name?: string;
+}
+
+interface DailyPerformance {
+  date: string;
+  totalPlans: number;
+  completedPlans: number;
+  completionRate: number;
+  allPlans: JourneyPlan[];
+  achievedPlans: JourneyPlan[];
+}
+
+
+
+const RouteCoveragePage: React.FC = () => {
+  const { salesRepId } = useParams<{ salesRepId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [salesRep, setSalesRep] = useState<SalesRep | null>(null);
+  const [journeyPlans, setJourneyPlans] = useState<JourneyPlan[]>([]);
+  const [dailyPerformance, setDailyPerformance] = useState<DailyPerformance[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+
+  useEffect(() => {
+    if (location.state) {
+      setSalesRep(location.state.salesRep);
+      setJourneyPlans(location.state.journeyPlans);
+      processDailyPerformance(location.state.journeyPlans);
+    } else {
+      // If no state, fetch data from API
+      fetchSalesRepData();
+    }
+    setIsLoading(false);
+  }, [location.state, salesRepId]);
+
+  const fetchSalesRepData = async () => {
+    try {
+      // Fetch sales rep data
+      const repResponse = await fetch(`/api/sales-reps/${salesRepId}`);
+      const repData = await repResponse.json();
+      if (repData.success) {
+        setSalesRep(repData.data);
+      }
+
+      // Fetch journey plans for this sales rep
+      const plansResponse = await fetch(`/api/journey-plans`);
+      const plansData = await plansResponse.json();
+      if (plansData.success) {
+        const repPlans = plansData.data.filter((plan: JourneyPlan) => plan.userId === Number(salesRepId));
+        setJourneyPlans(repPlans);
+        processDailyPerformance(repPlans);
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const processDailyPerformance = (plans: JourneyPlan[]) => {
+    const dailyMap = new Map<string, DailyPerformance>();
+
+    plans.forEach(plan => {
+      // Normalize the date to ensure consistent grouping
+      let date = plan.date;
+      
+      // Handle different date formats
+      if (date.includes('T')) {
+        date = date.split('T')[0]; // Get just the date part from ISO string
+      } else if (date.includes(' ')) {
+        date = date.split(' ')[0]; // Get just the date part from datetime string
+      }
+      
+      // Ensure date is in YYYY-MM-DD format
+      const dateObj = new Date(date);
+      const normalizedDate = dateObj.toISOString().split('T')[0];
+      
+      if (!dailyMap.has(normalizedDate)) {
+        dailyMap.set(normalizedDate, {
+          date: normalizedDate,
+          totalPlans: 0,
+          completedPlans: 0,
+          completionRate: 0,
+          allPlans: [],
+          achievedPlans: []
+        });
+      }
+
+      const daily = dailyMap.get(normalizedDate)!;
+      daily.totalPlans++;
+      daily.allPlans.push(plan);
+      
+      if (plan.status === 3) { // Completed status
+        daily.completedPlans++;
+        daily.achievedPlans.push(plan);
+      }
+    });
+
+    // Calculate completion rates and sort by date
+    const dailyArray = Array.from(dailyMap.values()).map(daily => ({
+      ...daily,
+      completionRate: daily.totalPlans > 0 ? (daily.completedPlans / daily.totalPlans) * 100 : 0
+    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Debug: Log the unique dates found
+    console.log('Unique dates found:', dailyArray.map(d => d.date));
+    console.log('Total unique dates:', dailyArray.length);
+    console.log('Original plans count:', plans.length);
+    
+    // Ensure no duplicate dates (extra safety check)
+    const uniqueDates = new Set();
+    const finalDailyArray = dailyArray.filter(daily => {
+      if (uniqueDates.has(daily.date)) {
+        console.log('Duplicate date found:', daily.date);
+        return false;
+      }
+      uniqueDates.add(daily.date);
+      return true;
+    });
+    
+    console.log('Final unique dates after filtering:', finalDailyArray.map(d => d.date));
+    console.log('Final count after filtering:', finalDailyArray.length);
+
+    setDailyPerformance(finalDailyArray);
+    
+    // Set selected date to most recent
+    if (finalDailyArray.length > 0) {
+      setSelectedDate(finalDailyArray[0].date);
+    }
+  };
+
+
+
+  const getFormattedDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-US', { month: 'long' });
+    const year = date.getFullYear();
+    
+    // Add ordinal suffix to day
+    const getOrdinalSuffix = (day: number) => {
+      if (day > 3 && day < 21) return 'th';
+      switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+    
+    return `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+  };
+
+  const getStatusBadge = (status: number) => {
+    const statusConfig = {
+      0: { label: 'Pending', bgColor: 'bg-gray-100', textColor: 'text-gray-800' },
+      1: { label: 'In Progress', bgColor: 'bg-yellow-100', textColor: 'text-yellow-800' },
+      2: { label: 'Completed', bgColor: 'bg-green-100', textColor: 'text-green-800' },
+      3: { label: 'Completed', bgColor: 'bg-green-100', textColor: 'text-green-800' }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig[0];
+    
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const getOverallStats = () => {
+    const totalPlans = journeyPlans.length;
+    const completedPlans = journeyPlans.filter(plan => plan.status === 3).length;
+    const completionRate = totalPlans > 0 ? (completedPlans / totalPlans) * 100 : 0;
+    
+    return { totalPlans, completedPlans, completionRate };
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading route coverage data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!salesRep) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Sales representative not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const overallStats = getOverallStats();
+  const selectedDayPerformance = dailyPerformance.find(day => day.date === selectedDate);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center gap-4">
+                             <button
+                 onClick={() => navigate('/dashboard/journey-plans')}
+                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+               >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Route Coverage</h1>
+                  <p className="text-sm text-gray-600">{salesRep.name} • {salesRep.email}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <MapPin className="h-4 w-4" />
+              <span>{salesRep.route_name || 'No route assigned'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Overall Performance Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Plans</p>
+                <p className="text-2xl font-bold text-gray-900">{overallStats.totalPlans}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">{overallStats.completedPlans}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {overallStats.totalPlans - overallStats.completedPlans}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+                <p className="text-2xl font-bold text-gray-900">{overallStats.completionRate.toFixed(1)}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                 {/* Daily Performance */}
+         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                               <div className="p-6 border-b border-gray-200">
+               <h2 className="text-lg font-semibold text-gray-900">Daily Performance & Achievements</h2>
+               <p className="text-sm text-gray-600">Click on dates to view achieved journey plans and overall performance</p>
+             </div>
+
+          {dailyPerformance.length === 0 ? (
+            <div className="p-8 text-center">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No journey plans found for this sales representative.</p>
+            </div>
+          ) : (
+            <div className="p-6">
+                                            {/* Date Table */}
+               <div className="mb-6">
+                 <label className="block text-sm font-medium text-gray-700 mb-2">Click on a date to view details</label>
+                 <div className="overflow-x-auto">
+                   <table className="min-w-full divide-y divide-gray-200">
+                     <thead className="bg-gray-50">
+                       <tr>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Date
+                         </th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Day
+                         </th>
+                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Total Plans
+                         </th>
+                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Achieved
+                         </th>
+                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Completion Rate
+                         </th>
+                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Actions
+                         </th>
+                       </tr>
+                     </thead>
+                     <tbody className="bg-white divide-y divide-gray-200">
+                       {dailyPerformance.map((day, index) => (
+                         <tr 
+                           key={day.date}
+                           className={`hover:bg-gray-50 cursor-pointer ${
+                             selectedDate === day.date ? 'bg-blue-50' : ''
+                           }`}
+                           onClick={() => setSelectedDate(day.date)}
+                         >
+                           <td className="px-6 py-4 whitespace-nowrap">
+                             <div className="text-sm font-semibold text-gray-900">
+                               {getFormattedDate(day.date)}
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap">
+                             <div className="text-sm text-gray-600">
+                               {new Date(day.date).toLocaleDateString('en-US', { 
+                                 weekday: 'long' 
+                               })}
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-center">
+                             <div className="text-sm font-medium text-blue-600">
+                               {day.totalPlans}
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-center">
+                             <div className="text-sm font-medium text-green-600">
+                               {day.completedPlans}
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-center">
+                             <div className="text-sm font-medium text-purple-600">
+                               {day.completionRate.toFixed(1)}%
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-center">
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setSelectedDate(day.date);
+                               }}
+                               className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white ${
+                                 selectedDate === day.date
+                                   ? 'bg-blue-600 hover:bg-blue-700'
+                                   : 'bg-gray-600 hover:bg-gray-700'
+                               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                             >
+                               {selectedDate === day.date ? 'Selected' : 'Select'}
+                             </button>
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+
+              {/* Selected Day Performance */}
+              {selectedDayPerformance && (
+                <div className="mb-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                      {new Date(selectedDayPerformance.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">{selectedDayPerformance.totalPlans}</p>
+                        <p className="text-sm text-gray-600">Total Plans</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">{selectedDayPerformance.completedPlans}</p>
+                        <p className="text-sm text-gray-600">Completed</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-purple-600">{selectedDayPerformance.completionRate.toFixed(1)}%</p>
+                        <p className="text-sm text-gray-600">Completion Rate</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+                             {/* Achieved Plans Section */}
+               {selectedDayPerformance && selectedDayPerformance.achievedPlans.length > 0 && (
+                 <div className="mb-6">
+                   <h3 className="text-lg font-medium text-green-900 mb-4 flex items-center gap-2">
+                     <CheckCircle className="h-5 w-5 text-green-600" />
+                     Achieved Journey Plans ({selectedDayPerformance.achievedPlans.length})
+                   </h3>
+                   <div className="space-y-3">
+                     {selectedDayPerformance.achievedPlans.map((plan: JourneyPlan) => (
+                       <div
+                         key={plan.id}
+                         className="bg-green-50 rounded-lg p-4 border border-green-200"
+                       >
+                         <div className="flex items-start justify-between">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-4 mb-2">
+                               <div className="flex items-center gap-2">
+                                 <span className="font-medium text-green-900">
+                                   {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
+                                 </span>
+                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                   ✓ Achieved
+                                 </span>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                 <MapPin className="h-4 w-4 text-green-600" />
+                                 <span className="text-sm text-green-700">
+                                   {plan.route_name || 'No route'}
+                                 </span>
+                               </div>
+                             </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-700">
+                               <div>
+                                 <span className="font-medium">Time:</span> {plan.time}
+                               </div>
+                               <div>
+                                 <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
+                               </div>
+                               <div>
+                                 <span className="font-medium">Coordinates:</span>
+                                 {plan.latitude && plan.longitude ? (
+                                   <span className="text-green-600 ml-1">
+                                     {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
+                                   </span>
+                                 ) : (
+                                   <span className="text-green-400 ml-1">Not available</span>
+                                 )}
+                               </div>
+                             </div>
+                             {plan.notes && (
+                               <div className="mt-2 text-sm text-green-700">
+                                 <span className="font-medium">Notes:</span> {plan.notes}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+
+               {/* All Journey Plans Section */}
+               {selectedDayPerformance && selectedDayPerformance.allPlans.length > 0 && (
+                 <div>
+                   <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                     <BarChart3 className="h-5 w-5 text-blue-600" />
+                     All Journey Plans ({selectedDayPerformance.allPlans.length})
+                   </h3>
+                   <div className="space-y-3">
+                     {selectedDayPerformance.allPlans.map((plan: JourneyPlan) => (
+                       <div
+                         key={plan.id}
+                         className={`rounded-lg p-4 border ${
+                           plan.status === 3 
+                             ? 'bg-green-50 border-green-200' 
+                             : 'bg-gray-50 border-gray-200'
+                         }`}
+                       >
+                         <div className="flex items-start justify-between">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-4 mb-2">
+                               <div className="flex items-center gap-2">
+                                 <span className="font-medium text-gray-900">
+                                   {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
+                                 </span>
+                                 {plan.status === 3 && (
+                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                     ✓ Achieved
+                                   </span>
+                                 )}
+                               </div>
+                               <div className="flex items-center gap-2">
+                                 <MapPin className="h-4 w-4 text-gray-400" />
+                                 <span className="text-sm text-gray-600">
+                                   {plan.route_name || 'No route'}
+                                 </span>
+                               </div>
+                             </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                               <div>
+                                 <span className="font-medium">Time:</span> {plan.time}
+                               </div>
+                               <div>
+                                 <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
+                               </div>
+                               <div>
+                                 <span className="font-medium">Coordinates:</span>
+                                 {plan.latitude && plan.longitude ? (
+                                   <span className="text-blue-600 ml-1">
+                                     {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
+                                   </span>
+                                 ) : (
+                                   <span className="text-gray-400 ml-1">Not available</span>
+                                 )}
+                               </div>
+                             </div>
+                             {plan.notes && (
+                               <div className="mt-2 text-sm text-gray-600">
+                                 <span className="font-medium">Notes:</span> {plan.notes}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RouteCoveragePage;
