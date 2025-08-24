@@ -60,6 +60,21 @@ const RouteCoveragePage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapClients, setMapClients] = useState<JourneyPlan[]>([]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [filteredDailyPerformance, setFilteredDailyPerformance] = useState<DailyPerformance[]>([]);
+
+  // Function to get current month date range
+  const getCurrentMonthRange = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    return {
+      start: firstDay.toISOString().split('T')[0],
+      end: lastDay.toISOString().split('T')[0]
+    };
+  };
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
@@ -74,6 +89,38 @@ const RouteCoveragePage: React.FC = () => {
     }
     setIsLoading(false);
   }, [location.state, salesRepId]);
+
+  // Initialize filtered data when dailyPerformance changes
+  useEffect(() => {
+    setFilteredDailyPerformance(dailyPerformance);
+    
+    // Set current month as default filter
+    if (dailyPerformance.length > 0 && !startDate && !endDate) {
+      const currentMonth = getCurrentMonthRange();
+      setStartDate(currentMonth.start);
+      setEndDate(currentMonth.end);
+    }
+  }, [dailyPerformance, startDate, endDate]);
+
+  // Auto-apply filter when date range changes
+  useEffect(() => {
+    if (startDate && endDate && dailyPerformance.length > 0) {
+      // Apply filter directly here to avoid infinite loops
+      const filtered = dailyPerformance.filter(day => {
+        const dayDate = new Date(day.date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        // Set time to start/end of day for accurate comparison
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        return dayDate >= start && dayDate <= end;
+      });
+
+      setFilteredDailyPerformance(filtered);
+    }
+  }, [startDate, endDate, dailyPerformance]);
 
   const fetchSalesRepData = async () => {
     try {
@@ -211,8 +258,11 @@ const RouteCoveragePage: React.FC = () => {
   };
 
   const getOverallStats = () => {
-    const totalPlans = journeyPlans.length;
-    const completedPlans = journeyPlans.filter(plan => plan.status === 3).length;
+    // Use filtered data if available, otherwise use all data
+    const dataToUse = filteredDailyPerformance.length > 0 ? filteredDailyPerformance : dailyPerformance;
+    
+    const totalPlans = dataToUse.reduce((sum, day) => sum + day.allPlans.length, 0);
+    const completedPlans = dataToUse.reduce((sum, day) => sum + day.achievedPlans.length, 0);
     const completionRate = totalPlans > 0 ? (completedPlans / totalPlans) * 100 : 0;
     
     return { totalPlans, completedPlans, completionRate };
@@ -235,6 +285,33 @@ const RouteCoveragePage: React.FC = () => {
   const closeMapModal = () => {
     setIsMapModalOpen(false);
     setMapClients([]);
+  };
+
+  const filterByDateRange = () => {
+    if (!startDate || !endDate) {
+      setFilteredDailyPerformance(dailyPerformance);
+      return;
+    }
+
+    const filtered = dailyPerformance.filter(day => {
+      const dayDate = new Date(day.date);
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Set time to start/end of day for accurate comparison
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      
+      return dayDate >= start && dayDate <= end;
+    });
+
+    setFilteredDailyPerformance(filtered);
+  };
+
+  const clearDateFilter = () => {
+    setStartDate('');
+    setEndDate('');
+    setFilteredDailyPerformance(dailyPerformance);
   };
 
   // Initialize map when modal opens
@@ -460,23 +537,82 @@ const RouteCoveragePage: React.FC = () => {
           </div>
         </div>
 
-                 {/* Daily Performance */}
-         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                               <div className="p-6 border-b border-gray-200">
-               <h2 className="text-lg font-semibold text-gray-900">Daily Performance & Achievements</h2>
-               <p className="text-sm text-gray-600">Click on dates to view achieved journey plans and overall performance</p>
-             </div>
+                                   {/* Daily Performance */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                                                <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Daily Performance & Achievements</h2>
+                <p className="text-sm text-gray-600">Click on dates to view achieved journey plans and overall performance</p>
+                
+                {/* Date Range Filter */}
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">From:</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">To:</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <button
+                    onClick={filterByDateRange}
+                    disabled={!startDate || !endDate}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Filter
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentMonth = getCurrentMonthRange();
+                      setStartDate(currentMonth.start);
+                      setEndDate(currentMonth.end);
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Current Month
+                  </button>
+                  {(startDate || endDate) && (
+                    <button
+                      onClick={clearDateFilter}
+                      className="px-4 py-2 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                    >
+                      Clear Filter
+                    </button>
+                  )}
+                </div>
+              </div>
 
-          {dailyPerformance.length === 0 ? (
-            <div className="p-8 text-center">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No journey plans found for this sales representative.</p>
-            </div>
-          ) : (
+                     {filteredDailyPerformance.length === 0 ? (
+             <div className="p-8 text-center">
+               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+               <p className="text-gray-500">
+                 {startDate && endDate 
+                   ? `No journey plans found for the selected date range (${startDate} to ${endDate})`
+                   : 'No journey plans found for this sales representative.'
+                 }
+               </p>
+             </div>
+           ) : (
             <div className="p-6">
                                             {/* Date Table */}
-               <div className="mb-6">
-                 <label className="block text-sm font-medium text-gray-700 mb-2">Click on a date to view details</label>
+                               <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Click on a date to view details</label>
+                    {startDate && endDate && (
+                      <span className="text-sm text-gray-600">
+                        Showing {filteredDailyPerformance.length} of {dailyPerformance.length} dates
+                      </span>
+                    )}
+                  </div>
                  <div className="overflow-x-auto">
                    <table className="min-w-full divide-y divide-gray-200">
                      <thead className="bg-gray-50">
@@ -501,8 +637,8 @@ const RouteCoveragePage: React.FC = () => {
                          </th>
                        </tr>
                      </thead>
-                     <tbody className="bg-white divide-y divide-gray-200">
-                       {dailyPerformance.map((day, index) => (
+                                           <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredDailyPerformance.map((day, index) => (
                          <tr 
                            key={day.date}
                            className={`hover:bg-gray-50 cursor-pointer ${
