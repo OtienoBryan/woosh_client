@@ -221,6 +221,28 @@ const RouteCoveragePage: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const calculateTimeSpent = (checkInTime: string, checkoutTime: string): string => {
+    try {
+      const checkIn = new Date(checkInTime);
+      const checkOut = new Date(checkoutTime);
+      const diffMs = checkOut.getTime() - checkIn.getTime();
+      
+      if (diffMs < 0) return 'Invalid time range';
+      
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(diffMins / 60);
+      const minutes = diffMins % 60;
+      
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      } else {
+        return `${minutes}m`;
+      }
+    } catch (error) {
+      return 'Error calculating time';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -435,10 +457,10 @@ const RouteCoveragePage: React.FC = () => {
                  </div>
        </div>
 
-       {/* Journey Plans Modal */}
-       {isModalOpen && selectedDayPerformance && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-           <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+               {/* Journey Plans Modal */}
+        {isModalOpen && selectedDayPerformance && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white w-full h-full flex flex-col overflow-hidden">
              {/* Modal Header */}
              <div className="flex items-center justify-between p-6 border-b border-gray-200">
                <div>
@@ -517,24 +539,69 @@ const RouteCoveragePage: React.FC = () => {
                                  </span>
                                </div>
                              </div>
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-700">
-                               <div>
-                                 <span className="font-medium">Time:</span> {plan.time}
-                               </div>
-                               <div>
-                                 <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
-                               </div>
-                               <div>
-                                 <span className="font-medium">Coordinates:</span>
-                                 {plan.latitude && plan.longitude ? (
-                                   <span className="text-green-600 ml-1">
-                                     {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
-                                   </span>
-                                 ) : (
-                                   <span className="text-green-400 ml-1">Not available</span>
-                                 )}
-                               </div>
-                             </div>
+                                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700">
+                                <div>
+                                  <span className="font-medium">Scheduled Time:</span> {plan.time}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
+                                </div>
+                              </div>
+                              
+                              {/* Check-in/Check-out Times */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-700 mt-3">
+                                <div>
+                                  <span className="font-medium">Check-in:</span>
+                                  {plan.checkInTime ? (
+                                    <span className="text-green-600 ml-1">
+                                      {new Date(plan.checkInTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </span>
+                                  ) : (
+                                    <span className="text-green-400 ml-1">Not checked in</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Check-out:</span>
+                                  {plan.checkoutTime ? (
+                                    <span className="text-green-600 ml-1">
+                                      {new Date(plan.checkoutTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </span>
+                                  ) : (
+                                    <span className="text-green-400 ml-1">Not checked out</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Time Spent:</span>
+                                  {plan.checkInTime && plan.checkoutTime ? (
+                                    <span className="text-green-600 ml-1">
+                                      {calculateTimeSpent(plan.checkInTime, plan.checkoutTime)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-green-400 ml-1">N/A</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-1 gap-4 text-sm text-green-700 mt-3">
+                                <div>
+                                  <span className="font-medium">Coordinates:</span>
+                                  {plan.latitude && plan.longitude ? (
+                                    <span className="text-green-600 ml-1">
+                                      {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-green-400 ml-1">Not available</span>
+                                  )}
+                                </div>
+                              </div>
                              {plan.notes && (
                                <div className="mt-2 text-sm text-green-700">
                                  <span className="font-medium">Notes:</span> {plan.notes}
@@ -548,73 +615,179 @@ const RouteCoveragePage: React.FC = () => {
                  </div>
                )}
 
-               {/* All Journey Plans Section */}
-               {selectedDayPerformance.allPlans.length > 0 && (
-                 <div>
-                   <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                     <BarChart3 className="h-5 w-5 text-blue-600" />
-                     All Journey Plans ({selectedDayPerformance.allPlans.length})
-                   </h3>
-                   <div className="space-y-3">
-                     {selectedDayPerformance.allPlans.map((plan: JourneyPlan) => (
-                       <div
-                         key={plan.id}
-                         className={`rounded-lg p-4 border ${
-                           plan.status === 3 
-                             ? 'bg-green-50 border-green-200' 
-                             : 'bg-gray-50 border-gray-200'
-                         }`}
-                       >
-                         <div className="flex items-start justify-between">
-                           <div className="flex-1">
-                             <div className="flex items-center gap-4 mb-2">
-                               <div className="flex items-center gap-2">
-                                 <span className="font-medium text-gray-900">
-                                   {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
-                                 </span>
-                                 {plan.status === 3 && (
-                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                     ✓ Achieved
+                               {/* All Journey Plans Section */}
+                {selectedDayPerformance.allPlans.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                      All Journey Plans ({selectedDayPerformance.allPlans.length})
+                    </h3>
+                    
+                                         {/* Journey Plans Table */}
+                     <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                       <table className="min-w-full divide-y divide-gray-200">
+                         <thead className="bg-gray-50 sticky top-0 z-10">
+                           <tr>
+                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Client
+                             </th>
+                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Route
+                             </th>
+                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Scheduled
+                             </th>
+                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Status
+                             </th>
+                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Check-in
+                             </th>
+                             <th className="px-4 py-3 text-center text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Check-out
+                             </th>
+                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Time Spent
+                             </th>
+                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Coordinates
+                             </th>
+                           </tr>
+                         </thead>
+                                                   <tbody className="bg-white divide-y divide-gray-200">
+                            {selectedDayPerformance.allPlans
+                              .sort((a, b) => {
+                                // Sort by check-in time if available, otherwise by ID
+                                if (a.checkInTime && b.checkInTime) {
+                                  return new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime();
+                                } else if (a.checkInTime && !b.checkInTime) {
+                                  return -1; // Plans with check-in time come first
+                                } else if (!a.checkInTime && b.checkInTime) {
+                                  return 1; // Plans without check-in time come last
+                                } else {
+                                  return a.id - b.id; // Fallback to ID sorting
+                                }
+                              })
+                              .map((plan: JourneyPlan) => (
+                             <tr 
+                               key={plan.id}
+                               className={`${
+                                 plan.status === 3 
+                                   ? 'bg-green-50' 
+                                   : 'hover:bg-gray-50'
+                               }`}
+                             >
+                               {/* Client Name */}
+                               <td className="px-4 py-4 whitespace-nowrap">
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-sm font-medium text-gray-900">
+                                     {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
                                    </span>
+                                   {plan.status === 3 && (
+                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                       ✓
+                                     </span>
+                                   )}
+                                 </div>
+                               </td>
+                               
+                               {/* Route */}
+                               <td className="px-4 py-4 whitespace-nowrap">
+                                 <div className="flex items-center gap-2">
+                                   <MapPin className="h-4 w-4 text-gray-400" />
+                                   <span className="text-sm text-gray-600">
+                                     {plan.route_name || 'No route'}
+                                   </span>
+                                 </div>
+                               </td>
+                               
+                               {/* Scheduled Time */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                                 <span className="text-sm text-gray-900">{plan.time}</span>
+                               </td>
+                               
+                               {/* Status */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                                 {getStatusBadge(plan.status)}
+                               </td>
+                               
+                               {/* Check-in Time */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                                 {plan.checkInTime ? (
+                                   <span className="text-sm text-blue-600">
+                                     {new Date(plan.checkInTime).toLocaleTimeString('en-US', {
+                                       hour: '2-digit',
+                                       minute: '2-digit',
+                                       hour12: true
+                                     })}
+                                   </span>
+                                 ) : (
+                                   <span className="text-sm text-gray-400">Not checked in</span>
                                  )}
-                               </div>
-                               <div className="flex items-center gap-2">
-                                 <MapPin className="h-4 w-4 text-gray-400" />
-                                 <span className="text-sm text-gray-600">
-                                   {plan.route_name || 'No route'}
-                                 </span>
-                               </div>
-                             </div>
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                               <div>
-                                 <span className="font-medium">Time:</span> {plan.time}
-                               </div>
-                               <div>
-                                 <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
-                               </div>
-                               <div>
-                                 <span className="font-medium">Coordinates:</span>
+                               </td>
+                               
+                               {/* Check-out Time */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                                 {plan.checkoutTime ? (
+                                   <span className="text-sm text-blue-600">
+                                     {new Date(plan.checkoutTime).toLocaleTimeString('en-US', {
+                                       hour: '2-digit',
+                                       minute: '2-digit',
+                                       hour12: true
+                                     })}
+                                   </span>
+                                 ) : (
+                                   <span className="text-sm text-gray-400">Not checked out</span>
+                                 )}
+                               </td>
+                               
+                               {/* Time Spent */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                                 {plan.checkInTime && plan.checkoutTime ? (
+                                   <span className="text-sm text-blue-600 font-medium">
+                                     {calculateTimeSpent(plan.checkInTime, plan.checkoutTime)}
+                                   </span>
+                                 ) : (
+                                   <span className="text-sm text-gray-400">N/A</span>
+                                 )}
+                               </td>
+                               
+                               {/* Coordinates */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
                                  {plan.latitude && plan.longitude ? (
-                                   <span className="text-blue-600 ml-1">
+                                   <span className="text-sm text-gray-600">
                                      {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
                                    </span>
                                  ) : (
-                                   <span className="text-gray-400 ml-1">Not available</span>
+                                   <span className="text-sm text-gray-400">Not available</span>
                                  )}
-                               </div>
-                             </div>
-                             {plan.notes && (
-                               <div className="mt-2 text-sm text-gray-600">
-                                 <span className="font-medium">Notes:</span> {plan.notes}
-                               </div>
-                             )}
-                           </div>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-               )}
+                               </td>
+                             </tr>
+                           ))}
+                         </tbody>
+                       </table>
+                     </div>
+                    
+                    {/* Notes Section */}
+                    {selectedDayPerformance.allPlans.some(plan => plan.notes) && (
+                      <div className="mt-6">
+                        <h4 className="text-md font-medium text-gray-900 mb-3">Notes</h4>
+                        <div className="space-y-2">
+                          {selectedDayPerformance.allPlans
+                            .filter(plan => plan.notes)
+                            .map((plan: JourneyPlan) => (
+                              <div key={plan.id} className="bg-gray-50 rounded p-3">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}:
+                                </span>
+                                <span className="text-sm text-gray-600 ml-2">{plan.notes}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
              </div>
            </div>
          </div>
