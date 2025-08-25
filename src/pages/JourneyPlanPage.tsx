@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, MapPin, Users, Calendar, Clock, Eye, BarChart3 } from 'lucide-react';
+import { Plus, MapPin, Users, Calendar, Clock, Eye, BarChart3, FileText } from 'lucide-react';
 import CreateJourneyPlanModal from '../components/CreateJourneyPlanModal';
 import PendingJourneyPlansModal from '../components/PendingJourneyPlansModal';
 import SalesRepJourneyPlansModal from '../components/SalesRepJourneyPlansModal';
@@ -92,6 +92,14 @@ const JourneyPlanPage: React.FC = () => {
       state: { 
         salesRep, 
         journeyPlans: journeyPlans.filter(plan => plan.userId === salesRep.id) 
+      } 
+    });
+  };
+
+  const handleRouteReport = (salesRep: SalesRep) => {
+    navigate(`/dashboard/route-report/${salesRep.id}`, { 
+      state: { 
+        salesRep
       } 
     });
   };
@@ -258,16 +266,26 @@ const JourneyPlanPage: React.FC = () => {
                            <Plus className="h-4 w-4" />
                            Create Route Plan
                          </button>
-                         <button
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             handleRouteCoverage(rep);
-                           }}
-                           className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                         >
-                           <MapPin className="h-4 w-4" />
-                           Route Coverage
-                         </button>
+                                      <button
+               onClick={(e) => {
+                 e.stopPropagation();
+                 handleRouteCoverage(rep);
+               }}
+               className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+             >
+               <MapPin className="h-4 w-4" />
+               Route Coverage
+             </button>
+             <button
+               onClick={(e) => {
+                 e.stopPropagation();
+                 handleRouteReport(rep);
+               }}
+               className="inline-flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
+             >
+               <FileText className="h-4 w-4" />
+               Route Report
+             </button>
                        </div>
                      </td>
                    </tr>

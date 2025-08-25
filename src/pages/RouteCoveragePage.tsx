@@ -772,6 +772,14 @@ const RouteCoveragePage: React.FC = () => {
                                  <span className="font-medium text-green-900">
                                    {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
                                  </span>
+                                 <button
+                                   onClick={() => navigate(`/dashboard/route-report/${salesRep?.id}`, {
+                                     state: { salesRep, clientId: plan.clientId, selectedDate: selectedDate }
+                                   })}
+                                   className="ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                 >
+                                   View Reports
+                                 </button>
                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                    ✓ Achieved
                                  </span>
@@ -907,6 +915,9 @@ const RouteCoveragePage: React.FC = () => {
                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Coordinates
                              </th>
+                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                               Actions
+                             </th>
                            </tr>
                          </thead>
                                                    <tbody className="bg-white divide-y divide-gray-200">
@@ -1022,6 +1033,20 @@ const RouteCoveragePage: React.FC = () => {
                                    </span>
                                  ) : (
                                    <span className="text-sm text-gray-400">Not available</span>
+                                 )}
+                               </td>
+                               
+                               {/* Actions */}
+                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                                 {plan.status !== 0 && (
+                                   <button
+                                     onClick={() => navigate(`/dashboard/route-report/${salesRep?.id}`, {
+                                       state: { salesRep, clientId: plan.clientId, selectedDate: selectedDate }
+                                     })}
+                                     className="inline-flex items-center px-3 py-2 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                   >
+                                     View Reports
+                                   </button>
                                  )}
                                </td>
                              </tr>
