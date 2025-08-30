@@ -52,6 +52,12 @@ const navigation = [
     icon: UsersIcon,
     roles: ['admin', 'manager', 'accountant']
   },
+  {
+    name: 'Riders',
+    href: '/riders',
+    icon: UsersIcon,
+    roles: ['admin', 'manager', 'accountant', 'stock']
+  },
 
   {
     name: 'Reports',
@@ -139,6 +145,12 @@ const navigation = [
   {
     name: 'Create Invoice',
     href: '/create-invoice',
+    icon: FileTextIcon,
+    roles: ['admin', 'manager', 'accountant']
+  },
+  {
+    name: 'Invoice List',
+    href: '/invoice-list',
     icon: FileTextIcon,
     roles: ['admin', 'manager', 'accountant']
   },

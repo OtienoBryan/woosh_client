@@ -191,7 +191,7 @@ const SalesOrderDetailsPage: React.FC = () => {
       setSuccessMsg('');
 
       const paymentData = {
-        customer_id: salesOrder?.customer_id,
+        customer_id: salesOrder?.client_id,
         amount: parseFloat(paymentAmount),
         payment_date: paymentDate,
         payment_method: 'bank_transfer',

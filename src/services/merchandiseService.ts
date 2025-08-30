@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Merchandise, MerchandiseCategory, ApiResponse, PaginatedResponse } from '../types/financial';
+import { Merchandise, MerchandiseCategory, MerchandiseStock, MerchandiseStockReceipt, MerchandiseLedger, ApiResponse, PaginatedResponse, MerchandiseAssignment, CreateMerchandiseAssignment } from '../types/financial';
 import { API_BASE_URL } from '../config/api';
 
 // Add request interceptor to include auth token
@@ -107,6 +107,27 @@ export const merchandiseService = {
     if (merchandiseId) params.append('merchandise_id', merchandiseId.toString());
     if (storeId) params.append('store_id', storeId.toString());
     const response = await axios.get(`${API_BASE_URL}/merchandise/ledger?${params}`);
+    return response.data;
+  },
+
+  // Merchandise Assignment methods
+  getAssignments: async (): Promise<ApiResponse<MerchandiseAssignment[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/merchandise/assignments`);
+    return response.data;
+  },
+
+  createAssignment: async (assignment: CreateMerchandiseAssignment): Promise<ApiResponse<MerchandiseAssignment>> => {
+    const response = await axios.post(`${API_BASE_URL}/merchandise/assignments`, assignment);
+    return response.data;
+  },
+
+  updateAssignment: async (id: number, assignment: Partial<CreateMerchandiseAssignment>): Promise<ApiResponse<void>> => {
+    const response = await axios.put(`${API_BASE_URL}/merchandise/assignments/${id}`, assignment);
+    return response.data;
+  },
+
+  deleteAssignment: async (id: number): Promise<ApiResponse<void>> => {
+    const response = await axios.delete(`${API_BASE_URL}/merchandise/assignments/${id}`);
     return response.data;
   }
 };

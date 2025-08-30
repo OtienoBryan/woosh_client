@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { merchandiseService, merchandiseCategoriesService } from '../services/merchandiseService';
 import { storeService } from '../services/storeService';
-import { Merchandise, MerchandiseCategory, MerchandiseStock } from '../types/financial';
+import { staffService } from '../services/staffService';
+import { Merchandise, MerchandiseCategory, MerchandiseStock, MerchandiseAssignment, CreateMerchandiseAssignment, MerchandiseLedger } from '../types/financial';
+import { Staff } from '../services/staffService';
 import { useAuth } from '../contexts/AuthContext';
 
 const MerchandisePage: React.FC = () => {
@@ -24,10 +26,14 @@ const MerchandisePage: React.FC = () => {
   const [currentStock, setCurrentStock] = useState<{ merchandise_id: number; store_id: number; quantity: number; merchandise_name: string; store_name: string }[]>([]);
   const [showCurrentStock, setShowCurrentStock] = useState(false);
   const [selectedStockStore, setSelectedStockStore] = useState<number | 'all'>('all');
-  const [ledger, setLedger] = useState<{ id: number; merchandise_id: number; store_id: number; transaction_type: string; quantity: number; balance_after: number; reference_type: string; notes?: string; created_at: string; merchandise_name: string; store_name: string }[]>([]);
+  const [ledger, setLedger] = useState<MerchandiseLedger[]>([]);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
   const [selectedLedgerStore, setSelectedLedgerStore] = useState<number | 'all'>('all');
   const [selectedLedgerType, setSelectedLedgerType] = useState<string | 'all'>('all');
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [assignments, setAssignments] = useState<MerchandiseAssignment[]>([]);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [showAssignmentsModal, setShowAssignmentsModal] = useState(false);
 
   // Form states
   const [form, setForm] = useState({
@@ -47,6 +53,14 @@ const MerchandisePage: React.FC = () => {
     general_notes: ''
   });
 
+  const [assignmentForm, setAssignmentForm] = useState<CreateMerchandiseAssignment>({
+    merchandise_id: 0,
+    staff_id: 0,
+    quantity_assigned: 0,
+    date_assigned: new Date().toISOString().split('T')[0],
+    comment: ''
+  });
+
   useEffect(() => {
     fetchData();
   }, [currentPage, searchTerm, selectedCategory]);
@@ -56,29 +70,36 @@ const MerchandisePage: React.FC = () => {
       setLoading(true);
       console.log('Fetching data...', { currentPage, searchTerm, selectedCategory });
       
-      const [merchandiseResponse, categoriesResponse, storesResponse] = await Promise.all([
+      const [merchandiseResponse, categoriesResponse, storesResponse, staffResponse] = await Promise.all([
         merchandiseService.getAll(currentPage, 10, searchTerm, selectedCategory === 'all' ? undefined : selectedCategory),
         merchandiseCategoriesService.getAll(),
-        storeService.getAllStores()
+        storeService.getAllStores(),
+        staffService.getStaffList()
       ]);
 
-      console.log('API Responses:', { merchandiseResponse, categoriesResponse, storesResponse });
+      console.log('API Responses:', { merchandiseResponse, categoriesResponse, storesResponse, staffResponse });
 
       if (merchandiseResponse.success) {
         setMerchandise(merchandiseResponse.data);
-        setTotalPages(merchandiseResponse.totalPages || 1);
-        setTotalItems(merchandiseResponse.total || 0);
+        setTotalPages(merchandiseResponse.pagination?.total_pages || 1);
+        setTotalItems(merchandiseResponse.pagination?.total_items || 0);
         console.log('Merchandise data set:', merchandiseResponse.data);
+        console.log('Merchandise IDs available:', merchandiseResponse.data.map(item => ({ id: item.id, name: item.name })));
       }
 
       if (categoriesResponse.success) {
-        setCategories(categoriesResponse.data);
+        setCategories(categoriesResponse.data || []);
         console.log('Categories data set:', categoriesResponse.data);
       }
 
       if (storesResponse.success) {
-        setStores(storesResponse.data);
+        setStores(storesResponse.data || []);
         console.log('Stores data set:', storesResponse.data);
+      }
+
+      if (staffResponse) {
+        setStaff(staffResponse);
+        console.log('Staff data set:', staffResponse);
       }
     } catch (err: any) {
       console.error('Error fetching data:', err);
@@ -93,7 +114,7 @@ const MerchandisePage: React.FC = () => {
     try {
       const response = await merchandiseService.getCurrentStock();
       if (response.success) {
-        setCurrentStock(response.data);
+        setCurrentStock(response.data || []);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to fetch current stock');
@@ -111,10 +132,21 @@ const MerchandisePage: React.FC = () => {
     try {
       const response = await merchandiseService.getLedger();
       if (response.success) {
-        setLedger(response.data);
+        setLedger(response.data || []);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to fetch ledger');
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await merchandiseService.getAssignments();
+      if (response.success) {
+        setAssignments(response.data || []);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch assignments');
     }
   };
 
@@ -148,6 +180,21 @@ const MerchandisePage: React.FC = () => {
     const newItems = [...stockForm.items];
     newItems[index] = { ...newItems[index], [field]: value };
     setStockForm({ ...stockForm, items: newItems });
+  };
+
+  const handleAssignmentFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name === 'merchandise_id' || name === 'staff_id' || name === 'quantity_assigned') {
+      setAssignmentForm(prev => ({
+        ...prev,
+        [name]: value === '' ? 0 : Number(value)
+      }));
+    } else {
+      setAssignmentForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const addStockItem = () => {
@@ -232,6 +279,27 @@ const MerchandisePage: React.FC = () => {
     }
   };
 
+  const handleAssignmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      console.log('Assignment form data:', assignmentForm);
+      
+      if (assignmentForm.merchandise_id <= 0 || assignmentForm.staff_id <= 0 || assignmentForm.quantity_assigned <= 0) {
+        setError('Please fill in all required fields');
+        return;
+      }
+
+      console.log('Sending assignment data:', assignmentForm);
+      await merchandiseService.createAssignment(assignmentForm);
+      setShowAssignmentModal(false);
+      resetAssignmentForm();
+      fetchAssignments();
+      fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to create assignment');
+    }
+  };
+
   const handleEdit = (item: Merchandise) => {
     setEditingItem(item);
     setForm({
@@ -253,6 +321,17 @@ const MerchandisePage: React.FC = () => {
     }
   };
 
+  const handleDeleteAssignment = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this assignment?')) {
+      try {
+        await merchandiseService.deleteAssignment(id);
+        fetchAssignments();
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to delete assignment');
+      }
+    }
+  };
+
   const resetForm = () => {
     setForm({
       name: '',
@@ -269,6 +348,16 @@ const MerchandisePage: React.FC = () => {
     });
   };
 
+  const resetAssignmentForm = () => {
+    setAssignmentForm({
+      merchandise_id: 0,
+      staff_id: 0,
+      quantity_assigned: 0,
+      date_assigned: new Date().toISOString().split('T')[0],
+      comment: ''
+    });
+  };
+
   const openAddModal = () => {
     resetForm();
     setShowAddModal(true);
@@ -279,6 +368,11 @@ const MerchandisePage: React.FC = () => {
     setShowStockModal(true);
   };
 
+  const openAssignmentModal = () => {
+    resetAssignmentForm();
+    setShowAssignmentModal(true);
+  };
+
   const closeModals = () => {
     setShowAddModal(false);
     setShowEditModal(false);
@@ -286,12 +380,15 @@ const MerchandisePage: React.FC = () => {
     setShowStockModal(false);
     setShowCurrentStock(false);
     setShowLedgerModal(false);
+    setShowAssignmentModal(false);
+    setShowAssignmentsModal(false);
     setSelectedStockStore('all');
     setSelectedLedgerStore('all');
     setSelectedLedgerType('all');
     setEditingItem(null);
     resetForm();
     resetStockForm();
+    resetAssignmentForm();
   };
 
   if (loading && merchandise.length === 0) {
@@ -371,6 +468,48 @@ const MerchandisePage: React.FC = () => {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               Receive Stock
+            </button>
+            <button
+              onClick={openAssignmentModal}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Assign to Staff
+            </button>
+            <button
+              onClick={() => {
+                setShowAssignmentsModal(!showAssignmentsModal);
+                if (!showAssignmentsModal) {
+                  fetchAssignments();
+                }
+              }}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                showAssignmentsModal 
+                  ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                  : 'bg-teal-600 text-white hover:bg-teal-700'
+              }`}
+            >
+              {showAssignmentsModal ? 'Hide' : 'View'} Assignments
+            </button>
+            <button
+              onClick={openAssignmentModal}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Assign to Staff
+            </button>
+            <button
+              onClick={() => {
+                setShowAssignmentsModal(!showAssignmentsModal);
+                if (!showAssignmentsModal) {
+                  fetchAssignments();
+                }
+              }}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                showAssignmentsModal 
+                  ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                  : 'bg-teal-600 text-white hover:bg-teal-700'
+              }`}
+            >
+              {showAssignmentsModal ? 'Hide' : 'View'} Assignments
             </button>
                          <button
                onClick={() => {
@@ -927,10 +1066,10 @@ const MerchandisePage: React.FC = () => {
                              {new Date(item.created_at).toLocaleDateString()}
                            </td>
                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                             {item.merchandise_name}
+                             {item.merchandise?.name || 'Unknown'}
                            </td>
                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                             {item.store_name}
+                             {item.store?.store_name || 'Unknown'}
                            </td>
                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -977,6 +1116,187 @@ const MerchandisePage: React.FC = () => {
                  <div className="mt-6 flex justify-end">
                    <button
                      onClick={() => setShowLedgerModal(false)}
+                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                   >
+                     Close
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
+
+         {/* Assignment Modal */}
+         {showAssignmentModal && (
+           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+             <div className="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+               <div className="mt-3">
+                 <h3 className="text-lg font-medium text-gray-900 mb-4">Assign Merchandise to Staff</h3>
+                 <form onSubmit={handleAssignmentSubmit} className="space-y-4">
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Merchandise Item</label>
+                     <select
+                       name="merchandise_id"
+                       value={assignmentForm.merchandise_id || ''}
+                       onChange={handleAssignmentFormChange}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       required
+                     >
+                       <option value="">Select merchandise item</option>
+                       {merchandise.map(item => (
+                         <option key={item.id} value={item.id}>{item.name}</option>
+                       ))}
+                     </select>
+                   </div>
+
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member</label>
+                     <select
+                       name="staff_id"
+                       value={assignmentForm.staff_id || ''}
+                       onChange={handleAssignmentFormChange}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       required
+                     >
+                       <option value="">Select staff member</option>
+                                               {staff.map(staffMember => (
+                          <option key={staffMember.id} value={staffMember.id}>
+                            {staffMember.name} ({staffMember.empl_no})
+                          </option>
+                        ))}
+                     </select>
+                   </div>
+
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Quantity Assigned</label>
+                     <input
+                       type="number"
+                       name="quantity_assigned"
+                       value={assignmentForm.quantity_assigned || ''}
+                       onChange={handleAssignmentFormChange}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       min="1"
+                       required
+                     />
+                   </div>
+
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Date Assigned</label>
+                     <input
+                       type="date"
+                       name="date_assigned"
+                       value={assignmentForm.date_assigned}
+                       onChange={handleAssignmentFormChange}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       required
+                     />
+                   </div>
+
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Comment (Optional)</label>
+                     <textarea
+                       name="comment"
+                       value={assignmentForm.comment || ''}
+                       onChange={handleAssignmentFormChange}
+                       rows={3}
+                       placeholder="Additional notes about this assignment"
+                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                     />
+                   </div>
+
+                   <div className="flex gap-3 pt-4">
+                     <button
+                       type="submit"
+                       className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+                     >
+                       Assign Merchandise
+                     </button>
+                     <button
+                       type="button"
+                       onClick={closeModals}
+                       className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+                     >
+                       Cancel
+                     </button>
+                   </div>
+                 </form>
+               </div>
+             </div>
+           </div>
+         )}
+
+         {/* View Assignments Modal */}
+         {showAssignmentsModal && (
+           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+             <div className="relative top-10 mx-auto p-6 border w-[1200px] shadow-lg rounded-md bg-white">
+               <div className="mt-3">
+                 <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-lg font-medium text-gray-900">Merchandise Assignments</h3>
+                   <button
+                     onClick={() => setShowAssignmentsModal(false)}
+                     className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                   >
+                     ×
+                   </button>
+                 </div>
+                 <p className="text-sm text-gray-600 mb-4">Track all merchandise assigned to staff members</p>
+                 
+                 <div className="overflow-x-auto max-h-[600px]">
+                   <table className="min-w-full divide-y divide-gray-200">
+                     <thead className="bg-gray-50 sticky top-0">
+                       <tr>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Assigned</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchandise</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff Member</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comment</th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                       </tr>
+                     </thead>
+                     <tbody className="bg-white divide-y divide-gray-200">
+                       {assignments.map((assignment, index) => (
+                         <tr key={index} className="hover:bg-gray-50">
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {new Date(assignment.date_assigned).toLocaleDateString()}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             {assignment.merchandise?.name || 'Unknown'}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             {assignment.staff?.name || 'Unknown'} ({assignment.staff?.empl_no || 'N/A'})
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                               {assignment.quantity_assigned}
+                             </span>
+                           </td>
+                           <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                             {assignment.comment || '-'}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                             <button
+                               onClick={() => handleDeleteAssignment(assignment.id)}
+                               className="text-red-600 hover:text-red-900"
+                             >
+                               Delete
+                             </button>
+                           </td>
+                         </tr>
+                       ))}
+                       {assignments.length === 0 && (
+                         <tr>
+                           <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                             No assignments found
+                           </td>
+                         </tr>
+                       )}
+                     </tbody>
+                   </table>
+                 </div>
+
+                 <div className="mt-6 flex justify-end">
+                   <button
+                     onClick={() => setShowAssignmentsModal(false)}
                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
                    >
                      Close

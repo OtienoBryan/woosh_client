@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   ShoppingCart, 
@@ -23,9 +23,11 @@ import { salesOrdersService, productsService } from '../services/financialServic
 import { SalesOrder, Product } from '../types/financial';
 import { riderService, Rider } from '../services/riderService';
 import { useAuth } from '../contexts/AuthContext';
+import { API_CONFIG } from '../config/api';
 
 const CustomerOrdersPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [orders, setOrders] = useState<SalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ const CustomerOrdersPage: React.FC = () => {
   const [myStatusFilter, setMyStatusFilter] = useState('0');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [riderFilter, setRiderFilter] = useState<number | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -86,12 +89,45 @@ const CustomerOrdersPage: React.FC = () => {
   const [receiveLoading, setReceiveLoading] = useState(false);
   const [receiveError, setReceiveError] = useState<string | null>(null);
 
+  // Complete Delivery Modal state
+  const [showCompleteDeliveryModal, setShowCompleteDeliveryModal] = useState(false);
+  const [completingOrder, setCompletingOrder] = useState<SalesOrder | null>(null);
+  const [completeDeliveryForm, setCompleteDeliveryForm] = useState({
+    recipient_name: '',
+    recipient_phone: '',
+    delivery_image: null as File | null,
+    notes: ''
+  });
+  const [completeDeliveryLoading, setCompleteDeliveryLoading] = useState(false);
+  const [completeDeliveryError, setCompleteDeliveryError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchOrders();
     fetchProducts();
     fetchRiders();
     fetchStores();
   }, []);
+
+  // Handle URL parameters for filtering
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const riderId = searchParams.get('rider_id');
+    const statusParam = searchParams.get('status');
+    
+    if (riderId) {
+      setRiderFilter(parseInt(riderId));
+    }
+    
+    if (statusParam) {
+      // Parse comma-separated status values
+      const statuses = statusParam.split(',').map(s => s.trim());
+      // For now, we'll use the first status as the filter
+      // You might want to implement multi-status filtering
+      if (statuses.length > 0) {
+        setMyStatusFilter(statuses[0]);
+      }
+    }
+  }, [location.search]);
 
   // Close product dropdown when clicking outside
   useEffect(() => {
@@ -162,7 +198,7 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
-  // Filter orders based on search term, my_status, and date range
+  // Filter orders based on search term, my_status, date range, and rider
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.so_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -170,6 +206,9 @@ const CustomerOrdersPage: React.FC = () => {
       order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesMyStatus = myStatusFilter === 'all' || order.my_status?.toString() === myStatusFilter;
+    
+    // Rider filtering
+    const matchesRider = !riderFilter || order.rider_id === riderFilter;
     
     // Date range filtering
     let matchesDateRange = true;
@@ -187,7 +226,7 @@ const CustomerOrdersPage: React.FC = () => {
       }
     }
     
-    return matchesSearch && matchesMyStatus && matchesDateRange;
+    return matchesSearch && matchesMyStatus && matchesRider && matchesDateRange;
   });
 
   // Pagination state for orders list
@@ -772,6 +811,118 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
+  // Complete Delivery functions
+  const openCompleteDeliveryModal = (order: SalesOrder) => {
+    if (order.my_status !== 2) {
+      alert('Only orders in transit can be completed');
+      return;
+    }
+    setCompletingOrder(order);
+    setCompleteDeliveryForm({
+      recipient_name: '',
+      recipient_phone: '',
+      delivery_image: null,
+      notes: ''
+    });
+    setShowCompleteDeliveryModal(true);
+  };
+
+  const closeCompleteDeliveryModal = () => {
+    setShowCompleteDeliveryModal(false);
+    setCompletingOrder(null);
+    setCompleteDeliveryForm({
+      recipient_name: '',
+      recipient_phone: '',
+      delivery_image: null,
+      notes: ''
+    });
+    setCompleteDeliveryError(null);
+  };
+
+  const handleCompleteDeliveryFormChange = (field: string, value: any) => {
+    setCompleteDeliveryForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCompleteDelivery = async () => {
+    if (!completingOrder || !completeDeliveryForm.recipient_name || !completeDeliveryForm.recipient_phone) {
+      setCompleteDeliveryError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setCompleteDeliveryLoading(true);
+      setCompleteDeliveryError(null);
+
+      // Create form data for image upload
+      const formData = new FormData();
+      formData.append('order_id', completingOrder.id.toString());
+      formData.append('recipient_name', completeDeliveryForm.recipient_name);
+      formData.append('recipient_phone', completeDeliveryForm.recipient_phone);
+      formData.append('notes', completeDeliveryForm.notes || '');
+      if (completeDeliveryForm.delivery_image) {
+        formData.append('delivery_image', completeDeliveryForm.delivery_image);
+      }
+
+      // Complete delivery using the dedicated endpoint
+      const requestBody = {
+        recipient_name: completeDeliveryForm.recipient_name,
+        recipient_phone: completeDeliveryForm.recipient_phone,
+        notes: completeDeliveryForm.notes || ''
+      };
+      
+      console.log('Completing delivery for order:', completingOrder.id, 'with data:', requestBody);
+      
+      const completeResponse = await fetch(API_CONFIG.getUrl(`/sales-orders/${completingOrder.id}/complete-delivery`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (completeResponse.ok) {
+        // Upload delivery image if provided
+        if (completeDeliveryForm.delivery_image) {
+          const imageResponse = await fetch(API_CONFIG.getUrl('/upload-delivery-image'), {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+          });
+
+          if (!imageResponse.ok) {
+            console.warn('Failed to upload delivery image, but order was completed');
+          }
+        }
+
+        setSuccessMessage('Delivery completed successfully!');
+        await fetchOrders();
+        closeCompleteDeliveryModal();
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
+      } else {
+        const errorData = await completeResponse.json().catch(() => ({}));
+        console.error('Delivery completion failed:', {
+          status: completeResponse.status,
+          statusText: completeResponse.statusText,
+          errorData
+        });
+        setCompleteDeliveryError(errorData.error || `Failed to complete delivery (HTTP ${completeResponse.status})`);
+      }
+    } catch (err: any) {
+      console.error('Error completing delivery:', err);
+      setCompleteDeliveryError(err.message || 'Failed to complete delivery');
+    } finally {
+      setCompleteDeliveryLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -823,7 +974,7 @@ const CustomerOrdersPage: React.FC = () => {
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           {/* Active Filters Indicator */}
-          {(searchTerm || myStatusFilter !== '0' || startDate || endDate) && (
+          {(searchTerm || myStatusFilter !== '0' || startDate || endDate || riderFilter) && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -838,6 +989,11 @@ const CustomerOrdersPage: React.FC = () => {
                     {myStatusFilter !== 'all' && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         Status: {myStatusFilter === 'all' ? 'All Orders' : getMyStatusText(parseInt(myStatusFilter))}
+                      </span>
+                    )}
+                    {riderFilter && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        Rider: {riders.find(r => r.id === riderFilter)?.name || `ID: ${riderFilter}`}
                       </span>
                     )}
                     {startDate && (
@@ -930,6 +1086,7 @@ const CustomerOrdersPage: React.FC = () => {
                 setMyStatusFilter('all');
                 setStartDate('');
                 setEndDate('');
+                setRiderFilter(null);
               }}
               className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
             >
@@ -957,7 +1114,7 @@ const CustomerOrdersPage: React.FC = () => {
               <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
               <p className="text-gray-500">
-                {searchTerm || myStatusFilter !== 'all' || startDate || endDate ? 'Try adjusting your search terms, status filter, or date range.' : 'No orders available.'}
+                {searchTerm || myStatusFilter !== 'all' || startDate || endDate || riderFilter ? 'Try adjusting your search terms, status filter, rider filter, or date range.' : 'No orders available.'}
               </p>
             </div>
           ) : (
@@ -1132,6 +1289,15 @@ const CustomerOrdersPage: React.FC = () => {
                              >
                                <Truck className="h-4 w-4 mr-1" />
                                Assign Rider
+                             </button>
+                           )}
+                           {order.my_status === 2 && (
+                             <button
+                               onClick={() => openCompleteDeliveryModal(order)}
+                               className="text-blue-600 hover:text-blue-900 flex items-center bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded"
+                             >
+                               <Package className="h-4 w-4 mr-1" />
+                               Complete Delivery
                              </button>
                            )}
                            {(order.my_status === 4 || order.my_status === 6) && user?.role === 'stock' && (
@@ -1951,6 +2117,101 @@ const CustomerOrdersPage: React.FC = () => {
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                 >
                   {assignLoading ? 'Assigning...' : 'Assign Rider'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Complete Delivery Modal */}
+        {showCompleteDeliveryModal && completingOrder && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Complete Delivery - Order {completingOrder.so_number}</h2>
+                <button
+                  onClick={closeCompleteDeliveryModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {completeDeliveryError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {completeDeliveryError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Recipient Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={completeDeliveryForm.recipient_name}
+                    onChange={(e) => handleCompleteDeliveryFormChange('recipient_name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter recipient's full name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Recipient Phone *
+                  </label>
+                  <input
+                    type="tel"
+                    value={completeDeliveryForm.recipient_phone}
+                    onChange={(e) => handleCompleteDeliveryFormChange('recipient_phone', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter recipient's phone number"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Delivery Image
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleCompleteDeliveryFormChange('delivery_image', e.target.files?.[0] || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Upload proof of delivery (optional)</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={completeDeliveryForm.notes}
+                    onChange={(e) => handleCompleteDeliveryFormChange('notes', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    placeholder="Additional delivery notes (optional)"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={closeCompleteDeliveryModal}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCompleteDelivery}
+                  disabled={completeDeliveryLoading || !completeDeliveryForm.recipient_name || !completeDeliveryForm.recipient_phone}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {completeDeliveryLoading ? 'Completing...' : 'Complete Delivery'}
                 </button>
               </div>
             </div>

@@ -30,6 +30,7 @@ import ReceiveItemsPage from './pages/ReceiveItemsPage';
 import StoreInventoryPage from './pages/StoreInventoryPage';
 import PayablesPage from './pages/PayablesPage';
 import CreateInvoicePage from './pages/CreateInvoicePage';
+import InvoiceListPage from './pages/InvoiceListPage';
 import ReceivablesPage from './pages/ReceivablesPage';
 import ProfitLossReportPage from './pages/ProfitLossReportPage';
 import AddExpensePage from './pages/AddExpensePage';
@@ -118,6 +119,7 @@ import MerchandisePage from './pages/MerchandisePage';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import UploadDocumentPage from './pages/UploadDocumentPage';
 import EmployeeDocumentsPage from './pages/EmployeeDocumentsPage';
+import RidersPage from './pages/RidersPage';
 import InventorySalesPage from './pages/InventorySalesPage';
 import InventorySalesOrderDetailsPage from './pages/InventorySalesOrderDetailsPage';
 import DeliveryNotePage from './pages/DeliveryNotePage';
@@ -380,6 +382,11 @@ const App = () => {
                 <CreateInvoicePage />
               </RoleBasedRoute>
             } />
+            <Route path="/invoice-list" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <InvoiceListPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/credit-notes" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
                 <CreditNotesPage />
@@ -531,6 +538,11 @@ const App = () => {
             <Route path="/suppliers" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
                 <SuppliersPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/riders" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
+                <RidersPage />
               </RoleBasedRoute>
             } />
             <Route path="/suppliers/:supplierId/invoices" element={

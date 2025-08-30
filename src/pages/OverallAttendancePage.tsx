@@ -116,12 +116,18 @@ const OverallAttendancePage: React.FC = () => {
            console.log('Sample sales rep:', salesRepsRes[0]);
          }
         
-        setLoginHistory(loginRes.data || []);
-        setJourneyPlans(journeyRes.data || []);
+        console.log('Setting state with data:');
+        console.log('loginRes.data type:', typeof loginRes.data, 'isArray:', Array.isArray(loginRes.data));
+        console.log('journeyRes.data type:', typeof journeyRes.data, 'isArray:', Array.isArray(journeyRes.data));
+        console.log('clientsRes.data type:', typeof clientsRes.data, 'isArray:', Array.isArray(clientsRes.data));
+        console.log('salesRepsRes type:', typeof salesRepsRes, 'isArray:', Array.isArray(salesRepsRes));
+        
+        setLoginHistory(Array.isArray(loginRes.data) ? loginRes.data : []);
+        setJourneyPlans(Array.isArray(journeyRes.data) ? journeyRes.data : []);
         // Fix: Handle the paginated response structure for clients
-        setClients(clientsRes.data?.data || clientsRes.data || []);
-        setCountries(countriesRes || []);
-        setSalesReps(salesRepsRes || []);
+        setClients(Array.isArray(clientsRes.data?.data) ? clientsRes.data.data : Array.isArray(clientsRes.data) ? clientsRes.data : []);
+        setCountries(Array.isArray(countriesRes) ? countriesRes : []);
+        setSalesReps(Array.isArray(salesRepsRes) ? salesRepsRes : []);
         setLoading(false);
       })
       .catch((error) => {
@@ -133,31 +139,49 @@ const OverallAttendancePage: React.FC = () => {
 
   // Build attendance rows
   useEffect(() => {
+    // Safety check: ensure all required arrays are properly initialized
+    if (!Array.isArray(loginHistory) || !Array.isArray(journeyPlans) || !Array.isArray(salesReps)) {
+      console.log('Arrays not ready yet:', {
+        loginHistory: Array.isArray(loginHistory),
+        journeyPlans: Array.isArray(journeyPlans),
+        salesReps: Array.isArray(salesReps)
+      });
+      return;
+    }
+    
     const dateMap: Record<string, { salesReps: Set<number>; clients: Set<number> }> = {};
     
     // Get active sales reps (status = 1)
     const activeSalesRepIds = new Set(
-      salesReps.filter(rep => rep.status === 1).map(rep => rep.id)
+      Array.isArray(salesReps) ? salesReps.filter(rep => rep.status === 1).map(rep => rep.id) : []
     );
     
     console.log('Active sales reps count:', activeSalesRepIds.size);
     console.log('Total sales reps count:', salesReps.length);
     
-    loginHistory.forEach(lh => {
-      if (!lh.sessionStart) return;
-      // Only count if the user is an active sales rep
-      if (!activeSalesRepIds.has(lh.userId)) return;
-      
-      const date = lh.sessionStart.slice(0, 10);
-      if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set() };
-      dateMap[date].salesReps.add(lh.userId);
-    });
+    if (Array.isArray(loginHistory)) {
+      loginHistory.forEach(lh => {
+        if (!lh.sessionStart) return;
+        // Only count if the user is an active sales rep
+        if (!activeSalesRepIds.has(lh.userId)) return;
+        
+        const date = lh.sessionStart.slice(0, 10);
+        if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set() };
+        dateMap[date].salesReps.add(lh.userId);
+      });
+    } else {
+      console.warn('loginHistory is not an array:', loginHistory);
+    }
     
-    journeyPlans.forEach(jp => {
-      const date = jp.date.slice(0, 10);
-      if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set() };
-      dateMap[date].clients.add(jp.clientId);
-    });
+    if (Array.isArray(journeyPlans)) {
+      journeyPlans.forEach(jp => {
+        const date = jp.date.slice(0, 10);
+        if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: Set<number>() };
+        dateMap[date].clients.add(jp.clientId);
+      });
+    } else {
+      console.warn('journeyPlans is not an array:', journeyPlans);
+    }
     
     const rows: AttendanceRow[] = Object.entries(dateMap)
       .sort((a, b) => b[0].localeCompare(a[0]))
@@ -176,8 +200,8 @@ const OverallAttendancePage: React.FC = () => {
     if (startDate && row.date < startDate) return false;
     if (endDate && row.date > endDate) return false;
     if (selectedCountry) {
-      const repIds = salesReps.filter(rep => rep.country === selectedCountry && rep.status === 1).map(rep => rep.id);
-      const loginReps = loginHistory.filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === row.date).map(lh => lh.userId);
+      const repIds = Array.isArray(salesReps) ? salesReps.filter(rep => rep.country === selectedCountry && rep.status === 1).map(rep => rep.id) : [];
+      const loginReps = Array.isArray(loginHistory) ? loginHistory.filter(lh => lh.sessionStart && lh.sessionStart.slice(0, 10) === row.date).map(lh => lh.userId) : [];
       if (!loginReps.some(id => repIds.includes(id))) return false;
     }
     return true;
@@ -365,7 +389,7 @@ const OverallAttendancePage: React.FC = () => {
                     </div>
                     <div className="ml-4 flex-1">
                       <p className="text-sm font-medium text-gray-600">Active Sales Representatives</p>
-                      <p className="text-2xl font-bold text-gray-900">{salesReps.filter(rep => rep.status === 1).length}</p>
+                      <p className="text-2xl font-bold text-gray-900">{Array.isArray(salesReps) ? salesReps.filter(rep => rep.status === 1).length : 0}</p>
                       <p className="text-xs text-gray-500 mt-1">Active team members</p>
                     </div>
                   </div>
@@ -505,26 +529,26 @@ const OverallAttendancePage: React.FC = () => {
                                           if (!rep || rep.status !== 1) return null; // Only include active sales reps
                                           
                                           // Count clients visited by this rep on this date (only those with checkinTime)
-                                           const clientsVisited = journeyPlans.filter(jp => 
+                                           const clientsVisited = Array.isArray(journeyPlans) ? journeyPlans.filter(jp => 
                                              jp.userId === rep.id && 
                                              jp.date.slice(0, 10) === row.date &&
                                              (jp.checkinTime || jp.checkInTime) // Check both possible field names
-                                           ).length;
+                                           ).length : 0;
                                           
                                           console.log(`Rep ${rep.name} (ID: ${rep.id}):`, {
                                              repId: rep.id,
                                              loginUserId: lh.userId,
-                                             journeyPlansForRep: journeyPlans.filter(jp => jp.userId === rep.id),
-                                             journeyPlansForDate: journeyPlans.filter(jp => jp.date.slice(0, 10) === row.date),
-                                             journeyPlansWithCheckin: journeyPlans.filter(jp => 
+                                             journeyPlansForRep: Array.isArray(journeyPlans) ? journeyPlans.filter(jp => jp.userId === rep.id) : [],
+                                             journeyPlansForDate: Array.isArray(journeyPlans) ? journeyPlans.filter(jp => jp.date.slice(0, 10) === row.date) : [],
+                                             journeyPlansWithCheckin: Array.isArray(journeyPlans) ? journeyPlans.filter(jp => 
                                                jp.userId === rep.id && 
                                                jp.date.slice(0, 10) === row.date &&
                                                (jp.checkinTime || jp.checkInTime)
-                                             ),
+                                             ) : [],
                                              clientsVisited,
                                              targetDate: row.date,
-                                             sampleJourneyPlan: journeyPlans.find(jp => jp.userId === rep.id),
-                                             allDatesForRep: [...new Set(journeyPlans.filter(jp => jp.userId === rep.id).map(jp => jp.date.slice(0, 10)))]
+                                             sampleJourneyPlan: Array.isArray(journeyPlans) ? journeyPlans.find(jp => jp.userId === rep.id) : null,
+                                             allDatesForRep: Array.isArray(journeyPlans) ? [...new Set(journeyPlans.filter(jp => jp.userId === rep.id).map(jp => jp.date.slice(0, 10)))] : []
                                            });
                                           
                                           return {

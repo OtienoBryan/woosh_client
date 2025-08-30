@@ -46,16 +46,17 @@ const MyVisibilityPage: React.FC = () => {
     };
 
   // Get unique outlets and countries for filters
-  const outlets = [...new Set(reports.map(report => report.outlet).filter(Boolean))];
+  const outlets = [...new Set(reports.map(report => report.outletName || report.outlet).filter(Boolean))];
   const countries = [...new Set(reports.map(report => report.country).filter(Boolean))];
 
   // Filter reports based on search and filters
   const filteredReports = reports.filter(report => {
+    const outletName = report.outletName || report.outlet;
     const matchesSearch = searchQuery === '' || 
-      report.outlet?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      outletName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.comment.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesOutlet = selectedOutlet === '' || report.outlet === selectedOutlet;
+    const matchesOutlet = selectedOutlet === '' || outletName === selectedOutlet;
     const matchesCountry = selectedCountry === '' || report.country === selectedCountry;
     
     // Date range filtering
@@ -91,9 +92,10 @@ const MyVisibilityPage: React.FC = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Outlet', 'Country', 'Sales Rep', 'Comment', 'Created At'];
+    const headers = ['Outlet', 'Company', 'Country', 'Sales Rep', 'Comment', 'Created At'];
     const csvData = filteredReports.map(report => [
-      report.outlet || '',
+      report.outletName || report.outlet || '',
+      report.companyName || '',
       report.country || '',
       report.salesRep || '',
       report.comment,
@@ -458,8 +460,13 @@ const MyVisibilityPage: React.FC = () => {
                       {/* Outlet Column */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {report.outlet || 'Unknown Outlet'}
+                          {report.outletName || report.outlet || 'Unknown Outlet'}
                         </div>
+                        {report.companyName && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {report.companyName}
+                          </div>
+                        )}
                       </td>
 
                       {/* Country Column */}

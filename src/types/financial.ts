@@ -574,3 +574,29 @@ export interface MerchandiseLedger {
     store_code: string;
   };
 }
+
+export interface MerchandiseAssignment {
+  id: number;
+  merchandise_id: number;
+  staff_id: number;
+  quantity_assigned: number;
+  date_assigned: string;
+  comment?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  merchandise?: Merchandise;
+  staff?: {
+    id: number;
+    name: string;
+    empl_no: string;
+  };
+}
+
+export interface CreateMerchandiseAssignment {
+  merchandise_id: number;
+  staff_id: number;
+  quantity_assigned: number;
+  date_assigned: string;
+  comment?: string;
+}

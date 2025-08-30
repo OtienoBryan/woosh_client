@@ -20,6 +20,7 @@ interface VisibilityReport {
   latitude?: number;
   longitude?: number;
   imageUrl?: string;
+  comment?: string;
   notes?: string;
   status: number;
   user_name?: string;
@@ -145,10 +146,12 @@ const RouteReportPage: React.FC = () => {
     if (searchTerm) {
       filtered = filtered.filter(report => {
         const clientName = report.client_name || report.client_company_name || '';
+        const comment = report.comment || '';
         const notes = report.notes || '';
         const searchLower = searchTerm.toLowerCase();
         
         return clientName.toLowerCase().includes(searchLower) || 
+               comment.toLowerCase().includes(searchLower) ||
                notes.toLowerCase().includes(searchLower);
       });
     }
@@ -252,7 +255,7 @@ const RouteReportPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Overall Performance Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 hidden">
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -394,24 +397,14 @@ const RouteReportPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
-                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                     Date
-                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
-                  </th>
-                  
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
+                    Image
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notes
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Comment
                   </th>
                 </tr>
               </thead>
@@ -421,51 +414,23 @@ const RouteReportPage: React.FC = () => {
                     const statusConfig = getStatusConfig(report.status);
                     return (
                       <tr key={report.id} className="hover:bg-gray-50">
-                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                           <div>
-                             <div className="font-medium">{formatDate(report.createdAt)}</div>
-                           </div>
-                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div>
-                            <div className="font-medium">
-                              {report.client_name || report.client_company_name || `Client ID: ${report.clientId}`}
-                            </div>
+                            <div className="font-medium">{formatDate(report.createdAt)}</div>
                           </div>
                         </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
-                            {statusConfig.label}
-                          </span>
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {report.latitude && report.longitude ? (
-                            <div className="text-xs">
-                              <div>{report.latitude.toFixed(6)}</div>
-                              <div>{report.longitude.toFixed(6)}</div>
-                            </div>
+                          {report.imageUrl ? (
+                            <img src={report.imageUrl} alt="Visibility Report" className="h-10 w-10 object-cover rounded-md" />
                           ) : (
-                            <span className="text-gray-400">No coordinates</span>
+                            <div className="h-10 w-10 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-sm">
+                              <FileText className="h-5 w-5" />
+                            </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
-                          <div className="truncate">
-                            {report.notes || <span className="text-gray-400">No notes</span>}
-                          </div>
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex items-center gap-2">
-                            {report.imageUrl && (
-                              <button className="text-blue-600 hover:text-blue-800">
-                                <Eye className="h-4 w-4" />
-                              </button>
-                            )}
-                            {report.latitude && report.longitude && (
-                              <button className="text-green-600 hover:text-green-800">
-                                <MapPin className="h-4 w-4" />
-                              </button>
-                            )}
+                          <div className="truncate">
+                            {report.comment || <span className="text-gray-400">No comment</span>}
                           </div>
                         </td>
                       </tr>
@@ -473,7 +438,7 @@ const RouteReportPage: React.FC = () => {
                   })
                 ) : (
                   <tr>
-                                         <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="h-8 w-8 text-gray-300" />
                         <p>No visibility reports found</p>

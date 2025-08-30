@@ -199,6 +199,7 @@ const FinancialDashboardPage = () => {
     { to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
     { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+    { to: '/riders', label: 'Riders', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
     { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
@@ -206,6 +207,7 @@ const FinancialDashboardPage = () => {
     { to: '/products', label: 'Products', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
     { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     { to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
     //{ to: '/credit-note-summary', label: 'Credit Note Summary', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     { to: '/receipts', label: 'Receipts', icon: <ReceiptIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
@@ -310,7 +312,64 @@ const FinancialDashboardPage = () => {
             onClick={() => navigate('/payables')}
             change={{ value: 3.1, positive: false }}
           />
-      </div>
+        </div>
+
+        {/* Quick Actions Row */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+            <ZapIcon className="w-5 h-5 text-amber-500" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <button 
+              onClick={() => navigate('/financial/purchase-order')}
+              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
+            >
+              <ShoppingCartIcon className="w-5 h-5 text-blue-600 mb-2" />
+              <span className="text-xs font-medium text-center text-blue-700">New Purchase</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/financial/create-customer-order')}
+              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300"
+            >
+              <PackageIcon className="w-5 h-5 text-green-600 mb-2" />
+              <span className="text-xs font-medium text-center text-green-700">Create Order</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/create-invoice')}
+              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300"
+            >
+              <FileTextIcon className="w-5 h-5 text-emerald-600 mb-2" />
+              <span className="text-xs font-medium text-center text-emerald-700">Create Invoice</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/invoice-list')}
+              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-teal-200 bg-teal-50 hover:bg-teal-100 hover:border-teal-300"
+            >
+              <FileTextIcon className="w-5 h-5 text-teal-600 mb-2" />
+              <span className="text-xs font-medium text-center text-teal-700">Invoice List</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/add-expense')}
+              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300"
+            >
+              <DollarSignIcon className="w-5 h-5 text-red-600 mb-2" />
+              <span className="text-xs font-medium text-center text-red-700">Add Expense</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/add-journal-entry')}
+              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300"
+            >
+              <FileTextIcon className="w-5 h-5 text-purple-600 mb-2" />
+              <span className="text-xs font-medium text-center text-purple-700">Journal Entry</span>
+            </button>
+          </div>
+        </div>
 
         {/* Navigation Menu */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">

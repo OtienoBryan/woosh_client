@@ -9,6 +9,8 @@ export interface VisibilityReport {
   comment: string;
   imageUrl: string;
   createdAt: string;
+  clientId?: number;
+  userId?: number;
 }
 
 export interface VisibilityReportFilters {

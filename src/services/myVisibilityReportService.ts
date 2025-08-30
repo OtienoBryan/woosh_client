@@ -4,6 +4,8 @@ export interface MyVisibilityReport {
   id: number;
   reportId: number;
   outlet?: string;
+  outletName?: string;
+  companyName?: string;
   country?: string;
   salesRep?: string;
   comment: string;

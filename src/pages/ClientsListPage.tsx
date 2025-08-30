@@ -18,7 +18,8 @@ import {
   Users,
   Map,
   Activity,
-  Eye
+  Eye,
+  UserPlus
 } from 'lucide-react';
 
 interface Client {
@@ -45,11 +46,14 @@ interface Client {
   added_by?: number;
   created_at?: string;
   client_type_name?: string;
+  salesRepAssignment?: ClientAssignment | null;
 }
 
 interface Country { id: number; name: string; }
 interface Region { id: number; name: string; }
 interface Route { id: number; name: string; }
+interface SalesRep { id: number; name: string; email: string; phone: string; }
+interface ClientAssignment { id: number; outletId: number; salesRepId: number; assignedAt: string; status: string; sales_rep_name: string; }
 
 const AddClientModal: React.FC<{
   isOpen: boolean;
@@ -224,6 +228,156 @@ const AddClientModal: React.FC<{
   );
 };
 
+const AssignSalesRepModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  client: Client | null;
+  onAssignmentSuccess: (clientId: number) => void;
+}> = ({ isOpen, onClose, client, onAssignmentSuccess }) => {
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [selectedSalesRepId, setSelectedSalesRepId] = useState<number | ''>('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentAssignment, setCurrentAssignment] = useState<ClientAssignment | null>(null);
+
+  useEffect(() => {
+    if (isOpen && client) {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch sales reps and current assignment
+      Promise.all([
+        fetch('/api/sales-reps?status=1').then(res => res.json()),
+        fetch(`/api/client-assignments/outlet/${client.id}`).then(res => res.json())
+      ]).then(([salesRepsRes, assignmentRes]) => {
+        if (salesRepsRes.success) {
+          setSalesReps(salesRepsRes.data);
+        }
+        if (assignmentRes.success && assignmentRes.data.length > 0) {
+          setCurrentAssignment(assignmentRes.data[0]);
+          setSelectedSalesRepId(assignmentRes.data[0].salesRepId);
+        } else {
+          setCurrentAssignment(null);
+          setSelectedSalesRepId('');
+        }
+      }).catch(err => {
+        setError('Failed to fetch data');
+        console.error(err);
+      }).finally(() => setLoading(false));
+    }
+  }, [isOpen, client]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!client || !selectedSalesRepId) return;
+    
+    setSaving(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/client-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          outletId: client.id,
+          salesRepId: selectedSalesRepId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        onAssignmentSuccess(client.id);
+        onClose();
+      } else {
+        setError(result.message || 'Failed to assign sales rep');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to assign sales rep');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen || !client) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-900">Assign Sales Representative</h2>
+          <p className="text-sm text-gray-600 mt-1">Assign a sales rep to {client.name}</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+              <p className="text-gray-600 mt-2">Loading...</p>
+            </div>
+          ) : (
+            <>
+              {currentAssignment && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Current Assignment:</strong> {currentAssignment.sales_rep_name}
+                    <br />
+                    <span className="text-xs">Assigned: {new Date(currentAssignment.assignedAt).toLocaleDateString()}</span>
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Sales Representative
+                </label>
+                <select
+                  value={selectedSalesRepId}
+                  onChange={(e) => setSelectedSalesRepId(e.target.value ? parseInt(e.target.value) : '')}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  required
+                >
+                  <option value="">Select a sales rep</option>
+                  {salesReps.map(rep => (
+                    <option key={rep.id} value={rep.id}>
+                      {rep.name} - {rep.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+            </>
+          )}
+          
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              disabled={saving || !selectedSalesRepId}
+            >
+              {saving ? 'Assigning...' : currentAssignment ? 'Reassign' : 'Assign'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const ClientsListPage: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,6 +399,8 @@ const ClientsListPage: React.FC = () => {
   const [editClient, setEditClient] = useState<Client | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [assignSalesRepModalOpen, setAssignSalesRepModalOpen] = useState(false);
+  const [selectedClientForAssignment, setSelectedClientForAssignment] = useState<Client | null>(null);
   const [clientTypes, setClientTypes] = useState<{ id: number; name: string }[]>([]);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
@@ -302,7 +458,32 @@ const ClientsListPage: React.FC = () => {
       if (searchTerm) params.append('search', searchTerm);
       const res = await fetch(`/api/clients?${params.toString()}`);
       const data = await res.json();
-      setClients(data.data);
+      
+      // Fetch sales rep assignments for all clients
+      const clientsWithAssignments = await Promise.all(
+        data.data.map(async (client: Client) => {
+          try {
+            const assignmentRes = await fetch(`/api/client-assignments/outlet/${client.id}`);
+            if (!assignmentRes.ok) {
+              throw new Error(`HTTP ${assignmentRes.status}`);
+            }
+            const assignmentData = await assignmentRes.json();
+            
+            return {
+              ...client,
+              salesRepAssignment: assignmentData.success && assignmentData.data.length > 0 ? assignmentData.data[0] : null
+            };
+          } catch (err) {
+            console.error(`Failed to fetch assignment for client ${client.id}:`, err);
+            return {
+              ...client,
+              salesRepAssignment: null
+            };
+          }
+        })
+      );
+      
+      setClients(clientsWithAssignments);
       setPage(data.page);
       setLimit(data.limit);
       setTotalPages(data.totalPages);
@@ -401,6 +582,36 @@ const ClientsListPage: React.FC = () => {
     }
   };
 
+  const handleAssignSalesRep = (client: Client) => {
+    setSelectedClientForAssignment(client);
+    setAssignSalesRepModalOpen(true);
+  };
+
+  const handleAssignmentSuccess = () => {
+    // Refresh clients to show updated assignment info
+    fetchClients(page, limit, search);
+  };
+
+  const refreshClientAssignment = async (clientId: number) => {
+    try {
+      const assignmentRes = await fetch(`/api/client-assignments/outlet/${clientId}`);
+      const assignmentData = await assignmentRes.json();
+      
+      setClients(prevClients => 
+        prevClients.map(client => 
+          client.id === clientId 
+            ? {
+                ...client,
+                salesRepAssignment: assignmentData.success && assignmentData.data.length > 0 ? assignmentData.data[0] : null
+              }
+            : client
+        )
+      );
+    } catch (err) {
+      console.error(`Failed to refresh assignment for client ${clientId}:`, err);
+    }
+  };
+
   const ClientCard: React.FC<{ client: Client }> = ({ client }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6">
       <div className="flex items-start justify-between mb-4">
@@ -412,6 +623,13 @@ const ClientsListPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleAssignSalesRep(client)}
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Assign sales rep"
+          >
+            <UserPlus className="h-4 w-4" />
+          </button>
           <button
             onClick={() => handleEditClick(client)}
             className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
@@ -448,6 +666,14 @@ const ClientsListPage: React.FC = () => {
           <Route className="h-4 w-4 text-gray-400" />
           <span>{client.route_name_update || 'No route assigned'}</span>
         </div>
+        {client.salesRepAssignment && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <UserPlus className="h-4 w-4 text-blue-400" />
+            <span className="text-blue-600 font-medium">
+              {client.salesRepAssignment.sales_rep_name}
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="mt-4 pt-4 border-t border-gray-100">
@@ -615,6 +841,7 @@ const ClientsListPage: React.FC = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales Rep</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -647,7 +874,30 @@ const ClientsListPage: React.FC = () => {
                           <span className="text-sm text-gray-900">{client.client_type_name || 'Not assigned'}</span>
                         </td>
                         <td className="px-6 py-4">
+                          <span className="text-sm text-gray-900">
+                            {client.salesRepAssignment ? (
+                              <div>
+                                <div className="font-medium text-blue-600">
+                                  {client.salesRepAssignment.sales_rep_name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Assigned: {new Date(client.salesRepAssignment.assignedAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Not assigned</span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleAssignSalesRep(client)}
+                              className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Assign sales rep"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </button>
                             <button
                               onClick={() => handleEditClick(client)}
                               className="p-1 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
@@ -830,6 +1080,13 @@ const ClientsListPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <AssignSalesRepModal
+        isOpen={assignSalesRepModalOpen}
+        onClose={() => setAssignSalesRepModalOpen(false)}
+        client={selectedClientForAssignment}
+        onAssignmentSuccess={refreshClientAssignment}
+      />
     </div>
   );
 };

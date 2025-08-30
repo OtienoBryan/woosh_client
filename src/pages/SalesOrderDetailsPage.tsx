@@ -57,6 +57,8 @@ const SalesOrderDetailsPage: React.FC = () => {
   const [pendingReceiptId, setPendingReceiptId] = useState<number | null>(null);
   const [clientOutstandingBalance, setClientOutstandingBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [loadingAmountPaid, setLoadingAmountPaid] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,6 +81,8 @@ const SalesOrderDetailsPage: React.FC = () => {
         if (res.data.customer?.id) {
           fetchClientOutstandingBalance(res.data.customer.id);
         }
+        // Fetch amount paid after sales order is loaded
+        fetchAmountPaid();
       } else {
         setError(res.error || 'Failed to fetch sales order');
       }
@@ -91,6 +95,26 @@ const SalesOrderDetailsPage: React.FC = () => {
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
   const formatCurrency = (amount: number) => amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const fetchAmountPaid = async () => {
+    if (!id) return;
+    
+    setLoadingAmountPaid(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/financial/receipts/invoice/${id}`);
+      if (res.data.success) {
+        setAmountPaid(res.data.data.total_amount_paid || 0);
+      } else {
+        console.error('Failed to fetch amount paid:', res.data.error);
+        setAmountPaid(0);
+      }
+    } catch (error) {
+      console.error('Error fetching amount paid:', error);
+      setAmountPaid(0);
+    } finally {
+      setLoadingAmountPaid(false);
+    }
+  };
 
   const fetchClientOutstandingBalance = async (customerId?: number) => {
     const clientId = customerId || salesOrder?.customer?.id;
@@ -203,7 +227,7 @@ const SalesOrderDetailsPage: React.FC = () => {
       setSuccessMsg('');
 
       const paymentData = {
-        customer_id: salesOrder?.customer_id,
+        customer_id: salesOrder?.client_id,
         amount: parseFloat(paymentAmount),
         payment_date: paymentDate,
         payment_method: 'bank_transfer',
@@ -497,6 +521,14 @@ const SalesOrderDetailsPage: React.FC = () => {
                   <tr className="total-row">
                     <td className="label">Total:</td>
                     <td className="amount">{formatCurrency(salesOrder?.total_amount || 0)}</td>
+                  </tr>
+                  <tr>
+                    <td className="label">Amount Paid:</td>
+                    <td className="amount">{loadingAmountPaid ? 'Loading...' : formatCurrency(amountPaid)}</td>
+                  </tr>
+                  <tr className="balance-due-row">
+                    <td className="label">Balance Due:</td>
+                    <td className="amount">{loadingAmountPaid ? 'Loading...' : formatCurrency((salesOrder?.total_amount || 0) - amountPaid)}</td>
                   </tr>
                 </tbody>
               </table>

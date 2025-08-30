@@ -607,6 +607,9 @@ const VisibilityReportPage: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Report ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Outlet
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -629,6 +632,9 @@ const VisibilityReportPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {reports.map((report) => (
                   <tr key={report.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{report.reportId || 'N/A'}</div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{report.outlet || 'N/A'}</div>
                     </td>
@@ -666,7 +672,7 @@ const VisibilityReportPage: React.FC = () => {
                 ))}
                 {reports.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                       No visibility reports found for the selected filters.
                     </td>
                   </tr>

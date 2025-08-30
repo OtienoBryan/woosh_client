@@ -463,6 +463,11 @@ export const receiptsService = {
     return response.data;
   },
 
+  getByInvoice: async (invoiceId: number): Promise<ApiResponse<any>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/receipts/invoice/${invoiceId}`);
+    return response.data;
+  },
+
   download: async (id: number): Promise<Blob> => {
     const response = await axios.get(`${API_BASE_URL}/receipts/${id}/download`, {
       responseType: 'blob',
