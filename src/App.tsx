@@ -51,6 +51,7 @@ import PayrollManagementPage from './pages/PayrollManagementPage';
 import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import GeneralLedgerReportPage from './pages/GeneralLedgerReportPage';
 import CollectionReportPage from './pages/CollectionReportPage';
+import UnconfirmedPaymentsPage from './pages/UnconfirmedPaymentsPage';
 import InventoryTransactionsPage from './pages/InventoryTransactionsPage';
 import InventoryAsOfPage from './pages/InventoryAsOfPage';
 import StockTransferPage from './pages/StockTransferPage';
@@ -61,7 +62,6 @@ import OpeningQuantitiesPage from './pages/OpeningQuantitiesPage';
 import ClientsWithBalancesPage from './pages/ClientsWithBalancesPage';
 import CustomerLedgerPage from './pages/CustomerLedgerPage';
 import CustomerPaymentsPage from './pages/CustomerPaymentsPage';
-import UnconfirmedPaymentsPage from './pages/UnconfirmedPaymentsPage';
 import ReceivablesCustomerPage from './pages/ReceivablesCustomerPage';
 import SuppliersPage from './pages/SuppliersPage';
 import SupplierInvoicesPage from './pages/SupplierInvoicesPage';
@@ -378,11 +378,16 @@ const App = () => {
                 <GeneralLedgerReportPage />
               </RoleBasedRoute>
             } />
-            <Route path="/reports/collection-report" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
-                <CollectionReportPage />
-              </RoleBasedRoute>
-            } />
+                    <Route path="/reports/collection-report" element={
+          <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+            <CollectionReportPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="/reports/unconfirmed-payments" element={
+          <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+            <UnconfirmedPaymentsPage />
+          </RoleBasedRoute>
+        } />
             <Route path="/create-invoice" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
                 <CreateInvoicePage />

@@ -12,7 +12,8 @@ import {
   Download,
   Calendar,
   PieChart,
-  LineChart
+  LineChart,
+  AlertCircle
 } from 'lucide-react';
 
 interface ReportCard {
@@ -127,23 +128,40 @@ const FinancialReportsIndexPage: React.FC = () => {
       ],
       lastUpdated: '2024-06-10'
     },
-    {
-      id: 'collection-report',
-      title: 'Collection Report',
-      description: 'Comprehensive report of all confirmed payments received, with filtering and analysis capabilities.',
-      icon: <DollarSign className="w-8 h-8" />,
-      color: 'bg-green-500',
-      route: '/reports/collection-report',
-      features: [
-        'All confirmed payments',
-        'Date range filtering',
-        'Payment method breakdown',
-        'Client-wise collections',
-        'CSV export',
-        'Summary statistics'
-      ],
-      lastUpdated: '2024-01-15'
-    }
+            {
+          id: 'collection-report',
+          title: 'Collection Report',
+          description: 'Comprehensive report of all confirmed payments received, with filtering and analysis capabilities.',
+          icon: <DollarSign className="w-8 h-8" />,
+          color: 'bg-green-500',
+          route: '/reports/collection-report',
+          features: [
+            'All confirmed payments',
+            'Date range filtering',
+            'Payment method breakdown',
+            'Client-wise collections',
+            'CSV export',
+            'Summary statistics'
+          ],
+          lastUpdated: '2024-01-15'
+        },
+        {
+          id: 'unconfirmed-payments',
+          title: 'Unconfirmed Payments',
+          description: 'Track all payments pending confirmation with detailed filtering and analysis.',
+          icon: <AlertCircle className="w-8 h-8" />,
+          color: 'bg-orange-500',
+          route: '/reports/unconfirmed-payments',
+          features: [
+            'Pending payment confirmations',
+            'Date range filtering',
+            'Payment method breakdown',
+            'Account-wise pending amounts',
+            'CSV export',
+            'Summary statistics'
+          ],
+          lastUpdated: '2024-01-15'
+        }
   ];
 
   const quickActions = [
