@@ -33,6 +33,18 @@ const PurchaseOrderDetailsPage: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
+  // Helper function to calculate tax-exclusive unit price
+  const getTaxExclusivePrice = (taxInclusivePrice: number, taxType: string = '16%'): number => {
+    const taxRate = taxType === '16%' ? 0.16 : 0;
+    return taxInclusivePrice / (1 + taxRate);
+  };
+
+  // Helper function to calculate tax amount for a line item
+  const getTaxAmount = (taxInclusivePrice: number, quantity: number, taxType: string = '16%'): number => {
+    const taxExclusivePrice = getTaxExclusivePrice(taxInclusivePrice, taxType);
+    return (taxInclusivePrice - taxExclusivePrice) * quantity;
+  };
+
   useEffect(() => {
     if (id) {
       fetchPurchaseOrder();
@@ -61,7 +73,8 @@ const PurchaseOrderDetailsPage: React.FC = () => {
         items: purchaseOrder.items?.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
-          unit_price: item.unit_price
+          // Convert tax-inclusive price to tax-exclusive for editing
+          unit_price: getTaxExclusivePrice(item.unit_price)
         })) || []
       });
     }
@@ -82,7 +95,7 @@ const PurchaseOrderDetailsPage: React.FC = () => {
     const items = po.items?.map((item: any) => ({
       product_id: item.product_id,
       received_quantity: 0,
-      unit_cost: item.unit_price,
+      unit_cost: getTaxExclusivePrice(item.unit_price), // Use tax-exclusive price for inventory
       product_name: item.product_name,
       product_code: item.product_code,
       max_quantity: item.quantity - (item.received_quantity || 0)
@@ -191,7 +204,15 @@ const PurchaseOrderDetailsPage: React.FC = () => {
   const handleEditItemChange = (index: number, field: string, value: any) => {
     if (!editForm) return;
     const items = [...editForm.items];
+    
+    if (field === 'unit_price') {
+      // Convert tax-exclusive price to tax-inclusive for storage
+      const taxInclusivePrice = value * 1.16; // Assuming 16% tax rate
+      items[index] = { ...items[index], [field]: taxInclusivePrice };
+    } else {
     items[index] = { ...items[index], [field]: value };
+    }
+    
     setEditForm({ ...editForm, items });
   };
 
@@ -315,16 +336,23 @@ const PurchaseOrderDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Purchase Order Details</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                PO Number: {purchaseOrder.po_number}
-              </p>
+                <h1 className="text-4xl font-bold text-gray-900">Purchase Order</h1>
+                <p className="mt-2 text-lg text-gray-600">
+                  #{purchaseOrder.po_number} • {getStatusBadge(purchaseOrder.status)}
+                </p>
+              </div>
             </div>
               <div className="flex space-x-3">
               <Link to="/purchase-orders" className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -397,44 +425,45 @@ const PurchaseOrderDetailsPage: React.FC = () => {
         </div>
 
         {/* Purchase Order Summary */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Order Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white shadow-xl rounded-2xl p-6 mb-6 border border-gray-100">
+          <div className="flex items-center mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg mr-3">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Order Information</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">PO Number</p>
+              <p className="text-xs text-gray-500 mb-1">PO Number</p>
                   <p className="text-sm font-medium text-gray-900">{purchaseOrder.po_number}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <div className="mt-1">{getStatusBadge(purchaseOrder.status)}</div>
+              <p className="text-xs text-gray-500 mb-1">Status</p>
+              <div>{getStatusBadge(purchaseOrder.status)}</div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Order Date</p>
+              <p className="text-xs text-gray-500 mb-1">Order Date</p>
                   <p className="text-sm font-medium text-gray-900">
                     {formatDate(purchaseOrder.order_date)}
                   </p>
                 </div>
                 {purchaseOrder.expected_delivery_date && (
                   <div>
-                    <p className="text-sm text-gray-500">Expected Delivery</p>
+                <p className="text-xs text-gray-500 mb-1">Expected Delivery</p>
                     <p className="text-sm font-medium text-gray-900">
                       {formatDate(purchaseOrder.expected_delivery_date)}
                     </p>
                   </div>
                 )}
-              </div>
-            </div>
             <div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">Supplier</p>
+              <p className="text-xs text-gray-500 mb-1">Supplier</p>
                   {editMode ? (
                     <select
                       value={editForm?.supplier_id || ''}
                       onChange={e => handleEditFormChange('supplier_id', Number(e.target.value))}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-xs"
                     >
                       <option value="">Select supplier...</option>
                       {suppliers.map((s: Supplier) => (
@@ -442,7 +471,7 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                       ))}
                     </select>
                   ) : (
-                    <span>
+                <span className="text-sm font-medium text-gray-900">
                       {purchaseOrder.supplier?.company_name ||
                         suppliers.find(s => s.id === purchaseOrder.supplier_id)?.company_name ||
                         'N/A'}
@@ -450,51 +479,60 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Created By</p>
+              <p className="text-xs text-gray-500 mb-1">Created By</p>
                   <p className="text-sm font-medium text-gray-900">
                     {purchaseOrder.created_by_user?.full_name || 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Created Date</p>
+              <p className="text-xs text-gray-500 mb-1">Created Date</p>
                   <p className="text-sm font-medium text-gray-900">
                     {formatDate(purchaseOrder.created_at)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Notes</p>
+            <div className="col-span-2 md:col-span-1 lg:col-span-1">
+              <p className="text-xs text-gray-500 mb-1">Notes</p>
                   {editMode ? (
                     <textarea
                       value={editForm?.notes || ''}
                       onChange={e => handleEditFormChange('notes', e.target.value)}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-xs"
+                  rows={2}
                     />
                   ) : (
-                    <span>{purchaseOrder.notes}</span>
+                <span className="text-sm font-medium text-gray-900">{purchaseOrder.notes}</span>
                   )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Order Items */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Order Items</h2>
+        <div className="bg-white shadow-xl rounded-2xl p-8 mb-8 border border-gray-100">
+          <div className="flex items-center mb-6">
+            <div className="p-2 bg-green-100 rounded-lg mr-3">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Order Items</h2>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Unit Price
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                    Unit Price (excl. tax)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                    Tax
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Total
                   </th>
                 </tr>
@@ -530,10 +568,15 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                         <input
                           type="number"
                           min={0}
-                          value={item.unit_price}
+                          value={getTaxExclusivePrice(item.unit_price).toFixed(2)}
                           onChange={e => handleEditItemChange(index, 'unit_price', Number(e.target.value))}
                           className="border border-gray-300 rounded px-2 py-1 w-24"
                         />
+                      </td>
+                      <td>
+                        <span className="text-sm text-gray-600">
+                          {getTaxAmount(item.unit_price, item.quantity).toFixed(2)}
+                        </span>
                       </td>
                       <td>
                         <button type="button" onClick={() => handleRemoveEditItem(index)} className="text-red-600 hover:text-red-800">Remove</button>
@@ -549,7 +592,8 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                           'N/A'}
                       </td>
                       <td>{item.quantity}</td>
-                      <td>{item.unit_price}</td>
+                      <td>{getTaxExclusivePrice(item.unit_price).toFixed(2)}</td>
+                      <td>{getTaxAmount(item.unit_price, item.quantity).toFixed(2)}</td>
                       <td>{item.total_price}</td>
                     </tr>
                   ))
@@ -558,7 +602,7 @@ const PurchaseOrderDetailsPage: React.FC = () => {
               {editMode && (
                 <tfoot>
                   <tr>
-                    <td colSpan={4}>
+                    <td colSpan={5}>
                       <button type="button" onClick={handleAddEditItem} className="text-blue-600 hover:text-blue-800">Add Item</button>
                     </td>
                   </tr>
@@ -568,20 +612,25 @@ const PurchaseOrderDetailsPage: React.FC = () => {
           </div>
           
           {/* Order Totals */}
-          <div className="mt-6 border-t border-gray-200 pt-4">
+          <div className="mt-8 border-t border-gray-200 pt-6">
             <div className="flex justify-end">
-              <div className="w-64 space-y-2">
+              <div className="w-80 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Order Summary</h3>
+                <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal:</span>
-                  <span className="font-medium">{formatCurrency(purchaseOrder.subtotal)}</span>
+                    <span className="text-gray-600 font-medium">Subtotal:</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(purchaseOrder.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Tax:</span>
-                  <span className="font-medium">{formatCurrency(purchaseOrder.tax_amount)}</span>
+                    <span className="text-gray-600 font-medium">Tax:</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(purchaseOrder.tax_amount)}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                  <span>Total:</span>
-                  <span>{formatCurrency(purchaseOrder.total_amount)}</span>
+                  <div className="border-t border-blue-200 pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-xl font-bold text-gray-900">Total:</span>
+                      <span className="text-xl font-bold text-blue-600">{formatCurrency(purchaseOrder.total_amount)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -590,26 +639,38 @@ const PurchaseOrderDetailsPage: React.FC = () => {
 
         {/* Receive Items Form */}
         {showReceiveForm && (purchaseOrder.status === 'sent') && (
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Receive Items</h2>
+          <div className="bg-white shadow-xl rounded-2xl p-8 mb-8 border border-gray-100">
+            <div className="flex items-center mb-6">
+              <div className="p-2 bg-green-100 rounded-lg mr-3">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Receive Items</h2>
+            </div>
             
             {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
-                <div className="text-sm text-red-700">{error}</div>
+              <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm font-medium text-red-700">{error}</div>
+                </div>
               </div>
             )}
 
             <form onSubmit={handleReceiveSubmit}>
               {/* Store Selection */}
-              <div className="mb-6">
-                <label htmlFor="store" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8">
+                <label htmlFor="store" className="block text-sm font-semibold text-gray-700 mb-3">
                   Select Store *
                 </label>
                 <select
                   id="store"
                   value={selectedStore}
                   onChange={(e) => setSelectedStore(e.target.value ? parseInt(e.target.value) : '')}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-3 border-2 transition-all duration-200"
                   required
                 >
                   <option value="">Select a store...</option>
@@ -622,84 +683,116 @@ const PurchaseOrderDetailsPage: React.FC = () => {
               </div>
 
               {/* Items to Receive */}
-              <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-900 mb-4">Items to Receive</h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Product
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Remaining
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Receive Qty
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Unit Cost
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+              <div className="mb-8">
+                <div className="flex items-center mb-6">
+                  <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Items to Receive</h3>
+                </div>
+                
+                <div className="grid gap-4">
                       {receivingItems.map((item, index) => (
-                        <tr key={item.product_id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                    <div key={item.product_id} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 hover:shadow-md transition-all duration-200">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                        {/* Product Info */}
+                        <div className="md:col-span-2">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-white rounded-lg shadow-sm">
+                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              </svg>
+                            </div>
                             <div>
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-lg font-semibold text-gray-900">
                                 {item.product_name ||
                                   products.find(p => p.id === item.product_id)?.product_name ||
                                   'N/A'}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {item.product_code ||
+                              <div className="text-sm text-gray-600 font-medium">
+                                Code: {item.product_code ||
                                   products.find(p => p.id === item.product_id)?.product_code ||
                                   'N/A'}
                               </div>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {item.max_quantity}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          </div>
+                        </div>
+
+                        {/* Remaining Quantity */}
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 font-medium mb-1">Remaining</div>
+                          <div className="text-2xl font-bold text-blue-600">{item.max_quantity}</div>
+                        </div>
+
+                        {/* Receive Quantity Input */}
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 font-medium mb-2">Receive Qty</div>
                             <input
                               type="number"
                               min="0"
                               max={item.max_quantity}
                               value={item.received_quantity}
                               onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
-                              className="block w-20 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            className="block w-24 mx-auto text-center border-2 border-blue-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold transition-all duration-200"
                               disabled={item.max_quantity === 0}
                             />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(item.unit_cost)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        </div>
+
+                        {/* Unit Cost */}
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 font-medium mb-1">Unit Cost</div>
+                          <div className="text-lg font-semibold text-gray-900">{formatCurrency(item.unit_cost)}</div>
+                        </div>
+
+                        {/* Total */}
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 font-medium mb-1">Total</div>
+                          <div className="text-xl font-bold text-green-600">
                             {formatCurrency(item.received_quantity * item.unit_cost)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {item.max_quantity > 0 && (
+                        <div className="mt-4">
+                          <div className="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>{Math.round((item.received_quantity / item.max_quantity) * 100)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min((item.received_quantity / item.max_quantity) * 100, 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Notes */}
-              <div className="mb-6">
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8">
+                <div className="flex items-center mb-4">
+                  <div className="p-2 bg-yellow-100 rounded-lg mr-3">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <label htmlFor="notes" className="text-lg font-semibold text-gray-900">
                   Notes (Optional)
                 </label>
+                </div>
                 <textarea
                   id="notes"
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-2 border-blue-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-4 transition-all duration-200"
                   placeholder="Add any notes about this receipt..."
                 />
               </div>
@@ -715,19 +808,25 @@ const PurchaseOrderDetailsPage: React.FC = () => {
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-4">
                 <button
                   type="button"
                   onClick={() => setShowReceiveForm(false)}
-                  className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-6 py-3 border-2 border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || receivingItems.reduce((total, item) => total + item.received_quantity, 0) === 0}
-                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                   {submitting ? 'Receiving...' : 'Receive Items'}
                 </button>
               </div>
@@ -737,8 +836,15 @@ const PurchaseOrderDetailsPage: React.FC = () => {
 
         {/* Receipt History */}
         {purchaseOrder.receipts && purchaseOrder.receipts.length > 0 && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Receipt History</h2>
+          <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+            <div className="flex items-center mb-6">
+              <div className="p-2 bg-purple-100 rounded-lg mr-3">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Receipt History</h2>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">

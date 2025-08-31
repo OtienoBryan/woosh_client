@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -6,7 +6,9 @@ import {
   X, 
   Package, 
   DollarSign, 
-  FileText
+  FileText,
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { 
   suppliersService, 
@@ -43,9 +45,54 @@ const PurchaseOrderPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
 
+  // Supplier search state
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (dropdownRef.current && !dropdownRef.current.contains(target) && 
+          !target.closest('.supplier-search-container')) {
+        // Add a small delay to allow click events to complete
+        setTimeout(() => {
+          setShowSupplierDropdown(false);
+          setHighlightedIndex(-1);
+        }, 150);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter suppliers based on search term
+  useEffect(() => {
+    if (supplierSearchTerm.trim() === '') {
+      setFilteredSuppliers(suppliers);
+    } else {
+      const filtered = suppliers.filter(supplier => 
+        (supplier.company_name && supplier.company_name.toLowerCase().includes(supplierSearchTerm.toLowerCase())) ||
+        (supplier.contact_person && supplier.contact_person.toLowerCase().includes(supplierSearchTerm.toLowerCase())) ||
+        (supplier.email && supplier.email.toLowerCase().includes(supplierSearchTerm.toLowerCase())) ||
+        (supplier.phone && supplier.phone.toLowerCase().includes(supplierSearchTerm.toLowerCase())) ||
+        (supplier.supplier_code && supplier.supplier_code.toLowerCase().includes(supplierSearchTerm.toLowerCase()))
+      );
+      setFilteredSuppliers(filtered);
+    }
+  }, [supplierSearchTerm, suppliers]);
+
+
 
   const fetchInitialData = async () => {
     try {
@@ -91,14 +138,19 @@ const PurchaseOrderPage: React.FC = () => {
   };
 
   const updateItem = (index: number, field: keyof PurchaseOrderItem, value: any) => {
+    console.log(`Updating item ${index}, field ${field} to value:`, value, 'type:', typeof value);
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
-    // Recalculate total price when quantity or unit_price changes (gross total)
-    if (field === 'quantity' || field === 'unit_price') {
+    // Recalculate total price when quantity, unit_price, or tax_type changes
+    if (field === 'quantity' || field === 'unit_price' || field === 'tax_type') {
       const quantity = field === 'quantity' ? value : updatedItems[index].quantity;
       const unitPrice = field === 'unit_price' ? value : updatedItems[index].unit_price;
-      updatedItems[index].total_price = quantity * unitPrice;
+      const taxType = field === 'tax_type' ? value : updatedItems[index].tax_type;
+      const taxRate = getTaxRate(taxType);
+      // Calculate total as (quantity × unit_price) × (1 + tax_rate)
+      updatedItems[index].total_price = quantity * unitPrice * (1 + taxRate);
+      console.log(`Recalculated total for item ${index}:`, updatedItems[index].total_price);
     }
     
     // Update product details if product_id changed
@@ -111,33 +163,30 @@ const PurchaseOrderPage: React.FC = () => {
   };
 
   const calculateSubtotal = () => {
-    // Sum of net (tax-exclusive) line totals based on each line's tax type
+    // Sum of tax-exclusive line totals (quantity × unit_price)
     return items.reduce((sum, item) => {
-      const rate = getTaxRate(item.tax_type);
-      const lineGross = item.total_price;
-      const lineNet = rate > 0 ? lineGross / (1 + rate) : lineGross;
-      return sum + lineNet;
+      return sum + (item.quantity * item.unit_price);
     }, 0);
   };
 
   const calculateTax = () => {
-    // Sum of tax amounts per line based on each line's tax type
+    // Sum of tax amounts per line
     return items.reduce((sum, item) => {
       const rate = getTaxRate(item.tax_type);
       if (rate === 0) return sum;
-      const lineGross = item.total_price;
-      const lineNet = lineGross / (1 + rate);
-      return sum + (lineGross - lineNet);
+      const lineNet = item.quantity * item.unit_price;
+      const lineTax = lineNet * rate;
+      return sum + lineTax;
     }, 0);
   };
 
   const calculateTotal = () => {
-    // Total equals the sum of entered (tax-inclusive) line totals
+    // Total equals the sum of tax-inclusive line totals
     return items.reduce((sum, item) => sum + item.total_price, 0);
   };
 
   const validateForm = () => {
-    if (!selectedSupplier) {
+    if (!selectedSupplier || !supplierSearchTerm.trim()) {
       setError('Please select a supplier');
       return false;
     }
@@ -183,11 +232,15 @@ const PurchaseOrderPage: React.FC = () => {
         expected_delivery_date: expectedDeliveryDate || undefined,
         notes: notes || undefined,
         items: items.map(item => {
+           // Calculate tax-inclusive unit price for database storage
+           const taxRate = getTaxRate(item.tax_type);
+           const taxInclusiveUnitPrice = item.unit_price * (1 + taxRate);
+           
           return {
             product_id: item.product_id,
             quantity: item.quantity,
-            // Post tax-inclusive unit price as entered
-            unit_price: Number(item.unit_price.toFixed(2)),
+             // Post tax-inclusive unit price to database
+             unit_price: Number(taxInclusiveUnitPrice.toFixed(2)),
             tax_type: item.tax_type
           };
         })
@@ -199,6 +252,7 @@ const PurchaseOrderPage: React.FC = () => {
         alert('Purchase order created successfully!');
         // Reset form
         setSelectedSupplier('');
+        setSupplierSearchTerm('');
         setOrderDate(new Date().toISOString().split('T')[0]);
         setExpectedDeliveryDate('');
         setNotes('');
@@ -212,6 +266,66 @@ const PurchaseOrderPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSupplierSelect = (supplier: Supplier) => {
+    console.log('Supplier selected:', supplier); // Debug log
+    // Update all states immediately for instant feedback
+    setSelectedSupplier(supplier.id);
+    setSupplierSearchTerm(supplier.company_name || '');
+    setShowSupplierDropdown(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleSupplierSearchChange = (value: string) => {
+    setSupplierSearchTerm(value);
+    setShowSupplierDropdown(true);
+    setHighlightedIndex(-1);
+    // Clear selection if search term is empty or if user starts typing something different
+    if (!value.trim()) {
+      setSelectedSupplier('');
+    } else if (selectedSupplier) {
+      const selectedSupplierData = suppliers.find(s => s.id === selectedSupplier);
+      if (selectedSupplierData && !value.toLowerCase().includes(selectedSupplierData.company_name?.toLowerCase() || '')) {
+        setSelectedSupplier('');
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSupplierDropdown) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredSuppliers.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredSuppliers.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && filteredSuppliers[highlightedIndex]) {
+          handleSupplierSelect(filteredSuppliers[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowSupplierDropdown(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
+
+  const clearSupplierSelection = () => {
+    setSelectedSupplier('');
+    setSupplierSearchTerm('');
+    setShowSupplierDropdown(false);
+    setHighlightedIndex(-1);
   };
 
   if (loading) {
@@ -266,23 +380,187 @@ const PurchaseOrderPage: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Supplier Selection */}
-              <div>
+              <div className="relative supplier-search-container">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Supplier <span className="text-red-500">*</span>
+                  {selectedSupplier && (
+                    <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Selected
+                    </span>
+                  )}
                 </label>
-                <select
-                  value={selectedSupplier}
-                  onChange={(e) => setSelectedSupplier(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select a supplier</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.company_name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={supplierSearchTerm}
+                    onChange={(e) => handleSupplierSearchChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setShowSupplierDropdown(true)}
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${
+                      selectedSupplier ? 'bg-green-50 border-green-300' : ''
+                    }`}
+                    placeholder="Search by company name, contact person, email, phone, or supplier code..."
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    {loading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    ) : selectedSupplier ? (
+                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    ) : (
+                      <Search className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+                                 {showSupplierDropdown && filteredSuppliers.length > 0 && (
+                   <div ref={dropdownRef} className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                    {supplierSearchTerm.trim() === '' && (
+                      <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                        {filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''} available
+                      </div>
+                    )}
+                    {supplierSearchTerm.trim() !== '' && (
+                      <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                        {filteredSuppliers.length} result{filteredSuppliers.length !== 1 ? 's' : ''} for "{supplierSearchTerm}"
+                      </div>
+                    )}
+                                         {filteredSuppliers.map((supplier, index) => (
+                       <div
+                         key={supplier.id}
+                         className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                           index === highlightedIndex ? 'bg-blue-100' : ''
+                         }`}
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           handleSupplierSelect(supplier);
+                         }}
+                         onMouseDown={(e) => e.preventDefault()}
+                       >
+                        <div className="font-medium">{supplier.company_name || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">Code: {supplier.supplier_code || 'N/A'}</div>
+                        {supplier.contact_person && (
+                          <div className="text-sm text-gray-600">{supplier.contact_person}</div>
+                        )}
+                        {supplier.email && (
+                          <div className="text-sm text-gray-500">{supplier.email}</div>
+                        )}
+                        {supplier.phone && (
+                          <div className="text-sm text-gray-500">{supplier.phone}</div>
+                        )}
+                        {supplier.address && (
+                          <div className="text-sm text-gray-500">{supplier.address}</div>
+                        )}
+                        {supplier.tax_id && (
+                          <div className="text-sm text-gray-500">Tax ID: {supplier.tax_id}</div>
+                        )}
+                        <div className="text-sm text-gray-500">
+                          Payment Terms: {supplier.payment_terms || 'N/A'} days
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Credit Limit: ${(supplier.credit_limit || 0).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Status: {supplier.is_active ? 'Active' : 'Inactive'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Created: {supplier.created_at ? new Date(supplier.created_at).toLocaleDateString() : 'N/A'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Updated: {supplier.updated_at ? new Date(supplier.updated_at).toLocaleDateString() : 'N/A'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {showSupplierDropdown && supplierSearchTerm.trim() === '' && suppliers.length > 0 && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
+                    <div className="px-4 py-3 text-center">
+                      <div className="text-gray-500 mb-2">Start typing to search suppliers...</div>
+                      <div className="text-sm text-gray-400">Search by company name, contact person, email, phone, or supplier code</div>
+                      <div className="text-sm text-gray-400 mt-1">You can also browse all available suppliers below</div>
+                    </div>
+                  </div>
+                )}
+                {showSupplierDropdown && supplierSearchTerm.trim() !== '' && filteredSuppliers.length === 0 && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
+                    <div className="px-4 py-3 text-center">
+                      <div className="text-gray-500 mb-2">No suppliers found matching "{supplierSearchTerm}"</div>
+                      <div className="text-sm text-gray-400">Try searching by company name, contact person, email, phone, or supplier code</div>
+                    </div>
+                  </div>
+                )}
+                {showSupplierDropdown && suppliers.length === 0 && !loading && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
+                    <div className="px-4 py-3 text-center">
+                      <div className="text-gray-500 mb-2">No suppliers available</div>
+                      <div className="text-sm text-gray-400">Please add suppliers first before creating purchase orders</div>
+                    </div>
+                  </div>
+                )}
+                {selectedSupplier && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-green-800">
+                          {suppliers.find(s => s.id === selectedSupplier)?.company_name || 'N/A'}
+                        </div>
+                        <div className="text-sm text-green-600">
+                          Code: {suppliers.find(s => s.id === selectedSupplier)?.supplier_code || 'N/A'}
+                        </div>
+                        {suppliers.find(s => s.id === selectedSupplier)?.contact_person && (
+                          <div className="text-sm text-green-600">
+                            Contact: {suppliers.find(s => s.id === selectedSupplier)?.contact_person}
+                          </div>
+                        )}
+                        {suppliers.find(s => s.id === selectedSupplier)?.email && (
+                          <div className="text-sm text-green-600">
+                            Email: {suppliers.find(s => s.id === selectedSupplier)?.email}
+                          </div>
+                        )}
+                        {suppliers.find(s => s.id === selectedSupplier)?.phone && (
+                          <div className="text-sm text-green-600">
+                            Phone: {suppliers.find(s => s.id === selectedSupplier)?.phone}
+                          </div>
+                        )}
+                        {suppliers.find(s => s.id === selectedSupplier)?.address && (
+                          <div className="text-sm text-green-600">
+                            Address: {suppliers.find(s => s.id === selectedSupplier)?.address}
+                          </div>
+                        )}
+                        {suppliers.find(s => s.id === selectedSupplier)?.tax_id && (
+                          <div className="text-sm text-green-600">
+                            Tax ID: {suppliers.find(s => s.id === selectedSupplier)?.tax_id}
+                          </div>
+                        )}
+                        <div className="text-sm text-green-600">
+                          Payment Terms: {suppliers.find(s => s.id === selectedSupplier)?.payment_terms || 'N/A'} days
+                        </div>
+                        <div className="text-sm text-green-600">
+                          Credit Limit: ${(suppliers.find(s => s.id === selectedSupplier)?.credit_limit || 0).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-green-600">
+                          Status: {suppliers.find(s => s.id === selectedSupplier)?.is_active ? 'Active' : 'Inactive'}
+                        </div>
+                        <div className="text-sm text-green-600">
+                          Created: {suppliers.find(s => s.id === selectedSupplier)?.created_at ? new Date(suppliers.find(s => s.id === selectedSupplier)?.created_at || '').toLocaleDateString() : 'N/A'}
+                        </div>
+                        <div className="text-sm text-green-600">
+                          Updated: {suppliers.find(s => s.id === selectedSupplier)?.updated_at ? new Date(suppliers.find(s => s.id === selectedSupplier)?.updated_at || '').toLocaleDateString() : 'N/A'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={clearSupplierSelection}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Clear selection"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Order Date */}
@@ -394,8 +672,18 @@ const PurchaseOrderPage: React.FC = () => {
                         <input
                           type="number"
                           min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
+                          value={item.quantity || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') {
+                              updateItem(index, 'quantity', 1);
+                            } else {
+                              const numValue = parseInt(value);
+                              if (!isNaN(numValue) && numValue >= 1) {
+                                updateItem(index, 'quantity', numValue);
+                              }
+                            }
+                          }}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
                         />
@@ -404,20 +692,29 @@ const PurchaseOrderPage: React.FC = () => {
                       {/* Unit Price */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Unit Price (incl. tax) <span className="text-red-500">*</span>
+                           Unit Price (excl. tax) <span className="text-red-500">*</span>
                         </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2 text-gray-500">$</span>
                           <input
                             type="number"
                             min="0.01"
                             step="0.01"
-                            value={item.unit_price}
-                            onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
-                            className="w-full border border-gray-300 rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           value={item.unit_price || ''}
+                           onChange={(e) => {
+                             const value = e.target.value;
+                             console.log('Unit price input change:', value, 'type:', typeof value);
+                             if (value === '') {
+                               updateItem(index, 'unit_price', 0);
+                             } else {
+                               const numValue = parseFloat(value);
+                               console.log('Parsed value:', numValue);
+                               if (!isNaN(numValue) && numValue >= 0) {
+                                 updateItem(index, 'unit_price', numValue);
+                               }
+                             }
+                           }}
+                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             required
                           />
-                        </div>
                       </div>
 
                       {/* Tax Type */}
@@ -439,17 +736,14 @@ const PurchaseOrderPage: React.FC = () => {
                       {/* Total Price */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Total Price
+                           Total Price (incl. tax)
                         </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2 text-gray-500">$</span>
                           <input
                             type="number"
                             value={item.total_price.toFixed(2)}
                             readOnly
-                            className="w-full border border-gray-300 rounded-lg pl-8 pr-3 py-2 bg-gray-50 text-gray-900"
+                           className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900"
                           />
-                        </div>
                       </div>
                     </div>
 
@@ -493,16 +787,16 @@ const PurchaseOrderPage: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
+                   <span className="font-medium">{calculateSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax:</span>
-                  <span className="font-medium">${calculateTax().toFixed(2)}</span>
+                   <span className="font-medium">{calculateTax().toFixed(2)}</span>
                 </div>
                 <div className="border-top pt-3">
                   <div className="flex justify-between">
                     <span className="text-lg font-semibold text-gray-900">Total:</span>
-                    <span className="text-lg font-semibold text-gray-900">${calculateTotal().toFixed(2)}</span>
+                     <span className="text-lg font-semibold text-gray-900">{calculateTotal().toFixed(2)}</span>
                   </div>
                 </div>
               </div>
