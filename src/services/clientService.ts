@@ -124,8 +124,19 @@ export const clientService = {
 
   // Fetch all invoices for a customer
   getCustomerInvoices: async (clientId: string | number) => {
-    const response = await api.get(`/clients/${clientId}/invoices`);
-    return response.data;
+    try {
+      // Fetch from sales orders where my_status is 1, 2, or 3
+      const response = await fetch(`/api/financial/sales-orders?client_id=${clientId}&status=1,2,3`);
+      const data = await response.json();
+      if (data.success) {
+        return { success: true, data: data.data || [] };
+      } else {
+        return { success: false, data: [] };
+      }
+    } catch (error) {
+      console.error('Error fetching customer invoices from sales orders:', error);
+      return { success: false, data: [] };
+    }
   },
 
   // Fetch customer ledger for a customer

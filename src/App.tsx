@@ -50,6 +50,7 @@ import JournalEntriesPage from './pages/JournalEntriesPage';
 import PayrollManagementPage from './pages/PayrollManagementPage';
 import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import GeneralLedgerReportPage from './pages/GeneralLedgerReportPage';
+import CollectionReportPage from './pages/CollectionReportPage';
 import InventoryTransactionsPage from './pages/InventoryTransactionsPage';
 import InventoryAsOfPage from './pages/InventoryAsOfPage';
 import StockTransferPage from './pages/StockTransferPage';
@@ -375,6 +376,11 @@ const App = () => {
             <Route path="/reports/general-ledger" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
                 <GeneralLedgerReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/collection-report" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <CollectionReportPage />
               </RoleBasedRoute>
             } />
             <Route path="/create-invoice" element={

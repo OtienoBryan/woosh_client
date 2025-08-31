@@ -126,6 +126,23 @@ const FinancialReportsIndexPage: React.FC = () => {
         'CSV export',
       ],
       lastUpdated: '2024-06-10'
+    },
+    {
+      id: 'collection-report',
+      title: 'Collection Report',
+      description: 'Comprehensive report of all confirmed payments received, with filtering and analysis capabilities.',
+      icon: <DollarSign className="w-8 h-8" />,
+      color: 'bg-green-500',
+      route: '/reports/collection-report',
+      features: [
+        'All confirmed payments',
+        'Date range filtering',
+        'Payment method breakdown',
+        'Client-wise collections',
+        'CSV export',
+        'Summary statistics'
+      ],
+      lastUpdated: '2024-01-15'
     }
   ];
 

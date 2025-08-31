@@ -38,7 +38,7 @@ const ClientDetailsPage: React.FC = () => {
       setClient(clientData);
       setInvoices(invoicesRes.success ? invoicesRes.data : []);
       setPayments(paymentsRes.success ? paymentsRes.data : []);
-      console.log('Fetched invoices:', invoicesRes.success ? invoicesRes.data : []);
+      console.log('Fetched sales orders (invoices):', invoicesRes.success ? invoicesRes.data : []);
       console.log('Fetched payments:', paymentsRes.success ? paymentsRes.data : []);
     } catch (error: any) {
       console.error('Error fetching client, invoices, or payments:', error);
@@ -116,9 +116,16 @@ const ClientDetailsPage: React.FC = () => {
   const formatDate = (d: string) => (d ? new Date(d).toLocaleDateString() : '');
 
   const totals = useMemo(() => {
-    const totalInvoicedViaInvoices = invoices.reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
+    // Calculate total from sales orders (my_status 1, 2, 3)
+    const totalInvoicedViaSalesOrders = invoices.reduce((s: number, order: any) => {
+      // Calculate total from items if total_amount is not available
+      const orderTotal = order.total_amount || 
+        (order.items && order.items.reduce((sum: number, item: any) => sum + Number(item.total_price || 0), 0)) || 0;
+      return s + Number(orderTotal);
+    }, 0);
+    
     const totalInvoicedViaHistory = history.reduce((s, e) => s + Number(e.debit || 0), 0);
-    const totalInvoiced = totalInvoicedViaInvoices > 0 ? totalInvoicedViaInvoices : totalInvoicedViaHistory;
+    const totalInvoiced = totalInvoicedViaSalesOrders > 0 ? totalInvoicedViaSalesOrders : totalInvoicedViaHistory;
     const totalPaid = payments.filter((p: any) => p.status === 'confirmed').reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
     const outstanding = Math.max(0, totalInvoiced - totalPaid);
     const currentBalance = client && (client as any).balance != null ? Number((client as any).balance) : outstanding;
@@ -200,7 +207,7 @@ const ClientDetailsPage: React.FC = () => {
         <nav className="-mb-px flex flex-wrap gap-4" aria-label="Tabs">
           {[
             { key: 'overview', label: 'Overview', count: undefined },
-            { key: 'invoices', label: 'Invoices', count: invoices.length },
+            { key: 'invoices', label: 'Sales Orders', count: invoices.length },
             { key: 'payments', label: 'Payments', count: payments.length },
             { key: 'creditNotes', label: 'Credit Notes', count: creditNotes.length },
             { key: 'history', label: 'History', count: history.length },
@@ -238,28 +245,37 @@ const ClientDetailsPage: React.FC = () => {
               </div>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-3">Recent Invoices</h3>
+              <h3 className="text-lg font-semibold mb-3">Recent Sales Orders</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                       <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {invoices.slice(0, 5).map((inv: any) => (
-                      <tr key={inv.id}>
-                        <td className="px-4 py-2 text-sm text-gray-900">{inv.invoice_number || inv.id}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900">{formatDate(inv.created_at)}</td>
-                        <td className="px-4 py-2 text-right text-sm text-gray-900">{formatKES(Number(inv.total_amount || 0))}</td>
-                        <td className="px-4 py-2 text-sm">{inv.status || '-'}</td>
-                      </tr>
-                    ))}
+                    {invoices.slice(0, 5).map((order: any) => {
+                      const orderTotal = order.total_amount || 
+                        (order.items && order.items.reduce((sum: number, item: any) => sum + Number(item.total_price || 0), 0)) || 0;
+                      const statusText = order.my_status === 1 ? 'Approved' : order.my_status === 2 ? 'Assigned' : order.my_status === 3 ? 'In Transit' : 'Unknown';
+                      return (
+                        <tr 
+                          key={order.id} 
+                          className="cursor-pointer hover:bg-gray-50 transition-colors"
+                          onClick={() => navigate(`/sales-orders/${order.id}`)}
+                        >
+                          <td className="px-4 py-2 text-sm text-gray-900">{order.order_number || order.id}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{formatDate(order.created_at)}</td>
+                          <td className="px-4 py-2 text-right text-sm text-gray-900">{formatKES(Number(orderTotal))}</td>
+                          <td className="px-4 py-2 text-sm">{statusText}</td>
+                        </tr>
+                      );
+                    })}
                     {invoices.length === 0 && (
-                      <tr><td colSpan={4} className="px-4 py-3 text-center text-gray-500">No invoices</td></tr>
+                      <tr><td colSpan={4} className="px-4 py-3 text-center text-gray-500">No sales orders</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -296,15 +312,15 @@ const ClientDetailsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Invoices Tab */}
+      {/* Sales Orders Tab */}
       {activeTab === 'invoices' && (
         <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
@@ -315,23 +331,36 @@ const ClientDetailsPage: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">No invoices found</td>
+                  <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">No sales orders found</td>
                 </tr>
               ) : (
-                invoices.map((inv: any) => {
+                invoices.map((order: any) => {
+                  const orderTotal = order.total_amount || 
+                    (order.items && order.items.reduce((sum: number, item: any) => sum + Number(item.total_price || 0), 0)) || 0;
+                  const statusText = order.my_status === 1 ? 'Approved' : order.my_status === 2 ? 'Assigned' : order.my_status === 3 ? 'In Transit' : 'Unknown';
                   const paid = payments
-                    .filter((p: any) => p.invoice_id === inv.id && p.status === 'confirmed')
+                    .filter((p: any) => p.invoice_id === order.id && p.status === 'confirmed')
                     .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-                  const balance = Number(inv.total_amount) - paid;
+                  const balance = Number(orderTotal) - paid;
                   return (
-                    <tr key={inv.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.invoice_number || inv.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(inv.created_at)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.so_number || '-'}</td>
+                    <tr 
+                      key={order.id}
+                      className="cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={(e) => {
+                        // Don't navigate if clicking on action buttons
+                        if ((e.target as HTMLElement).closest('button')) {
+                          return;
+                        }
+                        navigate(`/sales-orders/${order.id}`);
+                      }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.order_number || order.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(order.created_at)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.customer_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                        {inv.total_amount != null && !isNaN(Number(inv.total_amount)) ? formatKES(Number(inv.total_amount)) : '-'}
+                        {orderTotal > 0 ? formatKES(Number(orderTotal)) : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inv.status || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{statusText}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-700 font-semibold">
                         {paid > 0 ? formatKES(paid) : '-'}
                       </td>
@@ -342,8 +371,9 @@ const ClientDetailsPage: React.FC = () => {
                         <div className="flex space-x-2">
                           <button
                             className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                            onClick={() => {
-                              setSelectedInvoice(inv);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedInvoice(order);
                               setIsPaymentModalOpen(true);
                             }}
                           >
@@ -351,7 +381,10 @@ const ClientDetailsPage: React.FC = () => {
                           </button>
                           <button
                             className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs flex items-center"
-                            onClick={() => navigate(`/create-credit-note?customerId=${client.id}&invoiceId=${inv.id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/create-credit-note?customerId=${client.id}&invoiceId=${order.id}`);
+                            }}
                           >
                             <FileText className="w-3 h-3 mr-1" />
                             Credit Note

@@ -315,7 +315,7 @@ const FinancialDashboardPage = () => {
         </div>
 
         {/* Quick Actions Row */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8 hidden">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
             <ZapIcon className="w-5 h-5 text-amber-500" />

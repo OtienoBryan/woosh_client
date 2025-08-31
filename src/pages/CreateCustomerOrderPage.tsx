@@ -665,15 +665,9 @@ const CreateCustomerOrderPage: React.FC = () => {
                           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-            Enter the base price before tax is added. 
-            {item.product?.selling_price && item.product.selling_price > 0 ? 
-              ` Product base price: ${formatCurrency(item.product.selling_price)}` : 
-              ' Product base price not set - enter your desired base price'
-            }
-          </p>
+                        
           {item.unit_price > 0 && (
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+            <div className="mt-2 p-2 bg-gray-50 rounded text-xs hidden">
               <div className="flex justify-between">
                 <span>Base Price:</span>
                 <span>{formatCurrency(item.unit_price)}</span>
@@ -742,7 +736,7 @@ const CreateCustomerOrderPage: React.FC = () => {
 
                      {/* Debug Information */}
            {items.length > 0 && (
-             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md hidden">
                <h4 className="text-sm font-medium text-yellow-800 mb-2">Debug Info (Current Items State)</h4>
                <pre className="text-xs text-yellow-700 overflow-auto">
                  {JSON.stringify(items, null, 2)}
@@ -756,7 +750,7 @@ const CreateCustomerOrderPage: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
               
               {/* Pricing Information Note */}
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md hidden">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
                     <DollarSign className="h-5 w-5 text-blue-600" />
