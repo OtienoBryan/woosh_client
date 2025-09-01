@@ -59,6 +59,8 @@ const ExpenseSummaryPage: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseSummary[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [selectedJournalEntry, setSelectedJournalEntry] = useState<JournalEntry | null>(null);
   const [loadingJournal, setLoadingJournal] = useState(false);
@@ -82,6 +84,7 @@ const ExpenseSummaryPage: React.FC = () => {
 
   useEffect(() => {
     filterExpenses();
+    setCurrentPage(1); // Reset to first page when filters change
   }, [expenses, startDate, endDate, selectedSupplier, paymentStatus]);
 
   const fetchExpenses = async () => {
@@ -249,6 +252,7 @@ const ExpenseSummaryPage: React.FC = () => {
     setEndDate('');
     setSelectedSupplier('');
     setPaymentStatus('all');
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   const formatCurrency = (amount: number) => {
@@ -264,6 +268,46 @@ const ExpenseSummaryPage: React.FC = () => {
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentExpenses = filteredExpenses.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) {
+        return; // Don't handle keyboard shortcuts when typing in form fields
+      }
+      
+      if (event.key === 'ArrowLeft' && currentPage > 1) {
+        goToPreviousPage();
+      } else if (event.key === 'ArrowRight' && currentPage < totalPages) {
+        goToNextPage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentPage, totalPages]);
 
   if (loading) {
     return (
@@ -612,7 +656,7 @@ const ExpenseSummaryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredExpenses.map((expense) => (
+                  {currentExpenses.map((expense) => (
                     <tr 
                       key={expense.id} 
                       className="hover:bg-gray-50 cursor-pointer"
@@ -695,6 +739,157 @@ const ExpenseSummaryPage: React.FC = () => {
               </table>
             </div>
                      )}
+
+        {/* Pagination Controls */}
+        {filteredExpenses.length > 0 && (
+          <div className="bg-white px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              {/* Page size selector */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-700">Show:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing page size
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-700">entries</span>
+              </div>
+
+              {/* Page info */}
+              <div className="text-sm text-gray-700">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredExpenses.length)} of {filteredExpenses.length} entries
+              </div>
+
+              {/* Pagination navigation */}
+              <div className="flex items-center space-x-2">
+                {/* Quick jump to page */}
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-700">Go to:</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={currentPage}
+                    onChange={(e) => {
+                      const page = parseInt(e.target.value);
+                      if (page >= 1 && page <= totalPages) {
+                        goToPage(page);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const page = parseInt(e.currentTarget.value);
+                        if (page >= 1 && page <= totalPages) {
+                          goToPage(page);
+                        }
+                      }
+                    }}
+                    className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                </div>
+
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center space-x-1">
+                  {(() => {
+                    const pages = [];
+                    const maxVisiblePages = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                    // Adjust start page if we're near the end
+                    if (endPage - startPage + 1 < maxVisiblePages) {
+                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+
+                    // First page
+                    if (startPage > 1) {
+                      pages.push(
+                        <button
+                          key={1}
+                          onClick={() => goToPage(1)}
+                          className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          1
+                        </button>
+                      );
+                      if (startPage > 2) {
+                        pages.push(
+                          <span key="ellipsis1" className="px-2 text-gray-500">
+                            ...
+                          </span>
+                        );
+                      }
+                    }
+
+                    // Visible page numbers
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => goToPage(i)}
+                          className={`px-3 py-1 text-sm font-medium rounded-md border ${
+                            i === currentPage
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+
+                    // Last page
+                    if (endPage < totalPages) {
+                      if (endPage < totalPages - 1) {
+                        pages.push(
+                          <span key="ellipsis2" className="px-2 text-gray-500">
+                            ...
+                          </span>
+                        );
+                      }
+                      pages.push(
+                        <button
+                          key={totalPages}
+                          onClick={() => goToPage(totalPages)}
+                          className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          {totalPages}
+                        </button>
+                      );
+                    }
+
+                    return pages;
+                  })()}
+                </div>
+
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
          </div>
        </div>
 

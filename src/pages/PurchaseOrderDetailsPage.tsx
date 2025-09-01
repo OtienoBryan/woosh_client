@@ -472,7 +472,7 @@ const PurchaseOrderDetailsPage: React.FC = () => {
                     </select>
                   ) : (
                 <span className="text-sm font-medium text-gray-900">
-                      {purchaseOrder.supplier?.company_name ||
+                      {purchaseOrder.supplier_name ||
                         suppliers.find(s => s.id === purchaseOrder.supplier_id)?.company_name ||
                         'N/A'}
                     </span>

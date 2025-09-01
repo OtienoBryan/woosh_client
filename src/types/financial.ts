@@ -95,7 +95,9 @@ export interface User {
     created_by: number;
     created_at: string;
     updated_at: string;
-    supplier?: Supplier;
+    supplier_name?: string;
+    supplier_code?: string;
+    created_by_name?: string;
     items?: PurchaseOrderItem[];
     created_by_user?: User;
   }

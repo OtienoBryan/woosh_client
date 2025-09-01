@@ -93,7 +93,7 @@ const PurchaseOrdersPage: React.FC = () => {
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         const matchesPO = po.po_number.toLowerCase().includes(search);
-        const matchesSupplier = po.supplier?.company_name?.toLowerCase().includes(search);
+        const matchesSupplier = po.supplier_name?.toLowerCase().includes(search);
         const matchesNotes = po.notes?.toLowerCase().includes(search);
         if (!matchesPO && !matchesSupplier && !matchesNotes) return false;
       }
@@ -207,7 +207,7 @@ const PurchaseOrdersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -444,8 +444,8 @@ const PurchaseOrdersPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{po.supplier?.company_name || 'Unknown Supplier'}</div>
-                        <div className="text-sm text-gray-500">{po.supplier?.supplier_code || 'N/A'}</div>
+                        <div className="text-sm text-gray-900">{po.supplier_name || 'Unknown Supplier'}</div>
+                        <div className="text-sm text-gray-500">{po.supplier_code || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(po.status)}
