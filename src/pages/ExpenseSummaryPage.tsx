@@ -7,13 +7,14 @@ interface ExpenseSummary {
   id: number;
   journal_entry_id: number;
   supplier_id: number;
-  amount: number;
+  amount: number | string;
   created_at: string;
   supplier_name: string;
   entry_date: string;
   reference: string;
   description: string;
   total_items?: number;
+  amount_paid: number | string;
 }
 
 interface Supplier {
@@ -210,7 +211,7 @@ const ExpenseSummaryPage: React.FC = () => {
     console.log('Filtered expenses:', filtered);
     
     const totalAmount = filtered.reduce((sum, expense) => {
-      const amount = parseFloat(expense.amount) || 0;
+      const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
       console.log(`Adding amount: ${amount} (original: ${expense.amount}, type: ${typeof expense.amount})`);
       return sum + amount;
     }, 0);
@@ -319,7 +320,7 @@ const ExpenseSummaryPage: React.FC = () => {
          </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -355,6 +356,27 @@ const ExpenseSummaryPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Total Paid</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {formatCurrency(filteredExpenses.reduce((sum, expense) => {
+                    const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                    return sum + amountPaid;
+                  }, 0))}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -365,6 +387,30 @@ const ExpenseSummaryPage: React.FC = () => {
                 <p className="text-sm font-medium text-gray-500">Unique Suppliers</p>
                 <p className="text-2xl font-semibold text-gray-900">
                   {new Set(filteredExpenses.map(e => e.supplier_id)).size}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Outstanding</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {formatCurrency(
+                    filteredExpenses.reduce((sum, expense) => {
+                      const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+                      const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                      return sum + (amount - amountPaid);
+                    }, 0)
+                  )}
                 </p>
               </div>
             </div>
@@ -425,10 +471,13 @@ const ExpenseSummaryPage: React.FC = () => {
                       Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Journal Entry
+                      Amount Paid
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      Balance
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Journal Entry
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -455,7 +504,16 @@ const ExpenseSummaryPage: React.FC = () => {
                         {expense.description || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {formatCurrency(expense.amount)}
+                        {formatCurrency(typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(
+                          (typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0) - 
+                          (typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0)
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         <button
@@ -657,7 +715,7 @@ const ExpenseSummaryPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-gray-500">Amount</p>
-                    <p className="text-gray-900">{formatCurrency(paymentExpense.amount)}</p>
+                    <p className="text-gray-900">{formatCurrency(typeof paymentExpense.amount === 'string' ? parseFloat(paymentExpense.amount) || 0 : paymentExpense.amount || 0)}</p>
                   </div>
                 </div>
               </div>
