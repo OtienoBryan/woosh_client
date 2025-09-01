@@ -55,6 +55,7 @@ const ExpenseSummaryPage: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState<number | ''>('');
+  const [paymentStatus, setPaymentStatus] = useState<'all' | 'fully_paid' | 'not_fully_paid'>('all');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseSummary[]>([]);
@@ -81,7 +82,7 @@ const ExpenseSummaryPage: React.FC = () => {
 
   useEffect(() => {
     filterExpenses();
-  }, [expenses, startDate, endDate, selectedSupplier]);
+  }, [expenses, startDate, endDate, selectedSupplier, paymentStatus]);
 
   const fetchExpenses = async () => {
     try {
@@ -145,7 +146,13 @@ const ExpenseSummaryPage: React.FC = () => {
     setPaymentDate(new Date(expense.entry_date).toISOString().slice(0,10));
     setPaymentMethod('cash');
     setPaymentAccountId('');
-    setPaymentAmount(String(expense.amount || ''));
+    
+    // Calculate the balance (outstanding amount) instead of full amount
+    const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+    const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+    const balance = Math.max(0, amount - amountPaid);
+    
+    setPaymentAmount(String(balance));
     setPaymentReference(expense.reference || '');
     setPaymentNotes('');
     setShowPaymentModal(true);
@@ -208,6 +215,21 @@ const ExpenseSummaryPage: React.FC = () => {
       );
     }
 
+    // Filter by payment status
+    if (paymentStatus !== 'all') {
+      filtered = filtered.filter(expense => {
+        const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+        const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+        
+        if (paymentStatus === 'fully_paid') {
+          return amountPaid >= amount; // Fully paid when amount paid >= expense amount
+        } else if (paymentStatus === 'not_fully_paid') {
+          return amountPaid < amount; // Not fully paid when amount paid < expense amount
+        }
+        return true;
+      });
+    }
+
     console.log('Filtered expenses:', filtered);
     
     const totalAmount = filtered.reduce((sum, expense) => {
@@ -226,6 +248,7 @@ const ExpenseSummaryPage: React.FC = () => {
     setStartDate('');
     setEndDate('');
     setSelectedSupplier('');
+    setPaymentStatus('all');
   };
 
   const formatCurrency = (amount: number) => {
@@ -261,7 +284,7 @@ const ExpenseSummaryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Expense Summary</h1>
@@ -270,29 +293,29 @@ const ExpenseSummaryPage: React.FC = () => {
 
                  {/* Filters */}
          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-           <div className="flex flex-wrap gap-4 items-end">
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 Start Date
-               </label>
-               <input
-                 type="date"
-                 value={startDate}
-                 onChange={(e) => setStartDate(e.target.value)}
-                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-               />
-             </div>
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 End Date
-               </label>
-               <input
-                 type="date"
-                 value={endDate}
-                 onChange={(e) => setEndDate(e.target.value)}
-                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-               />
-             </div>
+           <div className="flex flex-wrap gap-6 items-end">
+                            <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Start Date
+                 </label>
+                 <input
+                   type="date"
+                   value={startDate}
+                   onChange={(e) => setStartDate(e.target.value)}
+                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                 />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   End Date
+                 </label>
+                 <input
+                   type="date"
+                   value={endDate}
+                   onChange={(e) => setEndDate(e.target.value)}
+                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                 />
+               </div>
              <div>
                <label className="block text-sm font-medium text-gray-700 mb-1">
                  Supplier
@@ -310,6 +333,20 @@ const ExpenseSummaryPage: React.FC = () => {
                  ))}
                </select>
              </div>
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Payment Status
+               </label>
+               <select
+                 value={paymentStatus}
+                 onChange={(e) => setPaymentStatus(e.target.value as 'all' | 'fully_paid' | 'not_fully_paid')}
+                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
+               >
+                 <option value="all">All Expenses</option>
+                 <option value="fully_paid">Fully Paid</option>
+                 <option value="not_fully_paid">Not Fully Paid</option>
+               </select>
+             </div>
              <button
                onClick={clearFilters}
                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -320,7 +357,7 @@ const ExpenseSummaryPage: React.FC = () => {
          </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -417,6 +454,93 @@ const ExpenseSummaryPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Payment Status Summary */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 hidden">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Fully Paid</p>
+                <p className="text-xl font-semibold text-green-600">
+                  {expenses.filter(expense => {
+                    const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+                    const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                    return amountPaid >= amount;
+                  }).length}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Partially Paid</p>
+                <p className="text-xl font-semibold text-yellow-600">
+                  {expenses.filter(expense => {
+                    const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+                    const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                    return amountPaid > 0 && amountPaid < amount;
+                  }).length}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Unpaid</p>
+                <p className="text-xl font-semibold text-red-600">
+                  {expenses.filter(expense => {
+                    const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+                    const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                    return amountPaid === 0;
+                  }).length}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Payment Rate</p>
+                <p className="text-xl font-semibold text-blue-600">
+                  {(() => {
+                    const totalExpenses = expenses.length;
+                    const fullyPaid = expenses.filter(expense => {
+                      const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+                      const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                      return amountPaid >= amount;
+                    }).length;
+                    return totalExpenses > 0 ? Math.round((fullyPaid / totalExpenses) * 100) : 0;
+                  })()}%
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
@@ -452,34 +576,37 @@ const ExpenseSummaryPage: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                       Reference
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                       Supplier
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-64">
                       Description
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                       Amount Paid
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                       Balance
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                       Journal Entry
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                       Actions
                     </th>
                   </tr>
@@ -491,31 +618,58 @@ const ExpenseSummaryPage: React.FC = () => {
                       className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => handleExpenseClick(expense.journal_entry_id)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(expense.entry_date)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {expense.reference || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {expense.supplier_name || 'Unknown Supplier'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                      <td className="px-4 py-4 text-sm text-gray-900 max-w-xs truncate">
                         {expense.description || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {formatCurrency(typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(
                           (typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0) - 
                           (typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0)
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {(() => {
+                          const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) || 0 : expense.amount || 0;
+                          const amountPaid = typeof expense.amount_paid === 'string' ? parseFloat(expense.amount_paid) || 0 : expense.amount_paid || 0;
+                          const balance = amount - amountPaid;
+                          
+                          if (amountPaid >= amount) {
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Fully Paid
+                              </span>
+                            );
+                          } else if (amountPaid > 0) {
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Partially Paid
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Unpaid
+                              </span>
+                            );
+                          }
+                        })()}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -527,7 +681,7 @@ const ExpenseSummaryPage: React.FC = () => {
           #{expense.journal_entry_id}
         </button>
       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
         <button
           onClick={(e) => { e.stopPropagation(); openPaymentModal(expense); }}
           className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors duration-200"
@@ -714,8 +868,21 @@ const ExpenseSummaryPage: React.FC = () => {
                     <p className="text-gray-900">#{paymentExpense.journal_entry_id}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Amount</p>
+                    <p className="text-gray-500">Full Amount</p>
                     <p className="text-gray-900">{formatCurrency(typeof paymentExpense.amount === 'string' ? parseFloat(paymentExpense.amount) || 0 : paymentExpense.amount || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Amount Paid</p>
+                    <p className="text-gray-900">{formatCurrency(typeof paymentExpense.amount_paid === 'string' ? parseFloat(paymentExpense.amount_paid) || 0 : paymentExpense.amount_paid || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Outstanding Balance</p>
+                    <p className="text-gray-900 font-semibold text-blue-600">
+                      {formatCurrency(
+                        (typeof paymentExpense.amount === 'string' ? parseFloat(paymentExpense.amount) || 0 : paymentExpense.amount || 0) - 
+                        (typeof paymentExpense.amount_paid === 'string' ? parseFloat(paymentExpense.amount_paid) || 0 : paymentExpense.amount_paid || 0)
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -748,8 +915,9 @@ const ExpenseSummaryPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Amount (Outstanding Balance)</label>
                     <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <p className="text-xs text-gray-500 mt-1">This amount represents the outstanding balance. You can modify it if you want to pay a different amount.</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Reference</label>
