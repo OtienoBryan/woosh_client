@@ -34,6 +34,7 @@ import InvoiceListPage from './pages/InvoiceListPage';
 import ReceivablesPage from './pages/ReceivablesPage';
 import ProfitLossReportPage from './pages/ProfitLossReportPage';
 import AddExpensePage from './pages/AddExpensePage';
+import ExpenseSummaryPage from './pages/ExpenseSummaryPage';
 import AddAssetPage from './pages/AddAssetPage';
 import BalanceSheetReportPage from './pages/BalanceSheetReportPage';
 import CashFlowReportPage from './pages/CashFlowReportPage';
@@ -431,6 +432,11 @@ const App = () => {
             <Route path="/add-expense" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
                 <AddExpensePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/expense-summary" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <ExpenseSummaryPage />
               </RoleBasedRoute>
             } />
             <Route path="/assets/add" element={

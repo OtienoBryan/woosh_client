@@ -328,9 +328,9 @@ const ReceiveItemsPage: React.FC = () => {
                     <div className="text-center">
                       <div className="text-xs text-gray-500 font-medium mb-1">Product Code</div>
                       <div className="text-base font-semibold text-gray-900">
-                        {item.product_code}
-                      </div>
-                    </div>
+                            {item.product_code}
+                          </div>
+                        </div>
 
                     {/* Product Name */}
                     <div className="text-center">

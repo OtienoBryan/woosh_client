@@ -207,7 +207,7 @@ const StoreInventoryPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+         
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -217,7 +217,7 @@ const StoreInventoryPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <div>
+            <div>
                 <h1 className="text-4xl font-bold text-gray-900">Store Inventory</h1>
                 <p className="mt-2 text-lg text-gray-600">
                   Track inventory levels across all stores with real-time insights
@@ -265,14 +265,14 @@ const StoreInventoryPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Products</p>
                 <p className="text-3xl font-bold text-blue-600">{getTotalProducts().toLocaleString()}</p>
-              </div>
+                    </div>
               <div className="p-3 bg-blue-100 rounded-xl">
                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-              </div>
-            </div>
-          </div>
+                    </div>
+                  </div>
+                </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
             <div className="flex items-center justify-between">
@@ -296,7 +296,7 @@ const StoreInventoryPage: React.FC = () => {
               </div>
               
             </div>
-          </div>
+            </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
             <div className="flex items-center justify-between">
@@ -310,8 +310,8 @@ const StoreInventoryPage: React.FC = () => {
                 </svg>
               </div>
             </div>
-          </div>
-        </div>
+                </div>
+              </div>
 
         {/* Store Overview Button */}
         {selectedStore === 'all' && inventorySummary.length > 0 && (
@@ -340,83 +340,83 @@ const StoreInventoryPage: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
+          <div>
               <label htmlFor="store-filter" className="block text-sm font-semibold text-gray-700 mb-3">
                 Store
-              </label>
-              <select
-                id="store-filter"
-                value={selectedStore}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedStore(value === 'all' ? 'all' : Number(value));
-                }}
+            </label>
+            <select
+              id="store-filter"
+              value={selectedStore}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedStore(value === 'all' ? 'all' : Number(value));
+              }}
                 className="block w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-              >
-                <option value="all">All Stores</option>
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.store_name} ({store.store_code})
-                  </option>
-                ))}
-              </select>
-            </div>
+            >
+              <option value="all">All Stores</option>
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.store_name} ({store.store_code})
+                </option>
+              ))}
+            </select>
+          </div>
             
-            <div>
+          <div>
               <label htmlFor="category-filter" className="block text-sm font-semibold text-gray-700 mb-3">
                 Category
-              </label>
-              <select
-                id="category-filter"
-                value={selectedCategory}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedCategory(value);
-                }}
+            </label>
+            <select
+              id="category-filter"
+              value={selectedCategory}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedCategory(value);
+              }}
                 className="block w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-              >
-                <option value="all">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            >
+              <option value="all">All Categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
             <div>
               <label htmlFor="date-filter" className="block text-sm font-semibold text-gray-700 mb-3">
                 As of Date
-              </label>
-              <input
-                id="date-filter"
-                type="date"
+            </label>
+            <input
+              id="date-filter"
+              type="date"
                 className="block w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </div>
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+            />
           </div>
+        </div>
 
           {/* Active Filters */}
           <div className="mt-6 flex flex-wrap gap-3">
-            {selectedStore !== 'all' && (
+          {selectedStore !== 'all' && (
               <span className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                Store: {getStoreName(selectedStore as number)}
-              </span>
-            )}
-            {selectedCategory !== 'all' && (
+              Store: {getStoreName(selectedStore as number)}
+            </span>
+          )}
+          {selectedCategory !== 'all' && (
               <span className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                Category: {selectedCategory}
-              </span>
-            )}
+              Category: {selectedCategory}
+            </span>
+          )}
             {selectedDate && (
               <span className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 text-sm font-semibold rounded-full">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -446,12 +446,12 @@ const StoreInventoryPage: React.FC = () => {
             </div>
           </div>
 
-          {filteredInventory.length === 0 ? (
+        {filteredInventory.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 bg-gray-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No inventory found</h3>
               <p className="text-gray-500">
@@ -520,7 +520,7 @@ const StoreInventoryPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {item.category || 'N/A'}
+                        {item.category || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

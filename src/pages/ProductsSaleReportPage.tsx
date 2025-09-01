@@ -248,7 +248,7 @@ const ProductsSaleReportPage: React.FC = () => {
             Products sold from {filters.startDate} to {filters.endDate}
           </p>
           {/* Debug Info */}
-          <div className="mt-4 p-4 bg-gray-100 rounded">
+          <div className="mt-4 p-4 bg-gray-100 rounded hidden">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Debug Info:</h3>
             <p className="text-xs text-gray-600">Total Products: {products.length}</p>
             <p className="text-xs text-gray-600">Filtered Products: {filteredProducts.length}</p>

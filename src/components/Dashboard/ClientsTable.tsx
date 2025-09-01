@@ -313,6 +313,9 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ searchQuery = '' }) => {
                     Address
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Country
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -344,7 +347,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ searchQuery = '' }) => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedClients.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={12} className="px-6 py-4 text-center text-sm text-gray-500">
                       No clients found
                     </td>
                   </tr>
@@ -369,6 +372,11 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ searchQuery = '' }) => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
                           {client.address || ''}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {client.contact || client.phone || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

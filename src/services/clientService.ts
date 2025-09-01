@@ -183,5 +183,27 @@ export const clientService = {
       console.error('Error fetching client history:', error);
       return [];
     }
+  },
+
+  // Get all client types (outlet categories)
+  getClientTypes: async (): Promise<{ id: number; name: string }[]> => {
+    try {
+      const response = await api.get('/clients/types');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching client types:', error);
+      return [];
+    }
+  },
+
+  // Get all outlet accounts
+  getOutletAccounts: async (): Promise<{ id: number; name: string }[]> => {
+    try {
+      const response = await api.get('/clients/outlet-accounts');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching outlet accounts:', error);
+      return [];
+    }
   }
 }; 

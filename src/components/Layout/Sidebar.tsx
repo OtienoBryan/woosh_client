@@ -191,6 +191,18 @@ const navigation = [
     roles: ['admin', 'manager', 'accountant']
   },
   {
+    name: 'Add Expense',
+    href: '/add-expense',
+    icon: DollarSign,
+    roles: ['admin', 'manager', 'accountant']
+  },
+  {
+    name: 'Expense Summary',
+    href: '/expense-summary',
+    icon: BarChart3,
+    roles: ['admin', 'manager', 'accountant']
+  },
+  {
     name: 'Inventory Dashboard',
     href: '/inventory-staff-dashboard',
     icon: BoxIcon,

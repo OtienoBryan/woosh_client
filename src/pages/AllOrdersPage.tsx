@@ -14,6 +14,8 @@ interface SalesOrderRow {
   my_status: number;
   total_amount: number;
   outstanding_balance: number;
+  client_type_name?: string;
+  outlet_account_name?: string;
 }
 
 const AllOrdersPage: React.FC = () => {
@@ -32,11 +34,17 @@ const AllOrdersPage: React.FC = () => {
   const [startDate, setStartDate] = useState<string>(firstDayOfMonth);
   const [endDate, setEndDate] = useState<string>(lastDayOfMonth);
   const [clientFilter, setClientFilter] = useState<string>('');
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>('');
+  const [outletAccountFilter, setOutletAccountFilter] = useState<string>('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   // For modal temp state
   const [tempStartDate, setTempStartDate] = useState<string>(startDate);
   const [tempEndDate, setTempEndDate] = useState<string>(endDate);
   const [tempClientFilter, setTempClientFilter] = useState<string>(clientFilter);
+  const [tempClientTypeFilter, setTempClientTypeFilter] = useState<string>(clientTypeFilter);
+  const [tempOutletAccountFilter, setTempOutletAccountFilter] = useState<string>(outletAccountFilter);
+  const [clientTypes, setClientTypes] = useState<{ id: number; name: string }[]>([]);
+  const [outletAccounts, setOutletAccounts] = useState<{ id: number; name: string }[]>([]);
 
   // Get unique client names from orders
   const clientNames = Array.from(new Set(orders.map(o => o.customer))).filter(Boolean);
@@ -44,6 +52,8 @@ const AllOrdersPage: React.FC = () => {
   useEffect(() => {
     fetchSalesOrders();
     fetchReceipts();
+    fetchClientTypes();
+    fetchOutletAccounts();
   }, []);
 
   const fetchSalesOrders = async () => {
@@ -59,7 +69,7 @@ const AllOrdersPage: React.FC = () => {
       console.log('Response success:', soRes.success);
       console.log('Response error:', soRes.error);
       
-      const soRows: SalesOrderRow[] = (soRes.data || []).map((so: SalesOrder & { customer_name?: string; customer_balance?: number }) => ({
+      const soRows: SalesOrderRow[] = (soRes.data || []).map((so: SalesOrder & { customer_name?: string; customer_balance?: number; client_type_name?: string; outlet_account_name?: string }) => ({
         id: so.id,
         order_number: so.so_number,
         customer: (so.customer_name || so.customer?.company_name || 'N/A'),
@@ -67,7 +77,9 @@ const AllOrdersPage: React.FC = () => {
         status: so.status,
         my_status: so.my_status || 0,
         total_amount: so.total_amount,
-        outstanding_balance: so.customer_balance || 0
+        outstanding_balance: so.customer_balance || 0,
+        client_type_name: so.client_type_name || 'N/A',
+        outlet_account_name: so.outlet_account_name || 'N/A'
       }));
       
       console.log('Processed sales orders:', soRows);
@@ -99,6 +111,26 @@ const AllOrdersPage: React.FC = () => {
       setReceipts(res.data || []);
     } catch (err) {
       // Optionally handle error
+    }
+  };
+
+  const fetchClientTypes = async () => {
+    try {
+      const { clientService } = await import('../services/clientService');
+      const types = await clientService.getClientTypes();
+      setClientTypes(types);
+    } catch (err) {
+      console.error('Failed to fetch client types:', err);
+    }
+  };
+
+  const fetchOutletAccounts = async () => {
+    try {
+      const { clientService } = await import('../services/clientService');
+      const accounts = await clientService.getOutletAccounts();
+      setOutletAccounts(accounts);
+    } catch (err) {
+      console.error('Failed to fetch outlet accounts:', err);
     }
   };
 
@@ -138,6 +170,8 @@ const AllOrdersPage: React.FC = () => {
     setTempStartDate(startDate);
     setTempEndDate(endDate);
     setTempClientFilter(clientFilter);
+    setTempClientTypeFilter(clientTypeFilter);
+    setTempOutletAccountFilter(outletAccountFilter);
     setShowFilterModal(true);
   };
   const closeFilterModal = () => setShowFilterModal(false);
@@ -145,14 +179,18 @@ const AllOrdersPage: React.FC = () => {
     setStartDate(tempStartDate);
     setEndDate(tempEndDate);
     setClientFilter(tempClientFilter);
+    setClientTypeFilter(tempClientTypeFilter);
+    setOutletAccountFilter(tempOutletAccountFilter);
     setShowFilterModal(false);
   };
 
-  // Filter orders by date range and client
+  // Filter orders by date range, client, client type, and outlet account
   const filteredOrders = orders.filter(order => {
     if (startDate && new Date(order.order_date) < new Date(startDate)) return false;
     if (endDate && new Date(order.order_date) > new Date(endDate)) return false;
     if (clientFilter && order.customer !== clientFilter) return false;
+    if (clientTypeFilter && order.client_type_name !== clientTypeFilter) return false;
+    if (outletAccountFilter && order.outlet_account_name !== outletAccountFilter) return false;
     return true;
   });
 
@@ -240,6 +278,24 @@ const AllOrdersPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Type</label>
+                  <select value={tempClientTypeFilter} onChange={e => setTempClientTypeFilter(e.target.value)} className="border rounded px-2 py-1 w-full">
+                    <option value="">All Client Types</option>
+                    {clientTypes.map(type => (
+                      <option key={type.id} value={type.name}>{type.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Category</label>
+                  <select value={tempOutletAccountFilter} onChange={e => setTempOutletAccountFilter(e.target.value)} className="border rounded px-2 py-1 w-full">
+                    <option value="">All Client Categories</option>
+                    {outletAccounts.map(account => (
+                      <option key={account.id} value={account.name}>{account.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="mt-6 flex justify-end space-x-2">
                 <button onClick={closeFilterModal} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
@@ -270,6 +326,8 @@ const AllOrdersPage: React.FC = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
@@ -284,6 +342,8 @@ const AllOrdersPage: React.FC = () => {
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.order_number}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.customer}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.client_type_name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.outlet_account_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatDate(order.order_date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       <div className="flex flex-col">
