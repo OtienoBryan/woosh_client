@@ -43,6 +43,9 @@ interface JournalEntryLine {
   description: string;
 }
 
+type PaymentMethod = 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'mobile_money';
+interface CashAccount { id: number; account_name: string; account_code: string; }
+
 const ExpenseSummaryPage: React.FC = () => {
   const navigate = useNavigate();
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
@@ -57,10 +60,22 @@ const ExpenseSummaryPage: React.FC = () => {
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [selectedJournalEntry, setSelectedJournalEntry] = useState<JournalEntry | null>(null);
   const [loadingJournal, setLoadingJournal] = useState(false);
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentExpense, setPaymentExpense] = useState<ExpenseSummary | null>(null);
+  const [cashAccounts, setCashAccounts] = useState<CashAccount[]>([]);
+  const [paymentDate, setPaymentDate] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [paymentAccountId, setPaymentAccountId] = useState<number | ''>('');
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [paymentReference, setPaymentReference] = useState<string>('');
+  const [paymentNotes, setPaymentNotes] = useState<string>('');
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   useEffect(() => {
     fetchExpenses();
     fetchSuppliers();
+    fetchCashAccounts();
   }, []);
 
   useEffect(() => {
@@ -92,6 +107,15 @@ const ExpenseSummaryPage: React.FC = () => {
     }
   };
 
+  const fetchCashAccounts = async () => {
+    try {
+      const response = await axios.get('/api/financial/cash-equivalents/accounts');
+      setCashAccounts(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching cash accounts:', err);
+    }
+  };
+
   const fetchJournalEntry = async (journalEntryId: number) => {
     try {
       setLoadingJournal(true);
@@ -113,6 +137,53 @@ const ExpenseSummaryPage: React.FC = () => {
 
   const handleExpenseClick = (journalEntryId: number) => {
     navigate(`/expense-invoice/${journalEntryId}`);
+  };
+
+  const openPaymentModal = (expense: ExpenseSummary) => {
+    setPaymentExpense(expense);
+    setPaymentDate(new Date(expense.entry_date).toISOString().slice(0,10));
+    setPaymentMethod('cash');
+    setPaymentAccountId('');
+    setPaymentAmount(String(expense.amount || ''));
+    setPaymentReference(expense.reference || '');
+    setPaymentNotes('');
+    setShowPaymentModal(true);
+  };
+
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    setPaymentExpense(null);
+  };
+
+  const submitPayment = async () => {
+    if (!paymentExpense) return;
+    if (!paymentDate || !paymentMethod || !paymentAccountId || !paymentAmount) {
+      alert('Please fill all required fields');
+      return;
+    }
+    try {
+      setSubmittingPayment(true);
+      await axios.post(`/api/financial/expenses/${paymentExpense.journal_entry_id}/payments`, {
+        expense_detail_id: paymentExpense.id,
+        journal_entry_id: paymentExpense.journal_entry_id,
+        supplier_id: paymentExpense.supplier_id,
+        payment_date: paymentDate,
+        payment_method: paymentMethod,
+        account_id: paymentAccountId,
+        amount: parseFloat(paymentAmount),
+        reference: paymentReference,
+        notes: paymentNotes,
+        currency: 'KES'
+      });
+      closePaymentModal();
+      fetchExpenses();
+      alert('Payment recorded');
+    } catch (err) {
+      console.error('Error recording payment:', err);
+      alert('Failed to record payment');
+    } finally {
+      setSubmittingPayment(false);
+    }
   };
 
   const filterExpenses = () => {
@@ -356,6 +427,12 @@ const ExpenseSummaryPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Journal Entry
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -380,7 +457,7 @@ const ExpenseSummaryPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {formatCurrency(expense.amount)}
                       </td>
-                                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -390,6 +467,14 @@ const ExpenseSummaryPage: React.FC = () => {
           disabled={loadingJournal}
         >
           #{expense.journal_entry_id}
+        </button>
+      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <button
+          onClick={(e) => { e.stopPropagation(); openPaymentModal(expense); }}
+          className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors duration-200"
+        >
+          Make Payment
         </button>
       </td>
                     </tr>
@@ -543,6 +628,92 @@ const ExpenseSummaryPage: React.FC = () => {
            </div>
          </div>
        )}
+      {showPaymentModal && paymentExpense && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Make Payment</h3>
+                <button onClick={closePaymentModal} className="text-gray-400 hover:text-gray-600">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Supplier</p>
+                    <p className="text-gray-900">{paymentExpense.supplier_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Reference</p>
+                    <p className="text-gray-900">{paymentExpense.reference || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Journal Entry</p>
+                    <p className="text-gray-900">#{paymentExpense.journal_entry_id}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Amount</p>
+                    <p className="text-gray-900">{formatCurrency(paymentExpense.amount)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                  <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="cash">Cash</option>
+                      <option value="check">Check</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="credit_card">Credit Card</option>
+                      <option value="mobile_money">Mobile Money</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Account</label>
+                    <select value={paymentAccountId} onChange={(e) => setPaymentAccountId(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select account</option>
+                      {cashAccounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>{acc.account_name} ({acc.account_code})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                    <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+                    <input type="text" value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <button onClick={closePaymentModal} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">Cancel</button>
+                <button onClick={submitPayment} disabled={submittingPayment} className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-60">
+                  {submittingPayment ? 'Saving...' : 'Save Payment'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
      </div>
    );
  };

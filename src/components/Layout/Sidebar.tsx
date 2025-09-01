@@ -203,6 +203,12 @@ const navigation = [
     roles: ['admin', 'manager', 'accountant']
   },
   {
+    name: 'Pending Payments',
+    href: '/pending-payments',
+    icon: Clock,
+    roles: ['admin', 'manager', 'accountant']
+  },
+  {
     name: 'Inventory Dashboard',
     href: '/inventory-staff-dashboard',
     icon: BoxIcon,

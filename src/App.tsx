@@ -36,6 +36,7 @@ import ProfitLossReportPage from './pages/ProfitLossReportPage';
 import AddExpensePage from './pages/AddExpensePage';
 import ExpenseSummaryPage from './pages/ExpenseSummaryPage';
 import ExpenseInvoicePage from './pages/ExpenseInvoicePage';
+import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import AddAssetPage from './pages/AddAssetPage';
 import BalanceSheetReportPage from './pages/BalanceSheetReportPage';
 import CashFlowReportPage from './pages/CashFlowReportPage';
@@ -50,7 +51,6 @@ import CashAndEquivalentsPage from './pages/CashAndEquivalentsPage';
 import CashAccountDetailsPage from './pages/CashAccountDetailsPage';
 import JournalEntriesPage from './pages/JournalEntriesPage';
 import PayrollManagementPage from './pages/PayrollManagementPage';
-import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import GeneralLedgerReportPage from './pages/GeneralLedgerReportPage';
 import CollectionReportPage from './pages/CollectionReportPage';
 import UnconfirmedPaymentsPage from './pages/UnconfirmedPaymentsPage';
@@ -340,11 +340,6 @@ const App = () => {
                 <PayablesPage />
               </RoleBasedRoute>
             } />
-            <Route path="/pending-payments" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
-                <PendingPaymentsPage />
-              </RoleBasedRoute>
-            } />
             <Route path="/receivables" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
                 <ReceivablesPage />
@@ -443,6 +438,11 @@ const App = () => {
             <Route path="/expense-invoice/:journal_entry_id" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
                 <ExpenseInvoicePage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/pending-payments" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+                <PendingPaymentsPage />
               </RoleBasedRoute>
             } />
             <Route path="/assets/add" element={
