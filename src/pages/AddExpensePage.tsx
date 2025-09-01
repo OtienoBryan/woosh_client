@@ -310,14 +310,14 @@ const AddExpensePage: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
-            <select
+          <select
               value={isPaid ? 'paid' : 'unpaid'}
               onChange={e => setIsPaid(e.target.value === 'paid')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="paid">Paid</option>
               <option value="unpaid">Unpaid (Accrued)</option>
-            </select>
+          </select>
           </div>
 
           <div>
@@ -332,43 +332,43 @@ const AddExpensePage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Supplier *</label>
-            <select
+          <select
               value={selectedSupplier ? String(selectedSupplier.id) : ''}
               onChange={handleSupplierChange}
               className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 !selectedSupplier ? 'border-red-300' : 'border-gray-300'
               }`}
-              required
-            >
+            required
+          >
               <option value="">Select Supplier</option>
               {suppliers.map(supplier => (
                 <option key={supplier.id} value={supplier.id}>
                   {supplier.company_name} ({supplier.supplier_code})
                 </option>
               ))}
-            </select>
-          </div>
+          </select>
+        </div>
 
 
 
-          {isPaid && (
+        {isPaid && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Payment Account *</label>
-              <select
-                value={selectedPaymentAccount ? String(selectedPaymentAccount.id) : ''}
-                onChange={handlePaymentAccountChange}
+            <select
+              value={selectedPaymentAccount ? String(selectedPaymentAccount.id) : ''}
+              onChange={handlePaymentAccountChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required={isPaid}
-              >
-                <option value="">Select Payment Account</option>
-                {paymentAccounts.map(acc => (
+              required={isPaid}
+            >
+              <option value="">Select Payment Account</option>
+              {paymentAccounts.map(acc => (
                   <option key={acc.id} value={acc.id}>
                     {acc.account_name} ({acc.account_code})
                   </option>
-                ))}
-              </select>
-            </div>
-          )}
+              ))}
+            </select>
+          </div>
+        )}
         </div>
 
         {/* Expense Items */}
@@ -466,10 +466,10 @@ const AddExpensePage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price (Tax Excl.) *</label>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
                       value={item.unit_price === 0 ? '' : item.unit_price}
                       onChange={e => {
                         const value = e.target.value;
@@ -483,9 +483,9 @@ const AddExpensePage: React.FC = () => {
                       className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                         item.unit_price <= 0 ? 'border-red-300' : 'border-gray-300'
                       }`}
-                      required
-                    />
-                  </div>
+            required
+          />
+        </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>

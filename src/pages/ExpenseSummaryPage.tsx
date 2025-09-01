@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { format } from 'date-fns';
 
@@ -43,6 +44,7 @@ interface JournalEntryLine {
 }
 
 const ExpenseSummaryPage: React.FC = () => {
+  const navigate = useNavigate();
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +109,10 @@ const ExpenseSummaryPage: React.FC = () => {
   const closeJournalModal = () => {
     setShowJournalModal(false);
     setSelectedJournalEntry(null);
+  };
+
+  const handleExpenseClick = (journalEntryId: number) => {
+    navigate(`/expense-invoice/${journalEntryId}`);
   };
 
   const filterExpenses = () => {
@@ -354,7 +360,11 @@ const ExpenseSummaryPage: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredExpenses.map((expense) => (
-                    <tr key={expense.id} className="hover:bg-gray-50">
+                    <tr 
+                      key={expense.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleExpenseClick(expense.journal_entry_id)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(expense.entry_date)}
                       </td>
@@ -370,15 +380,18 @@ const ExpenseSummaryPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {formatCurrency(expense.amount)}
                       </td>
-                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                         <button
-                           onClick={() => fetchJournalEntry(expense.journal_entry_id)}
-                           className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                           disabled={loadingJournal}
-                         >
-                           #{expense.journal_entry_id}
-                         </button>
-                       </td>
+                                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            fetchJournalEntry(expense.journal_entry_id);
+          }}
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-200 cursor-pointer"
+          disabled={loadingJournal}
+        >
+          #{expense.journal_entry_id}
+        </button>
+      </td>
                     </tr>
                   ))}
                 </tbody>
