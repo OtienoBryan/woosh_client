@@ -15,8 +15,20 @@ const EmployeeWorkingHoursPage: React.FC = () => {
   const [records, setRecords] = useState<WorkingHourRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    return firstDay.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const lastDay = new Date(year, month + 1, 0);
+    return lastDay.toISOString().slice(0, 10);
+  });
   const [staffId, setStaffId] = useState('');
   const [staffList, setStaffList] = useState<{ id: number; name: string }[]>([]);
 
@@ -44,6 +56,17 @@ const EmployeeWorkingHoursPage: React.FC = () => {
       .catch(err => setError(err.message || 'Failed to fetch working hours'))
       .finally(() => setLoading(false));
   }, [startDate, endDate, staffId]);
+
+  const clearFilters = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    setStartDate(firstDay.toISOString().slice(0, 10));
+    setEndDate(lastDay.toISOString().slice(0, 10));
+    setStaffId('');
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -82,6 +105,14 @@ const EmployeeWorkingHoursPage: React.FC = () => {
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
       {loading ? (

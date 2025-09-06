@@ -53,6 +53,10 @@ const StaffList: React.FC = () => {
     id_no: 0,
     role: '',
     employment_type: 'Consultant',
+    gender: '',
+    business_email: '',
+    department_email: '',
+    salary: null,
   });
   const contentRef = useRef<HTMLDivElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -68,6 +72,7 @@ const StaffList: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedEmploymentType, setSelectedEmploymentType] = useState('');
+  const [selectedGender, setSelectedGender] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy] = useState<'name' | 'role' | 'date'>('name'); // Future use for sorting
@@ -141,7 +146,10 @@ const StaffList: React.FC = () => {
         member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.empl_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.id_no.toString().includes(searchTerm)
+        member.id_no.toString().includes(searchTerm) ||
+        (member.gender && member.gender.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (member.business_email && member.business_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (member.department_email && member.department_email.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     
@@ -159,6 +167,11 @@ const StaffList: React.FC = () => {
     // Apply employment type filter
     if (selectedEmploymentType) {
       filtered = filtered.filter(member => member.employment_type === selectedEmploymentType);
+    }
+    
+    // Apply gender filter
+    if (selectedGender) {
+      filtered = filtered.filter(member => member.gender === selectedGender);
     }
     
     // Apply sorting
@@ -192,13 +205,14 @@ const StaffList: React.FC = () => {
     });
     
     setFilteredStaff(filtered);
-  }, [staff, searchTerm, selectedRole, selectedStatus, selectedEmploymentType, sortBy, sortOrder]);
+  }, [staff, searchTerm, selectedRole, selectedStatus, selectedEmploymentType, selectedGender, sortBy, sortOrder]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNewStaff(prev => ({
       ...prev,
-      [name]: name === 'id_no' ? parseInt(value) || 0 : value
+      [name]: name === 'id_no' ? parseInt(value) || 0 : 
+              name === 'salary' ? parseFloat(value) || null : value
     }));
   };
 
@@ -243,6 +257,10 @@ const StaffList: React.FC = () => {
         id_no: 0,
         role: '',
         employment_type: 'Permanent',
+        gender: '',
+        business_email: '',
+        department_email: '',
+        salary: null,
       });
       setSelectedFile(null);
     } catch (err) {
@@ -293,6 +311,10 @@ const StaffList: React.FC = () => {
       id_no: staff.id_no,
       role: staff.role,
       employment_type: staff.employment_type,
+      gender: staff.gender || '',
+      business_email: staff.business_email || '',
+      department_email: staff.department_email || '',
+      salary: staff.salary || null,
     });
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -332,6 +354,7 @@ const StaffList: React.FC = () => {
     setSelectedRole('');
     setSelectedStatus('all');
     setSelectedEmploymentType('');
+    setSelectedGender('');
   };
 
   const getRoleStats = () => {
@@ -364,6 +387,19 @@ const StaffList: React.FC = () => {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'permanent':
         return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getGenderBadgeColor = (gender: string) => {
+    switch (gender?.toLowerCase()) {
+      case 'male':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'female':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'other':
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -453,7 +489,7 @@ const StaffList: React.FC = () => {
       <div className="min-h-screen bg-gray-50">
         {/* Loading Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="py-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -466,7 +502,7 @@ const StaffList: React.FC = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {/* Loading Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {[1, 2, 3, 4].map((i) => (
@@ -499,7 +535,7 @@ const StaffList: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="py-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -513,7 +549,7 @@ const StaffList: React.FC = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <div className="text-red-400 mb-4">
               <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -538,7 +574,7 @@ const StaffList: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Modern Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="py-6">
             <div className="flex items-center justify-between">
               <div>
@@ -559,7 +595,7 @@ const StaffList: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
@@ -648,7 +684,7 @@ const StaffList: React.FC = () => {
                 >
                   <Icons.Filter />
                   <span className="ml-2">Filters</span>
-                  {(selectedRole || selectedStatus !== 'all' || selectedEmploymentType) && (
+                  {(selectedRole || selectedStatus !== 'all' || selectedEmploymentType || selectedGender) && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
                       Active
                     </span>
@@ -742,7 +778,7 @@ const StaffList: React.FC = () => {
             {/* Advanced Filters */}
             {showFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                     <select
@@ -786,6 +822,20 @@ const StaffList: React.FC = () => {
                     </select>
                   </div>
                   
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select
+                      value={selectedGender}
+                      onChange={(e) => setSelectedGender(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">All Genders</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  
                   <div className="flex items-end">
               <button
                       onClick={clearFilters}
@@ -808,11 +858,11 @@ const StaffList: React.FC = () => {
               <Icons.UserPlus />
               <h3 className="mt-4 text-lg font-medium text-gray-900">No staff members found</h3>
               <p className="mt-2 text-sm text-gray-500">
-                {searchTerm || selectedRole || selectedStatus !== 'all' || selectedEmploymentType
+                {searchTerm || selectedRole || selectedStatus !== 'all' || selectedEmploymentType || selectedGender
                   ? 'Try adjusting your search or filters'
                   : 'Get started by adding your first staff member'}
               </p>
-              {!searchTerm && !selectedRole && selectedStatus === 'all' && !selectedEmploymentType && (
+              {!searchTerm && !selectedRole && selectedStatus === 'all' && !selectedEmploymentType && !selectedGender && (
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -846,6 +896,18 @@ const StaffList: React.FC = () => {
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Employment Type
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Gender
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Business Email
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Department Email
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Salary
                       </th>
                       <th scope="col" className="relative px-6 py-3">
                         <span className="sr-only">Actions</span>
@@ -902,6 +964,30 @@ const StaffList: React.FC = () => {
                             </span>
                           )}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {member.gender ? (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getGenderBadgeColor(member.gender)}`}>
+                              {member.gender}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {member.business_email || <span className="text-gray-500">-</span>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {member.department_email || <span className="text-gray-500">-</span>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 font-mono">
+                            {member.salary ? member.salary.toLocaleString() : <span className="text-gray-500">-</span>}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="relative">
                             <button
@@ -941,14 +1027,14 @@ const StaffList: React.FC = () => {
                                     {member.status === 1 ? <Icons.UserMinus /> : <Icons.UserPlus />}
                                     <span className="ml-2">{member.status === 1 ? 'Deactivate' : 'Activate'}</span>
                                   </button>
-                                  <Link
+                                  {/* <Link
                                     to={`/upload-document?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
                                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                                     onClick={() => setActionMenuStaffId(null)}
                                   >
                                     <Icons.Upload />
                                     <span className="ml-2">Upload Documents</span>
-                                  </Link>
+                                  </Link> */}
                                   <Link
                                     to={`/employee-documents?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
                                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
@@ -1070,6 +1156,28 @@ const StaffList: React.FC = () => {
                         <span className="text-gray-600">ID Number:</span>
                         <span className="font-medium text-gray-900">{member.id_no}</span>
                       </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Gender:</span>
+                        <span className="font-medium text-gray-900">{member.gender || '-'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Business Email:</span>
+                        <span className="font-medium text-gray-900 text-right max-w-32 truncate" title={member.business_email || ''}>
+                          {member.business_email || '-'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Dept Email:</span>
+                        <span className="font-medium text-gray-900 text-right max-w-32 truncate" title={member.department_email || ''}>
+                          {member.department_email || '-'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Salary:</span>
+                        <span className="font-medium text-gray-900 font-mono">
+                          {member.salary ? member.salary.toLocaleString() : '-'}
+                        </span>
+                      </div>
                     </div>
                     
                     {/* Status Badges */}
@@ -1080,6 +1188,11 @@ const StaffList: React.FC = () => {
                       {member.employment_type && (
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
                           {member.employment_type}
+                        </span>
+                      )}
+                      {member.gender && (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getGenderBadgeColor(member.gender)}`}>
+                          {member.gender}
                         </span>
                       )}
                     </div>
@@ -1117,6 +1230,10 @@ const StaffList: React.FC = () => {
                     id_no: 0,
                     role: '',
                     employment_type: 'Consultant',
+                    gender: '',
+                    business_email: '',
+                    department_email: '',
+                    salary: null,
                   });
                   setSelectedFile(null);
                 }}
@@ -1253,6 +1370,70 @@ const StaffList: React.FC = () => {
                     <option value="Permanent">Permanent</option>
                 </select>
               </div>
+
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gender
+                  </label>
+                <select
+                  name="gender"
+                  value={newStaff.gender}
+                  onChange={handleInputChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                  <label htmlFor="business_email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Email
+                  </label>
+                  <input
+                    type="email"
+                    name="business_email"
+                    id="business_email"
+                    value={newStaff.business_email || ''}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="john.doe@company.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="department_email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Department Email
+                  </label>
+                  <input
+                    type="email"
+                    name="department_email"
+                    id="department_email"
+                    value={newStaff.department_email || ''}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="hr@company.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
+                    Salary
+                  </label>
+                  <input
+                    type="number"
+                    name="salary"
+                    id="salary"
+                    step="0.01"
+                    min="0"
+                    value={newStaff.salary || ''}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="50000.00"
+                  />
+                </div>
               </div>
 
               {/* Modal Footer */}
@@ -1270,6 +1451,10 @@ const StaffList: React.FC = () => {
                       id_no: 0,
                       role: '',
                       employment_type: 'Consultant',
+                      gender: '',
+                      business_email: '',
+                      department_email: '',
+                      salary: null,
                     });
                     setSelectedFile(null);
                   }}

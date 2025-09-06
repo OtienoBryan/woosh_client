@@ -4,10 +4,12 @@ import {
   TrendingUp, 
   TrendingDown, 
   DollarSign, 
-  Calendar,
   Download,
   Filter
 } from 'lucide-react';
+import COGSDetailsModal from '../components/COGSDetailsModal';
+import SalesRevenueDetailsModal from '../components/SalesRevenueDetailsModal';
+import GrossMarginDetailsModal from '../components/GrossMarginDetailsModal';
 
 interface ProfitLossData {
   period: string;
@@ -32,12 +34,7 @@ interface ProfitLossData {
   net_margin: number;
 }
 
-interface AccountBalance {
-  account_code: string;
-  account_name: string;
-  account_type: string;
-  balance: number;
-}
+
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -48,7 +45,10 @@ const ProfitLossReportPage: React.FC = () => {
   const [period, setPeriod] = useState('current_month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
-  const [showCustomDate, setShowCustomDate] = useState(false);
+
+  const [showCOGSModal, setShowCOGSModal] = useState(false);
+  const [showSalesRevenueModal, setShowSalesRevenueModal] = useState(false);
+  const [showGrossMarginModal, setShowGrossMarginModal] = useState(false);
 
   useEffect(() => {
     fetchProfitLossReport();
@@ -131,14 +131,10 @@ const ProfitLossReportPage: React.FC = () => {
       ['Gross Margin', formatPercentage(reportData.gross_margin)],
       [''],
       ['Operating Expenses'],
-      ['Advertising Expense', number_format(reportData.expenses.advertising_expense)],
-      ['Rent Expense', number_format(reportData.expenses.rent_expense)],
-      ['Utilities Expense', number_format(reportData.expenses.utilities_expense)],
-      ['Wages Expense', number_format(reportData.expenses.wages_expense)],
-      ['Insurance Expense', number_format(reportData.expenses.insurance_expense)],
-      ['Office Supplies', number_format(reportData.expenses.office_supplies)],
-      ['Depreciation Expense', number_format(reportData.expenses.depreciation_expense)],
-      ['Miscellaneous Expense', number_format(reportData.expenses.miscellaneous_expense)],
+      // Operating expenses breakdown
+      ...reportData.expenses.operating_expenses_breakdown.map(exp => 
+        [exp.account_name, number_format(exp.balance)]
+      ),
       ['Total Operating Expenses', number_format(reportData.expenses.total_expenses)],
       [''],
       ['Net Profit', number_format(reportData.net_profit)],
@@ -299,9 +295,13 @@ const ProfitLossReportPage: React.FC = () => {
                   <div>
                     <h4 className="text-lg font-medium text-gray-900 mb-4">Revenue</h4>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center">
+                      <div 
+                        className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                        onClick={() => setShowSalesRevenueModal(true)}
+                        title="Click to view detailed breakdown"
+                      >
                         <span className="text-gray-600">Sales Revenue</span>
-                        <span className="font-medium">{number_format(reportData.revenue.sales_revenue)}</span>
+                        <span className="font-medium text-green-600 hover:text-green-800">{number_format(reportData.revenue.sales_revenue)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Other Income</span>
@@ -317,9 +317,13 @@ const ProfitLossReportPage: React.FC = () => {
                   {/* Cost of Goods Sold */}
                   <div>
                     <h4 className="text-lg font-medium text-gray-900 mb-4">Cost of Goods Sold</h4>
-                    <div className="flex justify-between items-center">
+                    <div 
+                      className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                      onClick={() => setShowCOGSModal(true)}
+                      title="Click to view detailed breakdown"
+                    >
                       <span className="text-gray-600">Cost of Goods Sold</span>
-                      <span className="font-medium">{number_format(reportData.expenses.cost_of_goods_sold)}</span>
+                      <span className="font-medium text-blue-600 hover:text-blue-800">{number_format(reportData.expenses.cost_of_goods_sold)}</span>
                     </div>
                   </div>
 
@@ -329,9 +333,13 @@ const ProfitLossReportPage: React.FC = () => {
                       <span className="font-semibold text-gray-900">Gross Profit</span>
                       <span className="font-bold text-gray-900">{number_format(reportData.gross_profit)}</span>
                     </div>
-                    <div className="flex justify-between items-center mt-1">
+                    <div 
+                      className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                      onClick={() => setShowGrossMarginModal(true)}
+                      title="Click to view detailed breakdown"
+                    >
                       <span className="text-sm text-gray-500">Gross Margin</span>
-                      <span className="text-sm font-medium text-gray-500">{formatPercentage(reportData.gross_margin)}</span>
+                      <span className="text-sm font-medium text-gray-500 hover:text-gray-700">{formatPercentage(reportData.gross_margin)}</span>
                     </div>
                   </div>
 
@@ -377,6 +385,32 @@ const ProfitLossReportPage: React.FC = () => {
           </div>
         ) : null}
       </div>
+
+      {/* COGS Details Modal */}
+      <COGSDetailsModal
+        isOpen={showCOGSModal}
+        onClose={() => setShowCOGSModal(false)}
+        period={period}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+      />
+
+      {/* Sales Revenue Details Modal */}
+      <SalesRevenueDetailsModal
+        isOpen={showSalesRevenueModal}
+        onClose={() => setShowSalesRevenueModal(false)}
+        period={period}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+      />
+
+      <GrossMarginDetailsModal
+        isOpen={showGrossMarginModal}
+        onClose={() => setShowGrossMarginModal(false)}
+        period={period}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+      />
     </div>
   );
 };

@@ -323,7 +323,7 @@ const AddExpensePage: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Total Amount</label>
             <div className="text-2xl font-bold text-gray-900">
-              ${getTotalAmount().toFixed(2)}
+              {getTotalAmount().toFixed(2)}
             </div>
           </div>
         </div>

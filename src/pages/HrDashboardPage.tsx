@@ -251,11 +251,11 @@ const HrDashboardPage: React.FC = () => {
       { to: '/employee-working-hours', label: 'Working Hours', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
       { to: '/employee-working-days', label: 'Working Days', icon: <CalendarIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
       { to: '/out-of-office-requests', label: 'Out of Office', icon: <UserXIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
-      { to: '/departments', label: 'Departments', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-      { to: '/positions', label: 'Positions', icon: <BriefcaseIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-      { to: '/payroll', label: 'Payroll', icon: <ClipboardListIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+      //{ to: '/departments', label: 'Departments', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+      //{ to: '/positions', label: 'Positions', icon: <BriefcaseIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+      //{ to: '/payroll', label: 'Payroll', icon: <ClipboardListIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
       { to: '/chat-room', label: 'Chat Room', icon: <MessageCircleIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-      { to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-4 w-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
+      //{ to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-4 w-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
     ];
 
     return (

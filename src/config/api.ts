@@ -4,7 +4,9 @@ export const API_CONFIG = {
   getBaseUrl: (): string => {
     const url = import.meta.env.VITE_API_URL;
     if (!url) {
-      throw new Error('VITE_API_URL environment variable is required but not defined');
+      // Default to localhost:5000 for development
+      console.warn('VITE_API_URL not set, using default: http://localhost:5000/api');
+      return 'http://localhost:5000/api';
     }
     // For Vercel deployment, VITE_API_URL is already '/api', so return as-is
     return url;

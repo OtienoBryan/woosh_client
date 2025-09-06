@@ -7,8 +7,11 @@ interface Task {
   title: string;
   description: string;
   date: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  assigned_to: string;
+  status: string;
+  isCompleted: boolean;
+  priority: string;
+  salesRepId: number;
+  createdAt: string;
   assigned_sales_reps?: SalesRep[]; // New field for multiple assignments
 }
 
@@ -20,12 +23,12 @@ const TasksPage: React.FC = () => {
   const [filterUser, setFilterUser] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
-  const [form, setForm] = useState<Omit<Task, 'id'> & { selectedSalesReps: number[] }>({
+  const [form, setForm] = useState<Omit<Task, 'id' | 'createdAt' | 'isCompleted' | 'salesRepId'> & { selectedSalesReps: number[] }>({
     title: '',
     description: '',
     date: '',
-    status: 'Pending',
-    assigned_to: '',
+    status: 'pending',
+    priority: 'medium',
     selectedSalesReps: [], // New field for multiple selection
   });
   const [submitting, setSubmitting] = useState(false);
@@ -36,15 +39,30 @@ const TasksPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [salesRepsLoading, setSalesRepsLoading] = useState(true);
 
   const fetchTasks = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`/api/calendar-tasks?month=${month}`);
-      setTasks(res.data);
+      const res = await axios.get(`/api/tasks?month=${month}`);
+      if (res.data && Array.isArray(res.data)) {
+        setTasks(res.data);
+      } else {
+        console.error('Invalid response format:', res.data);
+        setTasks([]);
+        setError('Invalid data format received from server');
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch tasks');
+      console.error('Error fetching tasks:', err);
+      setTasks([]);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Failed to fetch tasks');
+      }
     }
     setLoading(false);
   };
@@ -53,13 +71,30 @@ const TasksPage: React.FC = () => {
 
   // Fetch sales reps on mount
   useEffect(() => {
-    axios.get('/api/sales/sales-reps').then(res => setSalesReps(res.data));
+    const fetchSalesReps = async () => {
+      setSalesRepsLoading(true);
+      try {
+        const res = await axios.get('/api/sales/sales-reps');
+        if (res.data && Array.isArray(res.data)) {
+          setSalesReps(res.data);
+        } else {
+          console.error('Invalid sales reps response format:', res.data);
+          setSalesReps([]);
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch sales reps:', err);
+        setSalesReps([]);
+        setError('Failed to load sales representatives');
+      }
+      setSalesRepsLoading(false);
+    };
+    fetchSalesReps();
   }, []);
 
   const filteredTasks = tasks.filter(
     t =>
       (!filterStatus || t.status === filterStatus) &&
-      (!filterUser || t.assigned_to === filterUser)
+      (!filterUser || t.salesRepId.toString() === filterUser)
   );
 
   const handleAdd = () => {
@@ -67,8 +102,8 @@ const TasksPage: React.FC = () => {
       title: '', 
       description: '', 
       date: '', 
-      status: 'Pending', 
-      assigned_to: '',
+      status: 'pending', 
+      priority: 'medium',
       selectedSalesReps: []
     });
     setEditTask(null);
@@ -81,8 +116,8 @@ const TasksPage: React.FC = () => {
       description: task.description,
       date: task.date,
       status: task.status,
-      assigned_to: task.assigned_to,
-      selectedSalesReps: task.assigned_sales_reps?.map(rep => rep.id) || []
+      priority: task.priority,
+      selectedSalesReps: task.assigned_sales_reps?.map(rep => rep.id) || [task.salesRepId]
     });
     setEditTask(task);
     setModalOpen(true);
@@ -91,10 +126,17 @@ const TasksPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this task?')) return;
     try {
-      await axios.delete(`/api/calendar-tasks/${id}`);
-      fetchTasks();
+      await axios.delete(`/api/tasks/${id}`);
+      await fetchTasks(); // Refresh the tasks list
     } catch (err: any) {
-      setError(err.message || 'Failed to delete task');
+      console.error('Error deleting task:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Failed to delete task');
+      }
     }
   };
 
@@ -117,26 +159,34 @@ const TasksPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
     try {
-      const selectedSalesRepNames = salesReps
-        .filter(rep => form.selectedSalesReps.includes(rep.id))
-        .map(rep => rep.name)
-        .join(', ');
-
       const formData = {
-        ...form,
-        assigned_to: selectedSalesRepNames || 'Unassigned'
+        title: form.title,
+        description: form.description,
+        date: form.date,
+        status: form.status,
+        priority: form.priority,
+        salesRepId: form.selectedSalesReps[0] || 1, // Use first selected sales rep or default
+        isCompleted: form.status === 'completed'
       };
 
       if (editTask) {
-        await axios.put(`/api/calendar-tasks/${editTask.id}`, formData);
+        await axios.put(`/api/tasks/${editTask.id}`, formData);
       } else {
-        await axios.post('/api/calendar-tasks', formData);
+        await axios.post('/api/tasks', formData);
       }
       setModalOpen(false);
-      fetchTasks();
+      await fetchTasks(); // Refresh the tasks list
     } catch (err: any) {
-      setError(err.message || 'Failed to save task');
+      console.error('Error saving task:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Failed to save task');
+      }
     }
     setSubmitting(false);
   };
@@ -146,7 +196,7 @@ const TasksPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-2 sm:px-4">
+    <div className="w-full py-8 px-2 sm:px-4">
       <div className="sticky top-0 z-10 bg-white rounded-lg shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-3 mb-6">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center">
           <div className="flex items-center gap-2">
@@ -166,9 +216,9 @@ const TasksPage: React.FC = () => {
               className="border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -176,7 +226,8 @@ const TasksPage: React.FC = () => {
             <select
               value={filterUser}
               onChange={e => setFilterUser(e.target.value)}
-              className="border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
+              disabled={salesRepsLoading}
+              className="border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">All</option>
               {salesReps.map(rep => (
@@ -192,10 +243,22 @@ const TasksPage: React.FC = () => {
           Add Task
         </button>
       </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <div className="text-red-600 font-medium">Error:</div>
+            <div className="text-red-700 ml-2">{error}</div>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+        </div>
+      )}
       {loading ? (
         <div className="flex justify-center items-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
-      ) : error ? (
-        <div className="text-red-600 mb-4">{error}</div>
       ) : filteredTasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
           <svg width="80" height="80" fill="none" viewBox="0 0 24 24"><rect width="24" height="24" rx="12" fill="#f3f4f6"/><path d="M7 9h10M7 13h5" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -207,10 +270,15 @@ const TasksPage: React.FC = () => {
           {filteredTasks.map((task) => (
             <div key={task.id} className="bg-white rounded-lg shadow p-5 flex flex-col relative group transition hover:shadow-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold px-2 py-1 rounded-full "
-                  style={{ background: task.status === 'Completed' ? '#dcfce7' : task.status === 'In Progress' ? '#fef9c3' : '#fee2e2', color: task.status === 'Completed' ? '#16a34a' : task.status === 'In Progress' ? '#b45309' : '#dc2626' }}>
-                  {task.status}
-                </span>
+                <div className="flex gap-2">
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full "
+                    style={{ background: task.status === 'completed' ? '#dcfce7' : task.status === 'in_progress' ? '#fef9c3' : '#fee2e2', color: task.status === 'completed' ? '#16a34a' : task.status === 'in_progress' ? '#b45309' : '#dc2626' }}>
+                    {task.status}
+                  </span>
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                    {task.priority}
+                  </span>
+                </div>
                 <div className="flex gap-2 opacity-80 group-hover:opacity-100">
                   <button
                     onClick={() => handleEdit(task)}
@@ -231,10 +299,10 @@ const TasksPage: React.FC = () => {
               <div className="mb-1 text-lg font-bold text-gray-900 truncate" title={task.title}>{task.title}</div>
               <div className="mb-2 text-gray-700 whitespace-pre-line text-sm" style={{ minHeight: 48 }}>{task.description}</div>
               <div className="flex items-center gap-2 mt-auto pt-2 text-xs text-gray-500">
-                <span>Due:</span>
-                <span className="font-medium text-gray-700">{task.date}</span>
-                <span className="ml-4">Assigned:</span>
-                <span className="font-medium text-gray-700">{task.assigned_to}</span>
+                <span>Created:</span>
+                <span className="font-medium text-gray-700">{new Date(task.createdAt).toLocaleDateString()}</span>
+                <span className="ml-4">Sales Rep ID:</span>
+                <span className="font-medium text-gray-700">{task.salesRepId}</span>
               </div>
             </div>
           ))}
@@ -267,10 +335,9 @@ const TasksPage: React.FC = () => {
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                     <input
                       type="date"
-                      required
                       value={form.date}
                       onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
@@ -281,14 +348,28 @@ const TasksPage: React.FC = () => {
                     <select
                       required
                       value={form.status}
-                      onChange={e => setForm(f => ({ ...f, status: e.target.value as Task['status'] }))}
+                      onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
                     </select>
                   </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority *</label>
+                  <select
+                    required
+                    value={form.priority}
+                    onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
                 </div>
                 
                 {/* Multiple Sales Rep Selection */}
@@ -329,9 +410,12 @@ const TasksPage: React.FC = () => {
                       }
                       e.target.value = ''; // Reset selection
                     }}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    disabled={salesRepsLoading}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select sales rep to add</option>
+                    <option value="">
+                      {salesRepsLoading ? 'Loading sales reps...' : 'Select sales rep to add'}
+                    </option>
                     {salesReps
                       .filter(rep => !form.selectedSalesReps.includes(rep.id))
                       .map(rep => (

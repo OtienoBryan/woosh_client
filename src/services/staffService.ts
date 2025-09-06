@@ -10,10 +10,13 @@ export interface Staff {
   id_no: number;
   role: string;
   employment_type?: string;
+  gender?: string;
+  business_email?: string;
+  department_email?: string;
+  salary?: number | null;
   status: number;  // 1 for active, 0 for deactivated
   created_at: string;
   updated_at: string;
-  salary?: number | null;
 }
 
 export interface CreateStaffData {
@@ -23,6 +26,10 @@ export interface CreateStaffData {
   id_no: number;
   role: string;
   employment_type?: string;
+  gender?: string;
+  business_email?: string;
+  department_email?: string;
+  salary?: number | null;
 }
 
 export const staffService = {
@@ -80,7 +87,7 @@ export const staffService = {
   updateStaffStatus: async (staffId: number, status: number): Promise<Staff> => {
     try {
       console.log('Updating staff status:', { staffId, status });
-      const response = await api.put(`/staff/${staffId}/status`, { status });
+      const response = await api.patch(`/staff/${staffId}/status`, { status });
       console.log('Status update response:', response.data);
       return response.data;
     } catch (error) {

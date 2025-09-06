@@ -71,7 +71,7 @@ export const visibilityReportService = {
 
   getSalesReps: async (): Promise<SalesRep[]> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sales-reps`);
+      const response = await axios.get(`${API_BASE_URL}/sales-reps?status=1`);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error fetching sales reps:', error);

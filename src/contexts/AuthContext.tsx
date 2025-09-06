@@ -6,6 +6,16 @@ export interface User {
   email: string;
   role: string;
   avatar_url?: string;
+  // Staff table fields
+  name?: string;
+  empl_no?: string;
+  id_no?: string;
+  phone_number?: string;
+  department?: string;
+  department_email?: string;
+  salary?: string;
+  employment_type?: string;
+  gender?: string;
 }
 
 interface AuthContextType {

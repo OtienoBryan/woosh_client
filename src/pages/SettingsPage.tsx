@@ -6,8 +6,8 @@ import { API_CONFIG } from '../config/api';
 const SettingsPage: React.FC = () => {
   const { user, setUser } = useAuth();
   const [form, setForm] = useState({
-    name: user?.username || '',
-    email: user?.email || '',
+    name: user?.name || user?.username || '',
+    business_email: user?.business_email || user?.email || '',
   });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -37,9 +37,17 @@ const SettingsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    setForm({ name: user?.username || '', email: user?.email || '' });
+    setForm({ 
+      name: user?.name || user?.username || '', 
+      business_email: user?.business_email || user?.email || '' 
+    });
     setAvatarUrl(user?.avatar_url || '');
   }, [user]);
+
+  // Fetch staff data on component mount
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,16 +55,34 @@ const SettingsPage: React.FC = () => {
     setSuccess('');
     setError('');
     try {
-      const res = await fetch(API_CONFIG.getUrl(`/users/${user?.id}`), {
+      // Update staff table with name and business_email
+      const res = await fetch(API_CONFIG.getUrl(`/staff/${user?.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          business_email: form.business_email,
+          // Keep existing values for other fields
+          photo_url: user?.avatar_url || '',
+          empl_no: user?.empl_no || '',
+          id_no: user?.id_no || '',
+          role: user?.role || '',
+          phone_number: user?.phone_number || '',
+          department: user?.department || '',
+          department_email: user?.department_email || '',
+          salary: user?.salary || '',
+          employment_type: user?.employment_type || '',
+          gender: user?.gender || ''
+        }),
       });
       if (!res.ok) throw new Error('Failed to update profile');
       setSuccess('Profile updated successfully!');
+      
+      // Refresh user data to get updated information
+      await fetchUser();
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');
     }
@@ -107,6 +133,12 @@ const SettingsPage: React.FC = () => {
       if (!res.ok) return;
       const data = await res.json();
       if (setUser) setUser(data);
+      
+      // Update form with staff data (name and business_email from staff table)
+      setForm({
+        name: data.name || data.username || '',
+        business_email: data.business_email || data.email || '',
+      });
     } catch {}
   };
 
@@ -232,14 +264,14 @@ const SettingsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <label className="block text-sm font-medium text-gray-700">Business Email</label>
                   <input
                     type="email"
-                    name="email"
-                    value={form.email}
+                    name="business_email"
+                    value={form.business_email}
                     onChange={handleChange}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="you@example.com"
+                    placeholder="you@company.com"
                   />
                 </div>
               </div>

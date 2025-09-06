@@ -55,7 +55,7 @@ const SalesRepWorkingDaysPage: React.FC = () => {
     return d.toISOString().slice(0, 10);
   });
   const [endDate, setEndDate] = useState<string>(() => {
-    const d = new Date(year, month + 1, 0);
+    const d = new Date(year, month, daysInMonth);
     return d.toISOString().slice(0, 10);
   });
 
@@ -268,7 +268,7 @@ const SalesRepWorkingDaysPage: React.FC = () => {
       return d.toISOString().slice(0, 10);
     });
     setPendingEndDate(() => {
-      const d = new Date(year, month + 1, 0);
+      const d = new Date(year, month, daysInMonth);
       return d.toISOString().slice(0, 10);
     });
   };

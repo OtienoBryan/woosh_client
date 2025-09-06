@@ -30,7 +30,17 @@ export interface UpdateSalesRepData extends CreateSalesRepData {
 
 export interface Country { id: number; name: string; }
 export interface Region { id: number; name: string; country_id?: number; }
-export interface Route { id: number; name: string; }
+export interface Route { 
+  id: number; 
+  name: string; 
+  region: number;
+  region_name: string;
+  country_id: number;
+  country_name: string;
+  sales_rep_id: number;
+  sales_rep_name: string;
+  status: number;
+}
 
 export interface MasterSalesData {
   client_id: number;
@@ -55,7 +65,7 @@ const API_BASE_URL = '/api/sales';
 export const salesService = {
   // Get all sales reps
   getAllSalesReps: async (): Promise<SalesRep[]> => {
-    const response = await axios.get(`${API_BASE_URL}/sales-reps`);
+    const response = await axios.get(`${API_BASE_URL}/sales-reps?status=1`);
     return response.data;
   },
 
@@ -105,9 +115,9 @@ export const salesService = {
     return response.data;
   },
 
-  // Fetch routes
-  getRoutes: async (): Promise<Route[]> => {
-    const response = await axios.get(`${API_BASE_URL}/routes`);
+  // Fetch routes (optionally by country_id)
+  getRoutes: async (country_id?: number): Promise<Route[]> => {
+    const response = await axios.get(`${API_BASE_URL}/routes`, country_id ? { params: { country_id } } : undefined);
     return response.data;
   },
 

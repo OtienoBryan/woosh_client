@@ -14,26 +14,26 @@ const navigation = [
     name: 'Dashboard',
     href: '/',
     icon: HomeIcon,
-    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr']
+    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr', 'executive']
   },
   // Add Clients link here
   {
     name: 'Clients',
     href: '/clients-list',
     icon: UsersIcon,
-    roles: ['admin', 'manager', 'accountant', 'user', 'sales']
+    roles: ['admin', 'manager', 'accountant', 'user', 'sales', 'executive']
   },
   {
     name: 'Chat Room',
     href: '/chat-room',
     icon: MessageCircleIcon,
-    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr']
+    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr', 'executive']
   },
   {
     name: 'Guards List',
     href: '/dashboard/staff-list',
     icon: ImageIcon,
-    roles: ['admin', 'manager', 'hr']
+    roles: ['admin', 'manager', 'hr', 'executive']
   },
   // {
   //   name: 'Teams List',
@@ -50,7 +50,7 @@ const navigation = [
     name: 'Vendors',
     href: '/suppliers',
     icon: UsersIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Riders',
@@ -63,13 +63,13 @@ const navigation = [
     name: 'Reports',
     href: '/dashboard/claims',
     icon: Tally4Icon,
-    roles: ['admin', 'manager', 'accountant', 'user']
+    roles: ['admin', 'manager', 'accountant', 'user', 'executive']
   },
   {
     name: 'Notice Board',
     href: '/dashboard/claims',
     icon: BellIcon,
-    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr']
+    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr', 'executive']
   },
   // {
   //   name: 'Reports',
@@ -80,133 +80,133 @@ const navigation = [
     name: 'Settings',
     href: '/settings',
     icon: CogIcon,
-    roles: ['admin', 'manager']
+    roles: ['admin', 'manager', 'executive']
   },
   {
     name: 'Payables',
     href: '/payables',
     icon: BoxIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Pending Payments',
     href: '/pending-payments',
     icon: Clock,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Receivables',
     href: '/receivables',
     icon: FileTextIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Assets',
     href: '/assets',
     icon: BoxIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Reports',
     href: '/reports/profit-loss',
     icon: BarChart3,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
                 {
                 name: 'Master Sales',
                 href: '/master-sales',
                 icon: BarChart3,
-                roles: ['admin', 'manager', 'accountant', 'sales']
+                roles: ['admin', 'manager', 'accountant', 'sales', 'executive']
               },
               {
                 name: 'Sales Rep Master Report',
                 href: '/sales-rep-master-report',
                 icon: UsersIcon,
-                roles: ['admin', 'manager', 'accountant', 'sales']
+                roles: ['admin', 'manager', 'accountant', 'sales', 'executive']
               },
               {
                 name: 'Products Sale Report',
                 href: '/products-sale-report',
                 icon: BarChart3,
-                roles: ['admin', 'manager', 'accountant', 'sales']
+                roles: ['admin', 'manager', 'accountant', 'sales', 'executive']
               },
               {
                 name: 'Journey Plans',
                 href: '/dashboard/journey-plans',
                 icon: MapIcon,
-                roles: ['admin', 'manager', 'sales']
+                roles: ['admin', 'manager', 'sales', 'executive']
               },
   {
     name: 'Balance Sheet',
     href: '/reports/balance-sheet',
     icon: BarChart3,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Create Invoice',
     href: '/create-invoice',
     icon: FileTextIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Invoice List',
     href: '/invoice-list',
     icon: FileTextIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Create Credit Note',
     href: '/create-credit-note',
     icon: FileTextIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Credit Notes',
     href: '/credit-notes',
     icon: FileTextIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Add Asset',
     href: '/assets/add',
     icon: BoxIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Asset Depreciation',
     href: '/assets/depreciation',
     icon: BoxIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Depreciation Management',
     href: '/depreciation/manage',
     icon: BoxIcon,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Equity Entries',
     href: '/equity/entries',
     icon: DollarSign,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Add Expense',
     href: '/add-expense',
     icon: DollarSign,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Expense Summary',
     href: '/expense-summary',
     icon: BarChart3,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Pending Payments',
     href: '/pending-payments',
     icon: Clock,
-    roles: ['admin', 'manager', 'accountant']
+    roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
     name: 'Inventory Dashboard',

@@ -101,7 +101,10 @@ const StatCard: React.FC<{
   value: string | number;
   icon: React.ReactNode;
   color: 'blue' | 'green' | 'purple' | 'orange';
-}> = ({ title, value, icon, color }) => {
+  onClick?: () => void;
+  isActive?: boolean;
+  filterText?: string;
+}> = ({ title, value, icon, color, onClick, isActive, filterText }) => {
   const colorClasses = {
     blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
     green: 'bg-gradient-to-br from-green-500 to-green-600',
@@ -109,12 +112,20 @@ const StatCard: React.FC<{
     orange: 'bg-gradient-to-br from-orange-500 to-orange-600'
   };
 
+  const activeClasses = isActive ? 'ring-2 ring-white ring-opacity-50 shadow-xl' : '';
+
   return (
-    <div className={`${colorClasses[color]} rounded-xl shadow-lg p-6 text-white`}>
+    <div 
+      className={`${colorClasses[color]} rounded-xl shadow-lg p-6 text-white transition-all duration-200 ${onClick ? 'cursor-pointer hover:shadow-xl' : ''} ${activeClasses}`}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-blue-50">{title}</p>
           <p className="text-2xl font-bold">{value}</p>
+          {filterText && (
+            <p className="text-xs text-blue-100 mt-1">{filterText}</p>
+          )}
         </div>
         <div className="bg-white bg-opacity-20 rounded-lg p-3">
           {icon}
@@ -592,6 +603,7 @@ const SuppliersPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [balanceFilter, setBalanceFilter] = useState<'all' | 'with_balance' | 'zero_balance'>('all');
   const navigate = useNavigate();
 
   const fetchSuppliers = async () => {
@@ -621,15 +633,23 @@ const SuppliersPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const base = q
+    let base = q
       ? suppliers.filter((s: any) =>
           [s.company_name, s.contact_person, s.email, s.phone, s.supplier_code]
             .filter(Boolean)
             .some((v: string) => v.toLowerCase().includes(q))
         )
       : suppliers;
+    
+    // Apply balance filter
+    if (balanceFilter === 'with_balance') {
+      base = base.filter((s: any) => (Number(s.balance) || 0) > 0);
+    } else if (balanceFilter === 'zero_balance') {
+      base = base.filter((s: any) => (Number(s.balance) || 0) === 0);
+    }
+    
     return base;
-  }, [suppliers, search]);
+  }, [suppliers, search, balanceFilter]);
 
   const paginatedSuppliers = useMemo(() => {
     if (pageSize === filtered.length) {
@@ -665,6 +685,23 @@ const SuppliersPage: React.FC = () => {
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleBalanceFilterChange = () => {
+    if (balanceFilter === 'all') {
+      setBalanceFilter('with_balance');
+    } else if (balanceFilter === 'with_balance') {
+      setBalanceFilter('zero_balance');
+    } else {
+      setBalanceFilter('all');
+    }
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const handleTotalSuppliersClick = () => {
+    setSearch(''); // Clear search
+    setBalanceFilter('all'); // Clear balance filter
+    setCurrentPage(1); // Reset to first page
   };
 
   if (loading) {
@@ -733,9 +770,14 @@ const SuppliersPage: React.FC = () => {
             value={suppliers.length}
             icon={<Icons.Building />}
             color="blue"
+            onClick={handleTotalSuppliersClick}
+            isActive={search === '' && balanceFilter === 'all'}
+            filterText={
+              search === '' && balanceFilter === 'all' ? 'All suppliers shown' : 'Click to show all'
+            }
           />
           <StatCard
-            title="Active Suppliers"
+            title="Filtered Suppliers"
             value={filtered.length}
             icon={<Icons.Users />}
             color="green"
@@ -745,6 +787,13 @@ const SuppliersPage: React.FC = () => {
             value={totalBalance.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
             icon={<Icons.Currency />}
             color="purple"
+            onClick={handleBalanceFilterChange}
+            isActive={balanceFilter !== 'all'}
+            filterText={
+              balanceFilter === 'with_balance' ? 'Filtered: With Balance' :
+              balanceFilter === 'zero_balance' ? 'Filtered: Zero Balance' :
+              'Click to filter'
+            }
           />
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Search, Download, Eye, Calendar, DollarSign, Building, X, Package, Receipt, ArrowLeft, CheckSquare, Info } from 'lucide-react';
+import { FileText, Search, Download, Eye, Calendar, Building, X, Package, Receipt, ArrowLeft, CheckSquare, Info } from 'lucide-react';
 import { creditNoteService } from '../services/creditNoteService';
 import { storeService } from '../services/storeService';
 import { Store } from '../types/financial';
@@ -71,11 +71,12 @@ const CreditNoteSummaryPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('0');
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('month');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [jumpToPage, setJumpToPage] = useState('');
   
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -90,6 +91,7 @@ const CreditNoteSummaryPage: React.FC = () => {
   const [loadingStores, setLoadingStores] = useState(false);
   const [submittingReceiveBack, setSubmittingReceiveBack] = useState(false);
   const [receiveBackSuccess, setReceiveBackSuccess] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
 
   const { user } = useAuth();
 
@@ -123,20 +125,94 @@ const CreditNoteSummaryPage: React.FC = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('0');
-    setDateFilter('all');
+    setDateFilter('month');
     setStartDate('');
     setEndDate('');
     setCurrentPage(1);
   };
 
-  const validateDateRange = () => {
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      setError('Start date cannot be after end date');
-      return false;
-    }
-    setError(null);
-    return true;
+  const handlePageSizeChange = (newSize: number) => {
+    setItemsPerPage(newSize);
+    setCurrentPage(1); // Reset to first page when changing page size
   };
+
+  const handleJumpToPage = () => {
+    const pageNum = parseInt(jumpToPage);
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum);
+      setJumpToPage('');
+    }
+  };
+
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= totalPages)) {
+      setJumpToPage(value);
+    }
+  };
+
+  const exportToCSV = () => {
+    // Prepare CSV headers
+    const headers = [
+      'Credit Note Number',
+      'Customer Name',
+      'Customer ID',
+      'Date',
+      'Created By',
+      'Amount',
+      'Status',
+      'Receive Status',
+      'Received By',
+      'Reason'
+    ];
+
+    // Prepare CSV data
+    const csvData = filteredCreditNotes.map(note => [
+      note.credit_note_number || '',
+      note.customer_name || 'Unknown Customer',
+      note.customer_id || '',
+      note.credit_note_date ? formatDate(note.credit_note_date) : '',
+      note.creator_name || 'Unknown',
+      formatCurrency(note.total_amount || 0),
+      note.status || '',
+      getMyStatusText(note.my_status),
+      note.my_status === 1 && note.staff_name ? note.staff_name : (note.my_status === 1 ? `User ID: ${note.received_by}` : 'Not received'),
+      note.reason || 'No reason provided'
+    ]);
+
+    // Create CSV content
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Generate filename with current date and filter info
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filterSuffix = dateFilter === 'month' ? 'current-month' : 
+                        dateFilter === 'week' ? 'this-week' :
+                        dateFilter === 'today' ? 'today' :
+                        dateFilter === 'quarter' ? 'this-quarter' : 'all-dates';
+    
+    link.download = `credit-notes-${filterSuffix}-${currentDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    // Show success message
+    setExportSuccess(`CSV exported successfully! ${filteredCreditNotes.length} credit notes exported.`);
+    setTimeout(() => setExportSuccess(null), 3000);
+  };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, dateFilter, startDate, endDate]);
 
   const filteredCreditNotes = creditNotes.filter(note => {
     const matchesSearch = (note.credit_note_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -173,7 +249,6 @@ const CreditNoteSummaryPage: React.FC = () => {
       // Use dateFilter only when no date range is specified
       const noteDate = new Date(note.credit_note_date);
       const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
       const ninetyDaysAgo = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000));
       
       switch (dateFilter) {
@@ -185,7 +260,9 @@ const CreditNoteSummaryPage: React.FC = () => {
           matchesDate = noteDate >= weekAgo;
           break;
         case 'month':
-          matchesDate = noteDate >= thirtyDaysAgo;
+          // Check if the note date is in the current month and year
+          matchesDate = noteDate.getMonth() === today.getMonth() && 
+                       noteDate.getFullYear() === today.getFullYear();
           break;
         case 'quarter':
           matchesDate = noteDate >= ninetyDaysAgo;
@@ -253,7 +330,14 @@ const CreditNoteSummaryPage: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
+    // Handle NaN, null, undefined, or invalid numbers
+    if (isNaN(amount) || !isFinite(amount) || amount === null || amount === undefined) {
+      return 'KSh 0.00';
+    }
+    
     return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'KES',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -269,7 +353,25 @@ const CreditNoteSummaryPage: React.FC = () => {
 
   const calculateTotals = () => {
     return filteredCreditNotes.reduce((acc, note) => {
-      acc.totalAmount += note.total_amount || 0;
+      // Handle various data types and edge cases
+      let amount = 0;
+      
+      if (note.total_amount !== null && note.total_amount !== undefined) {
+        if (typeof note.total_amount === 'number') {
+          amount = note.total_amount;
+        } else if (typeof note.total_amount === 'string') {
+          const parsed = parseFloat(note.total_amount);
+          amount = isNaN(parsed) ? 0 : parsed;
+        }
+      }
+      
+      // Ensure amount is a valid number
+      if (isNaN(amount) || !isFinite(amount)) {
+        console.warn('Invalid total_amount found:', note.total_amount, 'for credit note:', note.id);
+        amount = 0;
+      }
+      
+      acc.totalAmount += amount;
       acc.count += 1;
       return acc;
     }, { totalAmount: 0, count: 0 });
@@ -462,30 +564,35 @@ const CreditNoteSummaryPage: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-green-600" />
+               
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.totalAmount)}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(totals.totalAmount)}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 ring-2 ring-green-200 bg-green-50">
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Calendar className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Month</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {creditNotes.filter(note => {
-                    if (!note.credit_note_date) return false;
-                    const noteDate = new Date(note.credit_note_date);
-                    const today = new Date();
-                    return noteDate.getMonth() === today.getMonth() && 
-                           noteDate.getFullYear() === today.getFullYear();
-                  }).length}
+                <p className="text-sm font-medium text-gray-600">
+                  {dateFilter === 'month' && !startDate && !endDate 
+                    ? 'This Month (Default View)' 
+                    : 'Filtered Results'}
+                </p>
+                <p className="text-2xl font-bold text-green-700">
+                  {filteredCreditNotes.length}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  {dateFilter === 'month' && !startDate && !endDate 
+                    ? 'Currently showing this month\'s data' 
+                    : 'Currently filtered results'}
                 </p>
               </div>
             </div>
@@ -613,23 +720,42 @@ const CreditNoteSummaryPage: React.FC = () => {
                 Clear Filters
               </button>
               <button
-                onClick={() => {
-                  // TODO: Implement export functionality
-                  alert('Export functionality coming soon');
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center"
+                onClick={exportToCSV}
+                disabled={filteredCreditNotes.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                title={filteredCreditNotes.length === 0 ? 'No data to export' : 'Export filtered credit notes to CSV'}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                Export CSV
               </button>
             </div>
           </div>
 
+          {/* Success Messages */}
+          {exportSuccess && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800">{exportSuccess}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Active Filters Indicator */}
-          {(searchTerm || statusFilter !== '0' || dateFilter !== 'all' || startDate || endDate) && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center flex-wrap gap-2">
-                <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+              
+              {/* Default Month Filter */}
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                Date: This Month (Default)
+              </span>
                 {searchTerm && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                     Search: "{searchTerm}"
@@ -652,11 +778,11 @@ const CreditNoteSummaryPage: React.FC = () => {
                     </button>
                   </span>
                 )}
-                {dateFilter !== 'all' && (
+                {dateFilter !== 'month' && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                    Date: {dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : dateFilter === 'month' ? 'This Month' : 'This Quarter'}
+                    Date: {dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : dateFilter === 'all' ? 'All Dates' : 'This Quarter'}
                     <button
-                      onClick={() => setDateFilter('all')}
+                      onClick={() => setDateFilter('month')}
                       className="ml-2 text-yellow-600 hover:text-yellow-800"
                     >
                       ×
@@ -687,23 +813,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                 )}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Debug Information */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb- hidden">
-          <h3 className="text-sm font-medium text-gray-800 mb-2">Debug Info:</h3>
-          <div className="text-xs text-gray-600 space-y-1">
-            <div>Total Credit Notes: {creditNotes.length}</div>
-            <div>Filtered Credit Notes: {filteredCreditNotes.length}</div>
-            <div>Status Filter: {statusFilter}</div>
-            <div>Date Filter: {dateFilter}</div>
-            <div>Start Date: {startDate || 'None'}</div>
-            <div>End Date: {endDate || 'None'}</div>
-            <div>Total Amount: {formatCurrency(totals.totalAmount)}</div>
-            <div>Count: {totals.count}</div>
           </div>
-        </div>
 
         {/* Credit Notes Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -711,6 +821,11 @@ const CreditNoteSummaryPage: React.FC = () => {
             <h2 className="text-xl font-medium text-gray-900">Credit Notes</h2>
             <p className="text-sm text-gray-500 mt-1">
               Showing {filteredCreditNotes.length} of {creditNotes.length} credit notes
+              {dateFilter === 'month' && !startDate && !endDate && (
+                <span className="ml-2 text-green-600">
+                  (This Month - Default View)
+                </span>
+              )}
               {(startDate || endDate) && (
                 <span className="ml-2 text-blue-600">
                   {startDate && endDate 
@@ -865,44 +980,118 @@ const CreditNoteSummaryPage: React.FC = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
+              {/* Enhanced Pagination */}
               {totalPages > 1 && (
                 <div className="px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-700">
-                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredCreditNotes.length)} of {filteredCreditNotes.length} results
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    {/* Results Info and Page Size */}
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                      <div className="text-sm text-gray-700">
+                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredCreditNotes.length)} of {filteredCreditNotes.length} results
+                      </div>
+                      <button
+                        onClick={exportToCSV}
+                        disabled={filteredCreditNotes.length === 0}
+                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        title="Export all filtered results to CSV"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Export All
+                      </button>
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600">Show:</label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                        <span className="text-sm text-gray-600">per page</span>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`px-3 py-2 border rounded-lg text-sm font-medium ${
-                              pageNum === currentPage
-                                ? 'border-blue-500 bg-blue-50 text-blue-600'
-                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
+
+                    {/* Pagination Controls */}
+                    <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                      {/* Jump to Page */}
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600">Go to page:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          value={jumpToPage}
+                          onChange={handlePageInputChange}
+                          onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Page"
+                        />
+                        <button
+                          onClick={handleJumpToPage}
+                          disabled={!jumpToPage || parseInt(jumpToPage) < 1 || parseInt(jumpToPage) > totalPages}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Go
+                        </button>
+                      </div>
+
+                      {/* Page Navigation */}
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="First page"
+                        >
+                          ««
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Previous page"
+                        >
+                          «
+                        </button>
+                        
+                        {/* Page Numbers */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`px-3 py-1 border rounded text-sm font-medium ${
+                                pageNum === currentPage
+                                  ? 'border-blue-500 bg-blue-50 text-blue-600'
+                                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        
+                        <button
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Next page"
+                        >
+                          »
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Last page"
+                        >
+                          »»
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

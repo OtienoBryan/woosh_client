@@ -1,6 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState, useMemo } from 'react';
+import { api } from '../services/api';
 import { Link } from 'react-router-dom';
+import { 
+  TrendingUp, 
+  Package, 
+  DollarSign, 
+  BarChart3, 
+  Filter, 
+  Download, 
+  Calendar, 
+  MapPin, 
+  Tag,
+  Search,
+  X,
+  RefreshCw,
+  Eye,
+  Award,
+  Target,
+  ChevronDown,
+  ChevronUp,
+  User
+} from 'lucide-react';
 
 interface ProductPerformance {
   product_id: number;
@@ -9,39 +29,81 @@ interface ProductPerformance {
   total_sales_value: number;
 }
 
+// Modern Statistics Card Component
+const StatsCard: React.FC<{
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: 'blue' | 'green' | 'purple' | 'orange';
+  subtitle?: string;
+}> = ({ title, value, icon, color, subtitle }) => {
+  const colorClasses = {
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
+    green: 'bg-gradient-to-br from-green-500 to-green-600 text-white',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-600 text-white',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'
+  };
+
+  return (
+    <div className={`${colorClasses[color]} rounded-xl shadow-lg p-6 transition-all duration-200 hover:shadow-xl`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium opacity-90">{title}</p>
+          <p className="text-2xl font-bold mt-1">{value}</p>
+          {subtitle && <p className="text-xs opacity-75 mt-1">{subtitle}</p>}
+        </div>
+        <div className="bg-white bg-opacity-20 rounded-lg p-3">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const ProductPerformancePage: React.FC = () => {
   const [products, setProducts] = useState<ProductPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
+    return `${year}-${month.toString().padStart(2, '0')}-01`;
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
+    const lastDay = new Date(year, month, 0).getDate(); // Get last day of current month
+    return `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+  });
   const [productType, setProductType] = useState<string>('');
   const [country, setCountry] = useState<string>('');
   const [countries, setCountries] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [region, setRegion] = useState<string>('');
-  const [modalOpen, setModalOpen] = useState(false);
-  // Temp filter state for modal
-  const [tempStartDate, setTempStartDate] = useState<string>('');
-  const [tempEndDate, setTempEndDate] = useState<string>('');
-  const [tempProductType, setTempProductType] = useState<string>('');
-  const [tempCountry, setTempCountry] = useState<string>('');
-  const [tempRegion, setTempRegion] = useState<string>('');
+  const [salesRep, setSalesRep] = useState<string>('');
+  const [salesReps, setSalesReps] = useState<{id: number, name: string}[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<keyof ProductPerformance>('total_sales_value');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  const fetchData = async (start?: string, end?: string, type?: string, countryName?: string, regionName?: string) => {
+  const fetchData = async (start?: string, end?: string, type?: string, countryName?: string, regionName?: string, salesRepId?: string) => {
     setLoading(true);
     setError(null);
     try {
-      let url = '/api/financial/reports/product-performance';
+      let url = '/financial/reports/product-performance';
       const params: Record<string, string> = {};
       if (start) params.startDate = start;
       if (end) params.endDate = end;
       if (type) params.productType = type;
       if (countryName) params.country = countryName;
       if (regionName) params.region = regionName;
+      if (salesRepId) params.salesRep = salesRepId;
       const query = new URLSearchParams(params).toString();
       if (query) url += `?${query}`;
-      const response = await axios.get(url);
+      const response = await api.get(url);
       if (response.data.success) {
         setProducts(response.data.data);
       } else {
@@ -55,15 +117,13 @@ const ProductPerformancePage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData(startDate, endDate, productType, country, region);
-    // eslint-disable-next-line
-  }, [startDate, endDate, productType, country, region]);
+    fetchData(startDate, endDate, productType, country, region, salesRep);
+  }, [startDate, endDate, productType, country, region, salesRep]);
 
   useEffect(() => {
-    // Fetch country and region options on mount
     const fetchCountries = async () => {
       try {
-        const res = await axios.get('/api/countries');
+        const res = await api.get('/countries');
         if (res.data.success) {
           setCountries(res.data.data.map((row: { name: string }) => row.name));
         }
@@ -71,209 +131,422 @@ const ProductPerformancePage: React.FC = () => {
     };
     const fetchRegions = async () => {
       try {
-        const res = await axios.get('/api/regions');
+        const res = await api.get('/regions');
         if (res.data.success) {
           setRegions(res.data.data.map((row: { name: string }) => row.name));
         }
       } catch {}
     };
+    const fetchSalesReps = async () => {
+      try {
+        const res = await api.get('/financial/sales-reps');
+        if (res.data.success) {
+          setSalesReps(res.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching sales reps:', error);
+      }
+    };
     fetchCountries();
     fetchRegions();
+    fetchSalesReps();
   }, []);
 
-  // Sync temp state with real state when modal opens
-  useEffect(() => {
-    if (modalOpen) {
-      setTempStartDate(startDate);
-      setTempEndDate(endDate);
-      setTempProductType(productType);
-      setTempCountry(country);
-      setTempRegion(region);
+
+  // Filtered and sorted products
+  const processedProducts = useMemo(() => {
+    let filtered = products.filter(product =>
+      product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort products
+    filtered.sort((a, b) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+      if (sortDirection === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+    return filtered;
+  }, [products, searchQuery, sortField, sortDirection]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const totalQuantity = processedProducts.reduce((sum, p) => sum + (Number(p.total_quantity_sold) || 0), 0);
+    const totalSalesValue = processedProducts.reduce((sum, p) => sum + (Number(p.total_sales_value) || 0), 0);
+    const avgSalesValue = processedProducts.length > 0 ? totalSalesValue / processedProducts.length : 0;
+    const topPerformer = processedProducts.length > 0 ? processedProducts[0] : null;
+
+    return {
+      totalProducts: processedProducts.length,
+      totalQuantity,
+      totalSalesValue,
+      avgSalesValue,
+      topPerformer
+    };
+  }, [processedProducts]);
+
+  const handleSort = (field: keyof ProductPerformance) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
     }
-    // eslint-disable-next-line
-  }, [modalOpen]);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Product Name', 'Quantity Sold', 'Sales Value'];
+    const csvContent = [
+      headers.join(','),
+      ...processedProducts.map(p => [
+        `"${p.product_name}"`,
+        p.total_quantity_sold,
+        p.total_sales_value
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `product-performance-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearAllFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setProductType('');
+    setCountry('');
+    setRegion('');
+    setSalesRep('');
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters = startDate || endDate || productType || country || region || salesRep || searchQuery;
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading product performance data...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-red-500">{error}</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-500" />
+          </div>
+          <p className="text-red-600 text-lg font-medium">{error}</p>
+          <button
+            onClick={() => fetchData(startDate, endDate, productType, country, region)}
+            className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
-  const totalQuantity = products.reduce((sum, p) => sum + (Number(p.total_quantity_sold) || 0), 0);
-  const totalSalesValue = products.reduce((sum, p) => sum + (Number(p.total_sales_value) || 0), 0);
-
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 sm:px-0 flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Product Performance Report</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Product Performance</h1>
+              <p className="text-gray-600 mt-2">Analyze product sales performance and identify top performers</p>
         </div>
-        <div className="flex items-center">
+            <div className="flex items-center gap-3">
           <button
-            className="ml-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            onClick={() => setModalOpen(true)}
+                onClick={exportToCSV}
+                disabled={processedProducts.length === 0}
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Filter
+                <Download className="w-4 h-4" />
+                Export CSV
           </button>
           <Link
             to="/dashboard/reports/product-performance-graph"
-            className="ml-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
           >
+                <BarChart3 className="w-4 h-4" />
             View Graph
           </Link>
         </div>
       </div>
-      {/* Filter Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+        </div>
+
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatsCard
+            title="Total Products"
+            value={stats.totalProducts}
+            icon={<Package className="w-6 h-6" />}
+            color="blue"
+            subtitle={`${products.length} total in database`}
+          />
+          <StatsCard
+            title="Total Quantity Sold"
+            value={stats.totalQuantity.toLocaleString()}
+            icon={<Target className="w-6 h-6" />}
+            color="green"
+            subtitle="Units sold"
+          />
+          <StatsCard
+            title="Total Sales Value"
+            value={stats.totalSalesValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+            icon={<DollarSign className="w-6 h-6" />}
+            color="purple"
+            subtitle="Revenue generated"
+          />
+          <StatsCard
+            title="Average Sales Value"
+            value={stats.avgSalesValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+            icon={<TrendingUp className="w-6 h-6" />}
+            color="orange"
+            subtitle="Per product"
+          />
+        </div>
+
+        {/* Filters Section */}
+        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Filters
+            </h2>
+            {hasActiveFilters && (
             <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl"
-              onClick={() => setModalOpen(false)}
-              aria-label="Close"
+                onClick={clearAllFilters}
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
             >
-              &times;
+                <RefreshCw className="w-4 h-4" />
+                Clear All
             </button>
-            <h2 className="text-lg font-semibold mb-4">Filter Product Performance</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Start Date
+              </label>
                 <input
                   type="date"
-                  value={tempStartDate}
-                  onChange={e => setTempStartDate(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                End Date
+              </label>
                 <input
                   type="date"
-                  value={tempEndDate}
-                  onChange={e => setTempEndDate(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="w-4 h-4 inline mr-1" />
+                Product Type
+              </label>
                 <select
-                  value={tempProductType}
-                  onChange={e => setTempProductType(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="">All</option>
-                  <option value="vape">Vapes</option>
-                  <option value="pouch">Pouches</option>
+                value={productType}
+                onChange={e => setProductType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+              >
+                <option value="">All Types</option>
+                <option value="vape">Vapes</option>
+                <option value="pouch">Pouches</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Country
+              </label>
                 <select
-                  value={tempCountry}
-                  onChange={e => setTempCountry(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="">All</option>
+                value={country}
+                onChange={e => setCountry(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+              >
+                <option value="">All Countries</option>
                   {countries.map((c: string) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Region
+              </label>
                 <select
-                  value={tempRegion}
-                  onChange={e => setTempRegion(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="">All</option>
+                value={region}
+                onChange={e => setRegion(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+              >
+                <option value="">All Regions</option>
                   {regions.map((r: string) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
               </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
-                onClick={() => {
-                  setStartDate(''); setEndDate(''); setProductType(''); setCountry(''); setRegion(''); setModalOpen(false);
-                }}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <User className="w-4 h-4 inline mr-1" />
+                Sales Rep
+              </label>
+              <select
+                value={salesRep}
+                onChange={e => setSalesRep(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
               >
-                Clear
-              </button>
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                onClick={() => {
-                  setStartDate(tempStartDate);
-                  setEndDate(tempEndDate);
-                  setProductType(tempProductType);
-                  setCountry(tempCountry);
-                  setRegion(tempRegion);
-                  setModalOpen(false);
-                }}
-              >
-                Apply
-              </button>
+                <option value="">All Sales Reps</option>
+                {salesReps.map((rep) => (
+                  <option key={rep.id} value={rep.id.toString()}>{rep.name}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
-      )}
-      
-      <div className="mt-8 flex flex-col">
-        <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="w-5 h-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        {/* Products Table */}
+        {processedProducts.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 text-gray-400 mx-auto mb-4">
+              <Package className="w-full h-full" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+            <p className="text-gray-500 mb-6">
+              {searchQuery || hasActiveFilters ? 'Try adjusting your search or filters' : 'No product performance data available'}
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                    <th 
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('product_name')}
+                    >
+                      <div className="flex items-center gap-2">
                       Product Name
+                        {sortField === 'product_name' && (
+                          sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
+                    <th 
+                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('total_quantity_sold')}
+                    >
+                      <div className="flex items-center justify-end gap-2">
                       Quantity Sold
+                        {sortField === 'total_quantity_sold' && (
+                          sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
-                      Total Sales Value
+                    <th 
+                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('total_sales_value')}
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        Sales Value (KES)
+                        {sortField === 'total_sales_value' && (
+                          sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {products.map((product) => (
-                    <tr key={product.product_id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        {product.product_name}
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {processedProducts.map((product, index) => {
+                    const isTopPerformer = index === 0 && sortField === 'total_sales_value' && sortDirection === 'desc';
+                    
+                    return (
+                      <tr key={product.product_id} className={`hover:bg-gray-50 transition-colors duration-200 ${isTopPerformer ? 'bg-yellow-50' : ''}`}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {isTopPerformer && <Award className="w-4 h-4 text-yellow-500 mr-2" />}
+                            <div className="text-sm font-medium text-gray-900">{product.product_name}</div>
+                          </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-right text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-semibold">
                         {product.total_quantity_sold.toLocaleString()}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-right text-sm text-gray-500">
-                        {product.total_sales_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-semibold">
+                          {product.total_sales_value.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="bg-blue-50 font-semibold">
-                    <td className="py-3 pl-4 pr-3 text-left text-blue-900 sm:pl-6">Total</td>
-                    <td className="px-3 py-3 text-right text-blue-900">{totalQuantity.toLocaleString()}</td>
-                    <td className="px-3 py-3 text-right text-blue-900">{totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-4 text-left text-blue-900">
+                      Total ({processedProducts.length} products)
+                    </td>
+                    <td className="px-6 py-4 text-right text-blue-900">
+                      {stats.totalQuantity.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-right text-blue-900">
+                      {stats.totalSalesValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           </div>
-        </div>
+        )}
+
       </div>
     </div>
   );

@@ -47,6 +47,8 @@ const LoginPage: React.FC = () => {
             navigate('/hr-dashboard', { replace: true });
           } else if (response.data.user.role === 'stock') {
             navigate('/inventory-staff-dashboard', { replace: true });
+          } else if (response.data.user.role === 'executive') {
+            navigate('/executive-dashboard', { replace: true });
           } else {
             const from = (location.state as any)?.from?.pathname || '/';
             // Prevent redirecting to '/' (FinancialDashboard) for sales role

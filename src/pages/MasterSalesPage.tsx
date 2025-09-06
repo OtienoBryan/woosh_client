@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { clientService } from '../services/clientService';
 import { salesService, MasterSalesData } from '../services/salesService';
-import { Search, Download, Filter, TrendingUp, Users, DollarSign, Calendar, BarChart3, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, Filter, TrendingUp, Users, DollarSign, Calendar, BarChart3, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 const MasterSalesPage: React.FC = () => {
   const [salesData, setSalesData] = useState<MasterSalesData[]>([]);
@@ -22,6 +21,13 @@ const MasterSalesPage: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [showSalesDetailModal, setShowSalesDetailModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<{ id: number; name: string } | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [salesDetails, setSalesDetails] = useState<any[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const months = [
     'january', 'february', 'march', 'april', 'may', 'june',
@@ -84,6 +90,25 @@ const MasterSalesPage: React.FC = () => {
     }
   };
 
+  const fetchSalesDetails = async (clientId: number, month: string) => {
+    try {
+      setLoadingDetails(true);
+      const monthNumber = months.indexOf(month) + 1;
+      const response = await fetch(`/api/sales/client-month-details?clientId=${clientId}&month=${monthNumber}&year=${selectedYear}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSalesDetails(data);
+      } else {
+        setSalesDetails([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch sales details:', err);
+      setSalesDetails([]);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   const filterData = () => {
     if (!searchQuery.trim()) {
       setFilteredData(salesData);
@@ -129,10 +154,10 @@ const MasterSalesPage: React.FC = () => {
 
   const generateCSVContent = () => {
     const headers = ['Client Name', ...monthLabels, 'Total'];
-    const rows = filteredData.map(client => [
+    const rows = sortedData.map(client => [
       client.client_name,
-      ...months.map(month => (client as any)[month] || 0),
-      client.total
+      ...months.map(month => parseFloat(String((client as any)[month])) || 0),
+      parseFloat(String(client.total)) || 0
     ]);
     return [headers, ...rows].map(row => row.join(',')).join('\n');
   };
@@ -144,11 +169,38 @@ const MasterSalesPage: React.FC = () => {
     }).format(amount);
   };
 
-  const totalItems = filteredData.length;
+  const getSortedData = () => {
+    if (!sortColumn) return filteredData;
+    
+    return [...filteredData].sort((a, b) => {
+      let aValue, bValue;
+      
+      if (sortColumn === 'client_name') {
+        aValue = a.client_name.toLowerCase();
+        bValue = b.client_name.toLowerCase();
+      } else if (sortColumn === 'total') {
+        aValue = parseFloat(String(a.total)) || 0;
+        bValue = parseFloat(String(b.total)) || 0;
+      } else {
+        // It's a month column
+        aValue = parseFloat(String((a as any)[sortColumn])) || 0;
+        bValue = parseFloat(String((b as any)[sortColumn])) || 0;
+      }
+      
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  };
+
+  const sortedData = getSortedData();
+  const totalItems = sortedData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
+  const currentData = sortedData.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -157,6 +209,25 @@ const MasterSalesPage: React.FC = () => {
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
+  };
+
+  const handleCellClick = async (client: MasterSalesData, month: string) => {
+    const monthValue = parseFloat((client as any)[month]) || 0;
+    if (monthValue > 0) {
+      setSelectedClient({ id: client.client_id, name: client.client_name });
+      setSelectedMonth(month);
+      setShowSalesDetailModal(true);
+      await fetchSalesDetails(client.client_id, month);
+    }
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
   };
 
   const getPageNumbers = () => {
@@ -195,8 +266,8 @@ const MasterSalesPage: React.FC = () => {
   };
 
   // Calculate summary statistics
-  const totalSales = filteredData.reduce((sum, client) => sum + client.total, 0);
-  const totalClients = filteredData.length;
+  const totalSales = sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0);
+  const totalClients = sortedData.length;
   const avgSalesPerClient = totalClients > 0 ? totalSales / totalClients : 0;
   const activeFilters = [
     selectedYear !== new Date().getFullYear(),
@@ -248,9 +319,7 @@ const MasterSalesPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Master Sales Report</h1>
-              <p className="text-lg text-gray-600 max-w-2xl">
-                Comprehensive monthly sales analysis across all clients, categories, and sales representatives
-              </p>
+               
             </div>
             <div className="mt-6 lg:mt-0 flex flex-col sm:flex-row gap-3">
               <button
@@ -271,7 +340,7 @@ const MasterSalesPage: React.FC = () => {
               </button>
               <button
                 onClick={exportToCSV}
-                disabled={exporting || filteredData.length === 0}
+                disabled={exporting || sortedData.length === 0}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
                 {exporting ? (
@@ -360,7 +429,7 @@ const MasterSalesPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <BarChart3 className="h-4 w-4" />
-              <span>{filteredData.length} of {salesData.length} clients</span>
+              <span>{sortedData.length} of {salesData.length} clients</span>
             </div>
           </div>
         </div>
@@ -377,16 +446,50 @@ const MasterSalesPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                    <th 
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                      onClick={() => handleSort('client_name')}
+                    >
+                      <div className="flex items-center gap-2">
                       Client Name
+                        {sortColumn === 'client_name' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
                     </th>
-                    {monthLabels.map((month, index) => (
-                      <th key={month} className="px-4 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                    {monthLabels.map((month, index) => {
+                      const monthKey = months[index];
+                      return (
+                        <th 
+                          key={month} 
+                          className="px-4 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                          onClick={() => handleSort(monthKey)}
+                        >
+                          <div className="flex items-center justify-end gap-2">
                         {month}
+                            {sortColumn === monthKey ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                            ) : (
+                              <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                            )}
+                          </div>
                       </th>
-                    ))}
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider bg-blue-50">
+                      );
+                    })}
+                    <th 
+                      className="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors duration-150"
+                      onClick={() => handleSort('total')}
+                    >
+                      <div className="flex items-center justify-end gap-2">
                       Total
+                        {sortColumn === 'total' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
                     </th>
                   </tr>
                 </thead>
@@ -410,13 +513,22 @@ const MasterSalesPage: React.FC = () => {
                             {client.client_name}
                           </div>
                         </td>
-                        {months.map((month) => (
-                          <td key={month} className="whitespace-nowrap px-4 py-4 text-sm text-right text-gray-900">
-                            {formatCurrency((client as any)[month] || 0)}
+                        {months.map((month) => {
+                          const monthValue = parseFloat(String((client as any)[month])) || 0;
+                          return (
+                            <td 
+                              key={month} 
+                              className={`whitespace-nowrap px-4 py-4 text-sm text-right text-gray-900 ${
+                                monthValue > 0 ? 'cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150' : ''
+                              }`}
+                              onClick={() => handleCellClick(client, month)}
+                            >
+                              {formatCurrency(monthValue)}
                           </td>
-                        ))}
+                          );
+                        })}
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-right text-blue-900 bg-blue-50">
-                          {formatCurrency(client.total)}
+                          {formatCurrency(parseFloat(String(client.total)) || 0)}
                         </td>
                       </tr>
                     ))
@@ -424,7 +536,7 @@ const MasterSalesPage: React.FC = () => {
                 </tbody>
                 
                                  {/* Enhanced Summary Row */}
-                 {filteredData.length > 0 && (
+                 {sortedData.length > 0 && (
                    <tfoot className="bg-gray-100">
                      <tr>
                        <td className="px-6 py-4 text-sm font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
@@ -434,9 +546,9 @@ const MasterSalesPage: React.FC = () => {
                          </div>
                        </td>
                        {months.map((month) => {
-                         const monthTotal = filteredData.reduce((sum, client) => {
+                         const monthTotal = sortedData.reduce((sum, client) => {
                            const monthValue = (client as any)[month];
-                           return sum + (monthValue || 0);
+                           return sum + (parseFloat(String(monthValue)) || 0);
                          }, 0);
                          return (
                            <td key={month} className="px-4 py-4 text-sm font-bold text-right text-gray-900">
@@ -445,7 +557,7 @@ const MasterSalesPage: React.FC = () => {
                          );
                        })}
                        <td className="px-6 py-4 text-sm font-bold text-right text-green-900 bg-green-100">
-                         {formatCurrency(filteredData.reduce((sum, client) => sum + (client.total || 0), 0))}
+                         {formatCurrency(sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0))}
                        </td>
                      </tr>
                    </tfoot>
@@ -712,6 +824,145 @@ const MasterSalesPage: React.FC = () => {
                     className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
                   >
                     Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sales Details Modal */}
+        {showSalesDetailModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Sales Details - {selectedClient?.name}
+                    </h2>
+                    <p className="text-gray-600 mt-1">
+                      {monthLabels[months.indexOf(selectedMonth)]} {selectedYear}
+                    </p>
+                    <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <BarChart3 className="h-4 w-4" />
+                        {salesDetails.length} order items
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4" />
+                        Total: {formatCurrency(salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0))}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    onClick={() => setShowSalesDetailModal(false)}
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Modal Body */}
+              <div className="px-8 py-6 max-h-[60vh] overflow-y-auto">
+                {loadingDetails ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+                    <span className="ml-4 text-gray-600">Loading sales details...</span>
+                  </div>
+                ) : salesDetails.length === 0 ? (
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-medium text-gray-500">No sales details found</p>
+                    <p className="text-sm text-gray-400">No individual sales records for this client and month</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Order #
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Product
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Category
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Qty
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Unit Price
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Line Total
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Sales Rep
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {salesDetails.map((detail, index) => (
+                          <tr key={`${detail.order_id}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                              #{detail.order_number || detail.order_id}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(detail.order_date).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <div className="font-medium">{detail.product_name}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {detail.category_name || 'N/A'}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                              {detail.quantity}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                              {formatCurrency(parseFloat(String(detail.unit_price)) || 0)}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                              {formatCurrency(parseFloat(String(detail.line_total)) || 0)}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {detail.sales_rep_name || 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-100">
+                        <tr>
+                          <td colSpan={6} className="px-4 py-4 text-sm font-bold text-gray-900 text-right">
+                            Grand Total:
+                          </td>
+                          <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">
+                            {formatCurrency(salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0))}
+                          </td>
+                          <td className="px-4 py-4"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-8 py-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSalesDetailModal(false)}
+                    className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
+                  >
+                    Close
                   </button>
                 </div>
               </div>

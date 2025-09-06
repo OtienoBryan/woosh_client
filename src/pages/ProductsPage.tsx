@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { Pencil, Trash2, Plus, Package, DollarSign, Image as ImageIcon, Filter, Search, Grid, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Product {
   id: number;
@@ -16,6 +17,7 @@ interface Product {
 }
 
 const ProductsPage: React.FC = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,17 +65,16 @@ const ProductsPage: React.FC = () => {
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const totalProducts = products.length;
-    const totalValue = products.reduce((sum, p) => sum + (p.cost_price * p.current_stock), 0);
-    const lowStockProducts = products.filter(p => p.current_stock < 10).length;
     const productsWithImages = products.filter(p => p.image_url).length;
     
     return {
       totalProducts,
-      totalValue,
-      lowStockProducts,
       productsWithImages
     };
   }, [products]);
@@ -163,7 +164,7 @@ const ProductsPage: React.FC = () => {
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setEditForm(f => ({ ...f, [name]: name === 'cost_price' || name === 'selling_price' || name === 'current_stock' ? Number(value) : value }));
+    setEditForm(f => ({ ...f, [name]: name === 'cost_price' || name === 'selling_price' ? Number(value) : value }));
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -172,9 +173,15 @@ const ProductsPage: React.FC = () => {
     setEditSubmitting(true);
     setEditError(null);
     try {
-      const res = await axios.put(`/api/financial/products/${editProduct.id}`, editForm);
+      // Only include cost_price if user is admin
+      const updateData = { ...editForm };
+      if (!isAdmin) {
+        delete updateData.cost_price;
+      }
+      
+      const res = await axios.put(`/api/financial/products/${editProduct.id}`, updateData);
       if (res.data.success) {
-        setProducts(products => products.map(p => p.id === editProduct.id ? { ...p, ...editForm } as Product : p));
+        setProducts(products => products.map(p => p.id === editProduct.id ? { ...p, ...updateData } as Product : p));
         closeEditModal();
       } else {
         setEditError(res.data.error || 'Failed to update product');
@@ -273,59 +280,7 @@ const ProductsPage: React.FC = () => {
               </button>
             </div>
           </div>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Package className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Products</p>
-                  <p className="text-2xl font-semibold text-gray-900">{summaryMetrics.totalProducts}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <DollarSign className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Inventory Value</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {summaryMetrics.totalValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Package className="h-8 w-8 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Low Stock Items</p>
-                  <p className="text-2xl font-semibold text-gray-900">{summaryMetrics.lowStockProducts}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ImageIcon className="h-8 w-8 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Products with Images</p>
-                  <p className="text-2xl font-semibold text-gray-900">{summaryMetrics.productsWithImages}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+ 
         </div>
 
         {/* Filters and Search */}
@@ -466,16 +421,13 @@ const ProductsPage: React.FC = () => {
                           <p className="text-xs text-gray-500 mb-2">{product.product_code}</p>
                           <p className="text-xs text-gray-600 mb-3">{product.category}</p>
                           
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-semibold text-blue-600">
-                              {Number(product.cost_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              product.current_stock < 10 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                            }`}>
-                              Stock: {product.current_stock}
-                            </span>
-                          </div>
+                          {isAdmin && (
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-semibold text-blue-600">
+                                {Number(product.cost_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+                              </span>
+                            </div>
+                          )}
 
                           {/* Actions */}
                           <div className="flex gap-2">
@@ -535,8 +487,9 @@ const ProductsPage: React.FC = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Price</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                            {isAdmin && (
+                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Price</th>
+                            )}
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
@@ -560,16 +513,11 @@ const ProductsPage: React.FC = () => {
                               <span className="text-gray-400 text-xs">No image</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-blue-600">
-                            {Number(product.cost_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              product.current_stock < 10 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                            }`}>
-                              {product.current_stock}
-                            </span>
-                          </td>
+                          {isAdmin && (
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-blue-600">
+                              {Number(product.cost_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex items-center justify-end gap-2">
                               <button
@@ -747,19 +695,21 @@ const ProductsPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Cost Price</label>
-                  <input
-                    type="number"
-                    name="cost_price"
-                    value={editForm.cost_price ?? ''}
-                    onChange={handleEditChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
+                {isAdmin && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">Cost Price</label>
+                    <input
+                      type="number"
+                      name="cost_price"
+                      value={editForm.cost_price ?? ''}
+                      onChange={handleEditChange}
+                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                )}
                 <div className="mb-4" hidden>
                   <label className="block text-sm font-medium mb-1">Selling Price</label>
                   <input
@@ -842,7 +792,9 @@ const ProductsPage: React.FC = () => {
                     formData.append('product_name', addForm.product_name);
                     formData.append('product_code', addForm.product_code);
                     formData.append('category_id', addForm.category_id);
-                    formData.append('cost_price', addForm.cost_price);
+                    if (isAdmin) {
+                      formData.append('cost_price', addForm.cost_price);
+                    }
                     if (addForm.image) formData.append('image', addForm.image);
                     const res = await axios.post('/api/financial/products', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
                     if (res.data.success) {
@@ -890,16 +842,18 @@ const ProductsPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium mb-1">Cost Price</label>
-                  <input
-                    className="border rounded px-3 py-2 w-full"
-                    type="number"
-                    value={addForm.cost_price}
-                    onChange={e => setAddForm(f => ({ ...f, cost_price: e.target.value }))}
-                    required
-                  />
-                </div>
+                {isAdmin && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium mb-1">Cost Price</label>
+                    <input
+                      className="border rounded px-3 py-2 w-full"
+                      type="number"
+                      value={addForm.cost_price}
+                      onChange={e => setAddForm(f => ({ ...f, cost_price: e.target.value }))}
+                      required
+                    />
+                  </div>
+                )}
                 <div className="mb-3">
                   <label className="block text-sm font-medium mb-1">Image (optional)</label>
                   <input

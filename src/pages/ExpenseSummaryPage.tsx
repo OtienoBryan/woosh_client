@@ -331,8 +331,21 @@ const ExpenseSummaryPage: React.FC = () => {
       <div className="w-full">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Expense Summary</h1>
-          <p className="text-gray-600">Overview of all expenses from expense details</p>
+          <div className="flex justify-between items-start">
+            {/* <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Expense Summary</h1>
+              <p className="text-gray-600">Overview of all expenses from expense details</p>
+            </div> */}
+            <button
+              onClick={() => navigate('/add-expense')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add New Expense
+            </button>
+          </div>
         </div>
 
                  {/* Filters */}
@@ -434,10 +447,27 @@ const ExpenseSummaryPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div 
+            className={`bg-white rounded-lg shadow-sm p-6 cursor-pointer transition-all duration-200 hover:shadow-md ${
+              paymentStatus === 'fully_paid' ? 'ring-2 ring-orange-500 bg-orange-50' : 
+              paymentStatus === 'not_fully_paid' ? 'ring-2 ring-yellow-500 bg-yellow-50' : ''
+            }`}
+            onClick={() => {
+              if (paymentStatus === 'all') {
+                setPaymentStatus('fully_paid');
+              } else if (paymentStatus === 'fully_paid') {
+                setPaymentStatus('not_fully_paid');
+              } else {
+                setPaymentStatus('all');
+              }
+            }}
+          >
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  paymentStatus === 'fully_paid' ? 'bg-orange-200' : 
+                  paymentStatus === 'not_fully_paid' ? 'bg-yellow-200' : 'bg-orange-100'
+                }`}>
                   <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -451,11 +481,17 @@ const ExpenseSummaryPage: React.FC = () => {
                     return sum + amountPaid;
                   }, 0))}
                 </p>
+                {paymentStatus === 'fully_paid' && (
+                  <p className="text-xs text-orange-600 font-medium mt-1">Filtered: Fully Paid Only</p>
+                )}
+                {paymentStatus === 'not_fully_paid' && (
+                  <p className="text-xs text-yellow-600 font-medium mt-1">Filtered: Partially Paid Only</p>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          {/* <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -471,7 +507,7 @@ const ExpenseSummaryPage: React.FC = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
