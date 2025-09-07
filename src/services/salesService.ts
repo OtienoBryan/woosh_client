@@ -105,6 +105,32 @@ export interface SalesRepMonthlyPerformance {
   november_pouches?: number;
   december_pouches?: number;
   total_pouches?: number;
+  // Target fields - vapes
+  january_vapes_target?: number;
+  february_vapes_target?: number;
+  march_vapes_target?: number;
+  april_vapes_target?: number;
+  may_vapes_target?: number;
+  june_vapes_target?: number;
+  july_vapes_target?: number;
+  august_vapes_target?: number;
+  september_vapes_target?: number;
+  october_vapes_target?: number;
+  november_vapes_target?: number;
+  december_vapes_target?: number;
+  // Target fields - pouches
+  january_pouches_target?: number;
+  february_pouches_target?: number;
+  march_pouches_target?: number;
+  april_pouches_target?: number;
+  may_pouches_target?: number;
+  june_pouches_target?: number;
+  july_pouches_target?: number;
+  august_pouches_target?: number;
+  september_pouches_target?: number;
+  october_pouches_target?: number;
+  november_pouches_target?: number;
+  december_pouches_target?: number;
 }
 
 export interface SalesRepTargets {

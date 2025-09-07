@@ -369,14 +369,23 @@ const SalesRepPerformancePage: React.FC = () => {
             </div>
             {viewType === 'quantity' && (
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                    <span className="text-gray-700">Vapes (Categories 1, 3)</span>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                      <span className="text-gray-700">Vapes (Categories 1, 3)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                      <span className="text-gray-700">Pouches (Categories 4, 5)</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span className="text-gray-700">Pouches (Categories 4, 5)</span>
+                  <div className="text-xs text-gray-600">
+                    <div className="flex items-center gap-4">
+                      <span>• <span className="font-medium text-green-600">Green %</span> = 100%+ target achieved</span>
+                      <span>• <span className="font-medium text-yellow-600">Yellow %</span> = 80-99% target achieved</span>
+                      <span>• <span className="font-medium text-red-600">Red %</span> = Below 80% target</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -572,18 +581,57 @@ const SalesRepPerformancePage: React.FC = () => {
                         </div>
                       </td>
                       {viewType === 'quantity' ? (
-                        // Quantity view: Show vapes and pouches stacked vertically for each month
+                        // Quantity view: Show vapes and pouches stacked vertically for each month with targets
                         months.map((month) => {
                           const vapesValue = parseFloat(String((rep as any)[`${month}_vapes`])) || 0;
                           const pouchesValue = parseFloat(String((rep as any)[`${month}_pouches`])) || 0;
+                          const vapesTarget = parseFloat(String((rep as any)[`${month}_vapes_target`])) || 0;
+                          const pouchesTarget = parseFloat(String((rep as any)[`${month}_pouches_target`])) || 0;
+                          
+                          const vapesPercentage = vapesTarget > 0 ? (vapesValue / vapesTarget) * 100 : 0;
+                          const pouchesPercentage = pouchesTarget > 0 ? (pouchesValue / pouchesTarget) * 100 : 0;
+                          
                           return (
                             <td key={month} className="px-3 py-4 text-center text-sm text-gray-900">
-                              <div className="space-y-1">
-                                <div className="text-orange-600 font-medium">
-                                  {vapesValue.toLocaleString()}
+                              <div className="space-y-2">
+                                {/* Vapes */}
+                                <div className="space-y-1">
+                                  <div className="text-orange-600 font-medium">
+                                    {vapesValue.toLocaleString()}
+                                  </div>
+                                  {vapesTarget > 0 && (
+                                    <div className="text-xs text-gray-500">
+                                      Target: {vapesTarget.toLocaleString()}
+                                    </div>
+                                  )}
+                                  {vapesTarget > 0 && (
+                                    <div className={`text-xs font-medium ${
+                                      vapesPercentage >= 100 ? 'text-green-600' : 
+                                      vapesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
+                                    }`}>
+                                      {vapesPercentage.toFixed(1)}%
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="text-green-600 font-medium">
-                                  {pouchesValue.toLocaleString()}
+                                
+                                {/* Pouches */}
+                                <div className="space-y-1">
+                                  <div className="text-green-600 font-medium">
+                                    {pouchesValue.toLocaleString()}
+                                  </div>
+                                  {pouchesTarget > 0 && (
+                                    <div className="text-xs text-gray-500">
+                                      Target: {pouchesTarget.toLocaleString()}
+                                    </div>
+                                  )}
+                                  {pouchesTarget > 0 && (
+                                    <div className={`text-xs font-medium ${
+                                      pouchesPercentage >= 100 ? 'text-green-600' : 
+                                      pouchesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
+                                    }`}>
+                                      {pouchesPercentage.toFixed(1)}%
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -629,7 +677,7 @@ const SalesRepPerformancePage: React.FC = () => {
                       </div>
                     </td>
                     {viewType === 'quantity' ? (
-                      // Quantity view: Show vapes and pouches totals stacked vertically for each month
+                      // Quantity view: Show vapes and pouches totals stacked vertically for each month with targets
                       months.map((month) => {
                         const vapesTotal = sortedData.reduce((sum, rep) => {
                           const vapesValue = (rep as any)[`${month}_vapes`];
@@ -639,14 +687,59 @@ const SalesRepPerformancePage: React.FC = () => {
                           const pouchesValue = (rep as any)[`${month}_pouches`];
                           return sum + (parseFloat(String(pouchesValue)) || 0);
                         }, 0);
+                        const vapesTargetTotal = sortedData.reduce((sum, rep) => {
+                          const vapesTarget = (rep as any)[`${month}_vapes_target`];
+                          return sum + (parseFloat(String(vapesTarget)) || 0);
+                        }, 0);
+                        const pouchesTargetTotal = sortedData.reduce((sum, rep) => {
+                          const pouchesTarget = (rep as any)[`${month}_pouches_target`];
+                          return sum + (parseFloat(String(pouchesTarget)) || 0);
+                        }, 0);
+                        
+                        const vapesPercentage = vapesTargetTotal > 0 ? (vapesTotal / vapesTargetTotal) * 100 : 0;
+                        const pouchesPercentage = pouchesTargetTotal > 0 ? (pouchesTotal / pouchesTargetTotal) * 100 : 0;
+                        
                         return (
                           <td key={month} className="px-3 py-4 text-center text-sm font-bold text-gray-900">
-                            <div className="space-y-1">
-                              <div className="text-orange-600">
-                                {vapesTotal.toLocaleString()}
+                            <div className="space-y-2">
+                              {/* Vapes Total */}
+                              <div className="space-y-1">
+                                <div className="text-orange-600">
+                                  {vapesTotal.toLocaleString()}
+                                </div>
+                                {vapesTargetTotal > 0 && (
+                                  <div className="text-xs text-gray-500 font-normal">
+                                    Target: {vapesTargetTotal.toLocaleString()}
+                                  </div>
+                                )}
+                                {vapesTargetTotal > 0 && (
+                                  <div className={`text-xs font-medium ${
+                                    vapesPercentage >= 100 ? 'text-green-600' : 
+                                    vapesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
+                                  }`}>
+                                    {vapesPercentage.toFixed(1)}%
+                                  </div>
+                                )}
                               </div>
-                              <div className="text-green-600">
-                                {pouchesTotal.toLocaleString()}
+                              
+                              {/* Pouches Total */}
+                              <div className="space-y-1">
+                                <div className="text-green-600">
+                                  {pouchesTotal.toLocaleString()}
+                                </div>
+                                {pouchesTargetTotal > 0 && (
+                                  <div className="text-xs text-gray-500 font-normal">
+                                    Target: {pouchesTargetTotal.toLocaleString()}
+                                  </div>
+                                )}
+                                {pouchesTargetTotal > 0 && (
+                                  <div className={`text-xs font-medium ${
+                                    pouchesPercentage >= 100 ? 'text-green-600' : 
+                                    pouchesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
+                                  }`}>
+                                    {pouchesPercentage.toFixed(1)}%
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
