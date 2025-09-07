@@ -597,6 +597,7 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/master-sales" element={<MasterSalesPage />} />
+            <Route path="/sales-rep-performance" element={<SalesRepPerformancePage />} />
             <Route path="/sales-rep-master-report" element={<SalesRepMasterReportPage />} />
             <Route path="/sales-rep-reports/:salesRepId/:clientId" element={<SalesRepReportsPage />} />
             <Route path="/products-sale-report" element={<ProductsSaleReportPage />} />

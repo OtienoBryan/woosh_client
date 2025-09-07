@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { salesService, SalesRep, CreateSalesRepData, Country, Region, Route as SalesRoute } from '../services/salesService';
+import { salesService, SalesRep, CreateSalesRepData, Country, Region, Route as SalesRoute, SalesRepTargets } from '../services/salesService';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { saveAs } from 'file-saver';
+import SalesRepTargetsModal from '../components/SalesRepTargetsModal';
 
 interface SalesRepModalProps {
   isOpen: boolean;
@@ -366,6 +367,11 @@ const SalesRepsPage: React.FC = () => {
   const [selectedManager, setSelectedManager] = useState<string>('');
   const [salesRepManagers, setSalesRepManagers] = useState<Record<number, { id: number; name: string }[]>>({});
 
+  // Targets modal state
+  const [targetsModalOpen, setTargetsModalOpen] = useState(false);
+  const [selectedSalesRepForTargets, setSelectedSalesRepForTargets] = useState<SalesRep | null>(null);
+  const [targetsLoading, setTargetsLoading] = useState(false);
+
   // 1. Add pagination state
   const [currentPage, setCurrentPage] = useState(1);
   // 1. Add state for records per page
@@ -587,6 +593,36 @@ const SalesRepsPage: React.FC = () => {
     setSubmitting(false);
   };
 
+  const handleSetTargets = (salesRep: SalesRep) => {
+    setSelectedSalesRepForTargets(salesRep);
+    setTargetsModalOpen(true);
+  };
+
+  const handleTargetsSubmit = async (targets: SalesRepTargets) => {
+    setTargetsLoading(true);
+    try {
+      if (targets.id) {
+        // Update existing target
+        await salesService.updateSalesRepTarget(targets.id, {
+          year: targets.year,
+          month: targets.month,
+          vapesTarget: targets.vapesTarget,
+          pouchesTarget: targets.pouchesTarget
+        });
+        alert('Target updated successfully!');
+      } else {
+        // Create new target
+        await salesService.setSalesRepTarget(targets);
+        alert('Target set successfully!');
+      }
+      setTargetsModalOpen(false);
+      setSelectedSalesRepForTargets(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save target');
+    }
+    setTargetsLoading(false);
+  };
+
   return (
     <div className="w-full py-8 px-4">
       <div className="flex justify-between items-center mb-6">
@@ -791,30 +827,32 @@ const SalesRepsPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        to={`/sales-reps/${rep.id}`}
-                        className="bg-indigo-100 text-indigo-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-indigo-200 transition"
-                      >
-                        View Details
-                      </Link>
-                      {/* <button
-                        onClick={() => { setSelectedSalesRepId(rep.id); setAssignModalOpen(true); }}
-                        className="bg-green-100 text-green-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-green-200 transition"
-                      >
-                        Assign Managers
-                      </button> */}
-                      <button
-                        onClick={() => handleEdit(rep)}
-                        className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-blue-200 transition"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(rep.id)}
-                        className="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded hover:bg-red-200 transition"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          to={`/sales-reps/${rep.id}`}
+                          className="bg-indigo-100 text-indigo-700 font-semibold px-3 py-1 rounded hover:bg-indigo-200 transition"
+                        >
+                          View Details
+                        </Link>
+                        <button
+                          onClick={() => handleSetTargets(rep)}
+                          className="bg-purple-100 text-purple-700 font-semibold px-3 py-1 rounded hover:bg-purple-200 transition"
+                        >
+                          Set Targets
+                        </button>
+                        <button
+                          onClick={() => handleEdit(rep)}
+                          className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded hover:bg-blue-200 transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(rep.id)}
+                          className="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded hover:bg-red-200 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -871,6 +909,17 @@ const SalesRepsPage: React.FC = () => {
         isOpen={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         salesRepId={selectedSalesRepId}
+      />
+
+      <SalesRepTargetsModal
+        isOpen={targetsModalOpen}
+        onClose={() => {
+          setTargetsModalOpen(false);
+          setSelectedSalesRepForTargets(null);
+        }}
+        salesRep={selectedSalesRepForTargets}
+        onSubmit={handleTargetsSubmit}
+        loading={targetsLoading}
       />
 
       {/* 12. Add the modal JSX at the end of the component */}

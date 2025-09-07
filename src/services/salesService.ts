@@ -60,6 +60,64 @@ export interface MasterSalesData {
   total: number;
 }
 
+export interface SalesRepMonthlyPerformance {
+  sales_rep_id: number;
+  sales_rep_name: string;
+  // Sales view fields
+  january?: number;
+  february?: number;
+  march?: number;
+  april?: number;
+  may?: number;
+  june?: number;
+  july?: number;
+  august?: number;
+  september?: number;
+  october?: number;
+  november?: number;
+  december?: number;
+  total?: number;
+  // Quantity view fields - vapes
+  january_vapes?: number;
+  february_vapes?: number;
+  march_vapes?: number;
+  april_vapes?: number;
+  may_vapes?: number;
+  june_vapes?: number;
+  july_vapes?: number;
+  august_vapes?: number;
+  september_vapes?: number;
+  october_vapes?: number;
+  november_vapes?: number;
+  december_vapes?: number;
+  total_vapes?: number;
+  // Quantity view fields - pouches
+  january_pouches?: number;
+  february_pouches?: number;
+  march_pouches?: number;
+  april_pouches?: number;
+  may_pouches?: number;
+  june_pouches?: number;
+  july_pouches?: number;
+  august_pouches?: number;
+  september_pouches?: number;
+  october_pouches?: number;
+  november_pouches?: number;
+  december_pouches?: number;
+  total_pouches?: number;
+}
+
+export interface SalesRepTargets {
+  id?: number;
+  salesRepId: number;
+  year: number;
+  month: number;
+  vapesTarget: number;
+  pouchesTarget: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const API_BASE_URL = '/api/sales';
 
 export const salesService = {
@@ -122,9 +180,9 @@ export const salesService = {
   },
 
   // Get master sales data for all clients by year
-  getMasterSalesData: async (year: number, category?: number[], salesRep?: number[], categoryGroup?: string, startDate?: string, endDate?: string, clientStatus?: string): Promise<MasterSalesData[]> => {
+  getMasterSalesData: async (year: number, category?: number[], salesRep?: number[], categoryGroup?: string, startDate?: string, endDate?: string, clientStatus?: string, viewType?: 'sales' | 'quantity'): Promise<MasterSalesData[]> => {
     const response = await axios.get(`${API_BASE_URL}/master-sales`, {
-      params: { year, category, salesRep, categoryGroup, startDate, endDate, clientStatus }
+      params: { year, category, salesRep, categoryGroup, startDate, endDate, clientStatus, viewType }
     });
     return response.data;
   },
@@ -138,6 +196,45 @@ export const salesService = {
   // Get available sales reps for master sales filter
   getMasterSalesSalesReps: async (): Promise<{ id: number; name: string }[]> => {
     const response = await axios.get(`${API_BASE_URL}/master-sales/sales-reps`);
+    return response.data;
+  },
+
+  // Get sales rep monthly performance data
+  getSalesRepMonthlyPerformance: async (year?: number, salesRep?: number[], startDate?: string, endDate?: string, viewType?: 'sales' | 'quantity'): Promise<SalesRepMonthlyPerformance[]> => {
+    const response = await axios.get(`${API_BASE_URL}/sales-rep-monthly-performance`, {
+      params: { year, salesRep, startDate, endDate, viewType }
+    });
+    return response.data;
+  },
+
+  // Sales Rep Targets Management
+  // Get targets for a specific sales rep
+  getSalesRepTargets: async (salesRepId: number, year?: number): Promise<SalesRepTargets[]> => {
+    const params = year ? { year } : {};
+    const response = await axios.get(`${API_BASE_URL}/sales-reps/${salesRepId}/targets`, { params });
+    return response.data;
+  },
+
+  // Create or update a target for a sales rep
+  setSalesRepTarget: async (target: SalesRepTargets): Promise<SalesRepTargets> => {
+    const response = await axios.post(`${API_BASE_URL}/sales-reps/${target.salesRepId}/targets`, {
+      year: target.year,
+      month: target.month,
+      vapesTarget: target.vapesTarget,
+      pouchesTarget: target.pouchesTarget
+    });
+    return response.data;
+  },
+
+  // Update an existing target
+  updateSalesRepTarget: async (targetId: number, target: Partial<SalesRepTargets>): Promise<SalesRepTargets> => {
+    const response = await axios.put(`${API_BASE_URL}/sales-reps/targets/${targetId}`, target);
+    return response.data;
+  },
+
+  // Delete a target
+  deleteSalesRepTarget: async (targetId: number): Promise<{ success: boolean }> => {
+    const response = await axios.delete(`${API_BASE_URL}/sales-reps/targets/${targetId}`);
     return response.data;
   }
 }; 

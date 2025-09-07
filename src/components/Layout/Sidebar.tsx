@@ -119,6 +119,12 @@ const navigation = [
                 roles: ['admin', 'manager', 'accountant', 'sales', 'executive']
               },
               {
+                name: 'Sales Rep Performance',
+                href: '/sales-rep-performance',
+                icon: TrendingUp,
+                roles: ['admin', 'manager', 'accountant', 'sales', 'executive']
+              },
+              {
                 name: 'Sales Rep Master Report',
                 href: '/sales-rep-master-report',
                 icon: UsersIcon,

@@ -28,6 +28,7 @@ const MasterSalesPage: React.FC = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [viewType, setViewType] = useState<'sales' | 'quantity'>('sales');
 
   const months = [
     'january', 'february', 'march', 'april', 'may', 'june',
@@ -41,7 +42,7 @@ const MasterSalesPage: React.FC = () => {
 
   useEffect(() => {
     fetchSalesData();
-  }, [selectedYear, selectedCategories, selectedSalesReps, selectedCategoryGroup, startDate, endDate, clientStatus]);
+  }, [selectedYear, selectedCategories, selectedSalesReps, selectedCategoryGroup, startDate, endDate, clientStatus, viewType]);
 
   useEffect(() => {
     fetchCategories();
@@ -63,7 +64,7 @@ const MasterSalesPage: React.FC = () => {
       const startDateParam = startDate || undefined;
       const endDateParam = endDate || undefined;
       const clientStatusParam = clientStatus || undefined;
-      const data = await salesService.getMasterSalesData(selectedYear, categoryIds, salesRepIds, categoryGroup, startDateParam, endDateParam, clientStatusParam);
+      const data = await salesService.getMasterSalesData(selectedYear, categoryIds, salesRepIds, categoryGroup, startDateParam, endDateParam, clientStatusParam, viewType);
       setSalesData(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sales data');
@@ -140,7 +141,7 @@ const MasterSalesPage: React.FC = () => {
         selectedCategoryGroup ? `-${selectedCategoryGroup}` : '',
         clientStatus ? `-${clientStatus}` : ''
       ].filter(Boolean).join('');
-      link.setAttribute('download', `master-sales-${selectedYear}-${dateStr}${filterSuffix}.csv`);
+      link.setAttribute('download', `master-${viewType === 'sales' ? 'sales' : 'quantities'}-${selectedYear}-${dateStr}${filterSuffix}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -156,8 +157,14 @@ const MasterSalesPage: React.FC = () => {
     const headers = ['Client Name', ...monthLabels, 'Total'];
     const rows = sortedData.map(client => [
       client.client_name,
-      ...months.map(month => parseFloat(String((client as any)[month])) || 0),
-      parseFloat(String(client.total)) || 0
+      ...months.map(month => {
+        const value = parseFloat(String((client as any)[month])) || 0;
+        return viewType === 'sales' ? formatCurrency(value) : value.toLocaleString();
+      }),
+      (() => {
+        const total = parseFloat(String(client.total)) || 0;
+        return viewType === 'sales' ? formatCurrency(total) : total.toLocaleString();
+      })()
     ]);
     return [headers, ...rows].map(row => row.join(',')).join('\n');
   };
@@ -266,9 +273,9 @@ const MasterSalesPage: React.FC = () => {
   };
 
   // Calculate summary statistics
-  const totalSales = sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0);
+  const totalValue = sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0);
   const totalClients = sortedData.length;
-  const avgSalesPerClient = totalClients > 0 ? totalSales / totalClients : 0;
+  const avgValuePerClient = totalClients > 0 ? totalValue / totalClients : 0;
   const activeFilters = [
     selectedYear !== new Date().getFullYear(),
     startDate,
@@ -318,10 +325,36 @@ const MasterSalesPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Master Sales Report</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Master {viewType === 'sales' ? 'Sales' : 'Quantities'} Report
+              </h1>
                
             </div>
             <div className="mt-6 lg:mt-0 flex flex-col sm:flex-row gap-3">
+              {/* View Type Toggle */}
+              <div className="flex items-center gap-2 bg-white rounded-lg border-2 border-gray-200 p-1">
+                <button
+                  onClick={() => setViewType('sales')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                    viewType === 'sales'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Sales Value
+                </button>
+                <button
+                  onClick={() => setViewType('quantity')}
+                  className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                    viewType === 'quantity'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Quantities
+                </button>
+              </div>
+              
               <button
                 onClick={() => setShowFilterModal(true)}
                 className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
@@ -367,8 +400,12 @@ const MasterSalesPage: React.FC = () => {
                 <DollarSign className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Sales</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalSales)}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {viewType === 'sales' ? 'Total Sales' : 'Total Quantities'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {viewType === 'sales' ? formatCurrency(totalValue) : totalValue.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -391,8 +428,12 @@ const MasterSalesPage: React.FC = () => {
                 <TrendingUp className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg Sales/Client</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(avgSalesPerClient)}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {viewType === 'sales' ? 'Avg Sales/Client' : 'Avg Quantities/Client'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {viewType === 'sales' ? formatCurrency(avgValuePerClient) : Math.round(avgValuePerClient).toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -523,12 +564,12 @@ const MasterSalesPage: React.FC = () => {
                               }`}
                               onClick={() => handleCellClick(client, month)}
                             >
-                              {formatCurrency(monthValue)}
+                              {viewType === 'sales' ? formatCurrency(monthValue) : monthValue.toLocaleString()}
                           </td>
                           );
                         })}
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-right text-blue-900 bg-blue-50">
-                          {formatCurrency(parseFloat(String(client.total)) || 0)}
+                          {viewType === 'sales' ? formatCurrency(parseFloat(String(client.total)) || 0) : (parseFloat(String(client.total)) || 0).toLocaleString()}
                         </td>
                       </tr>
                     ))
@@ -552,12 +593,12 @@ const MasterSalesPage: React.FC = () => {
                          }, 0);
                          return (
                            <td key={month} className="px-4 py-4 text-sm font-bold text-right text-gray-900">
-                             {formatCurrency(monthTotal)}
+                             {viewType === 'sales' ? formatCurrency(monthTotal) : monthTotal.toLocaleString()}
                            </td>
                          );
                        })}
                        <td className="px-6 py-4 text-sm font-bold text-right text-green-900 bg-green-100">
-                         {formatCurrency(sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0))}
+                         {viewType === 'sales' ? formatCurrency(sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0)) : sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0).toLocaleString()}
                        </td>
                      </tr>
                    </tfoot>

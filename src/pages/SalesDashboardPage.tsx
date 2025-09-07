@@ -151,6 +151,7 @@ const SalesDashboardPage: React.FC = () => {
         // Fetch sales performance data
         const salesRes = await fetchData('/sales/performance');
         const reps = salesRes.data || [];
+        console.log('Active sales reps count:', reps.length);
         
         // Calculate top reps
         const repPerf = reps.map((rep: any) => {
@@ -253,13 +254,12 @@ const SalesDashboardPage: React.FC = () => {
         }
 
         // Fetch managers data and leaves
-        const [mgrRes, repRes, leavesRes] = await Promise.all([
+        const [mgrRes, leavesRes] = await Promise.all([
           fetchData('/managers'),
-          fetchData('/sales/performance'),
           fetchData('/sales-rep-leaves/sales-rep-leaves')
         ]);
         setManagers(mgrRes || []);
-        setRepData(repRes.data || []);
+        setRepData(reps); // Use the reps data from the first call
         
         // Calculate pending leaves count
         const leaves = leavesRes || [];
@@ -345,6 +345,7 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/invoice-list', label: 'Invoices', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/dashboard/reports/product-performance', label: 'Product Performance', icon: <PieChartIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
     { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
     { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/my-visibility', label: 'Visit Reports', icon: <EyeIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/dashboard/journey-plans', label: 'Route Plans', icon: <MapPinIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
