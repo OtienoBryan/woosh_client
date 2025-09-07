@@ -768,6 +768,7 @@ const ClientsListPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Number</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
@@ -783,6 +784,11 @@ const ClientsListPage: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {clients.map(client => (
                     <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900 font-mono">
+                          CUS{client.id.toString().padStart(6, '0')}
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{client.name}</div>
@@ -865,7 +871,7 @@ const ClientsListPage: React.FC = () => {
                   ))}
                   {clients.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center">
+                      <td colSpan={10} className="px-6 py-12 text-center">
                         <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No clients found</h3>
                         <p className="text-gray-600">Get started by adding your first client.</p>

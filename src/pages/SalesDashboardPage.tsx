@@ -345,7 +345,7 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/invoice-list', label: 'Invoices', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/dashboard/reports/product-performance', label: 'Product Performance', icon: <PieChartIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
     { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/sales-rep-master-report', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/my-visibility', label: 'Visit Reports', icon: <EyeIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/dashboard/journey-plans', label: 'Route Plans', icon: <MapPinIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     //{ to: '/settings', label: 'My Account', icon: <SettingsIcon className="h-4 w-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
