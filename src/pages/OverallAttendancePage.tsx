@@ -1012,9 +1012,9 @@ const OverallAttendancePage: React.FC = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Client Name
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Visit Details
-                            </th>
+                            </th> */}
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Sales Representative
                             </th>
@@ -1059,18 +1059,17 @@ const OverallAttendancePage: React.FC = () => {
                                       </div>
                                       <div className="ml-3">
                                         <div className="text-sm font-medium text-gray-900">{client.name}</div>
-                                        <div className="text-sm text-gray-500">Client ID: {client.id}</div>
-                                      </div>
+                                        </div>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                  {/* <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <div className="text-sm text-gray-900">
                                       {jp.notes || 'No notes'}
                                     </div>
                                     <div className="text-xs text-gray-500">
                                       Status: {jp.status === 1 ? 'Completed' : 'Pending'}
                                     </div>
-                                  </td>
+                                  </td> */}
                                   <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <div className="text-sm font-medium text-gray-900">
                                       {salesRep ? salesRep.name : 'Unknown'}
@@ -1120,7 +1119,7 @@ const OverallAttendancePage: React.FC = () => {
                                       className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
                                     >
                                       <FileText className="h-3 w-3 mr-1" />
-                                      Feedback
+                                      Reports
                                     </button>
                                   </td>
                                 </tr>
