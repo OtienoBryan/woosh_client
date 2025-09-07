@@ -584,7 +584,7 @@ const CreateCreditNotePage: React.FC = () => {
                     <div className="text-base text-blue-700">
                       <span className="font-medium">Total Available Credit:</span>
                       <span className="ml-2 text-xl font-bold">
-                        ${(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices.reduce((sum, inv) => sum + (Number(inv.remaining_amount) || 0), 0) : 0).toFixed(2)}
+                        {(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices.reduce((sum, inv) => sum + (Number(inv.remaining_amount) || 0), 0) : 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="text-sm text-blue-600">
@@ -721,19 +721,19 @@ const CreateCreditNotePage: React.FC = () => {
                             <div>
                               <p className="text-gray-500">Total Amount</p>
                               <p className="text-gray-900 font-semibold">
-                                ${(Number(invoice.total_amount) || 0).toFixed(2)}
+                                {(Number(invoice.total_amount) || 0).toFixed(2)}
                               </p>
                             </div>
                             <div>
                               <p className="text-gray-500">Credited</p>
                               <p className="text-orange-600 font-medium">
-                                ${(Number(invoice.credited_amount) || 0).toFixed(2)}
+                                {(Number(invoice.credited_amount) || 0).toFixed(2)}
                               </p>
                             </div>
                             <div>
                               <p className="text-gray-500">Remaining</p>
                               <p className="text-green-600 font-semibold">
-                                ${(Number(invoice.remaining_amount) || 0).toFixed(2)}
+                                {(Number(invoice.remaining_amount) || 0).toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -784,7 +784,7 @@ const CreateCreditNotePage: React.FC = () => {
                           <div className="text-right">
                             <div className="text-xs text-gray-500 mb-1">Available for Credit</div>
                             <div className="text-lg font-bold text-green-600">
-                              ${(Number(invoice.remaining_amount) || 0).toFixed(2)}
+                              {(Number(invoice.remaining_amount) || 0).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -1001,7 +1001,7 @@ const CreateCreditNotePage: React.FC = () => {
                                 Total Price
                               </label>
                               <div className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-base">
-                                ${(Number(item.total_price) || 0).toFixed(2)}
+                                {(Number(item.total_price) || 0).toFixed(2)}
                               </div>
                             </div>
 
@@ -1029,16 +1029,16 @@ const CreateCreditNotePage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-base text-gray-600">Subtotal (Net):</span>
-                      <span className="text-base font-medium">${(Number(calculateSubtotal()) || 0).toFixed(2)}</span>
+                      <span className="text-base font-medium">{(Number(calculateSubtotal()) || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-base text-gray-600">Tax (16%):</span>
-                      <span className="text-base font-medium">${(Number(calculateTaxTotal()) || 0).toFixed(2)}</span>
+                      <span className="text-base font-medium">{(Number(calculateTaxTotal()) || 0).toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-300 pt-3">
                       <div className="flex justify-between">
                         <span className="text-xl font-semibold text-gray-900">Total Credit Amount:</span>
-                        <span className="text-xl font-semibold text-gray-900">${(Number(calculateTotal()) || 0).toFixed(2)}</span>
+                        <span className="text-xl font-semibold text-gray-900">{(Number(calculateTotal()) || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

@@ -15,6 +15,10 @@ export interface Staff {
   department_email?: string;
   salary?: number | null;
   status: number;  // 1 for active, 0 for deactivated
+  department?: string;
+  department_id?: number;
+  department_name?: string;
+  department_description?: string;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +34,8 @@ export interface CreateStaffData {
   business_email?: string;
   department_email?: string;
   salary?: number | null;
+  department?: string;
+  department_id?: number;
 }
 
 export const staffService = {
@@ -111,6 +117,16 @@ export const staffService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching expiring contracts:', error);
+      throw error;
+    }
+  },
+
+  getDepartments: async () => {
+    try {
+      const response = await api.get('/my-departments');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching departments:', error);
       throw error;
     }
   }

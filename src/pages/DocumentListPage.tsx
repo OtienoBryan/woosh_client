@@ -11,6 +11,16 @@ interface Document {
   file_type?: string;
 }
 
+interface DocumentCategory {
+  id: number;
+  name: string;
+  description?: string;
+  color: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Enhanced SVG icons for modern design
 const Icons = {
   Plus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
@@ -25,6 +35,8 @@ const Icons = {
   ChevronDown: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>,
   Calendar: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Tag: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>,
+  Edit: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+  Settings: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
   Document: () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
   Image: () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   PDF: () => <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/></svg>
@@ -36,6 +48,22 @@ const DocumentListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Category management state
+  const [categories, setCategories] = useState<DocumentCategory[]>([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showCategoriesList, setShowCategoriesList] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<DocumentCategory | null>(null);
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    description: '',
+    color: '#3B82F6'
+  });
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  
+  // Categories pagination state
+  const [categoriesCurrentPage, setCategoriesCurrentPage] = useState(1);
+  const [categoriesPerPage, setCategoriesPerPage] = useState(6);
 
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>('date');
@@ -58,12 +86,6 @@ const DocumentListPage: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get current date in format: DD MMMM YYYY
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -89,8 +111,19 @@ const DocumentListPage: React.FC = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/document-categories');
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchCategories();
   }, []);
 
   // Enhanced filtering and sorting logic
@@ -152,7 +185,6 @@ const DocumentListPage: React.FC = () => {
     setCurrentPage(1);
   }, [documents, searchTerm, category, sortBy, sortOrder]);
 
-  const categories = Array.isArray(documents) ? Array.from(new Set(documents.map(d => d.category))) : [];
 
   // Pagination calculations
   const totalItems = Array.isArray(filteredDocuments) ? filteredDocuments.length : 0;
@@ -160,6 +192,13 @@ const DocumentListPage: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentPageDocuments = Array.isArray(filteredDocuments) ? filteredDocuments.slice(startIndex, endIndex) : [];
+
+  // Categories pagination calculations
+  const categoriesTotalItems = categories.length;
+  const categoriesTotalPages = Math.ceil(categoriesTotalItems / categoriesPerPage);
+  const categoriesStartIndex = (categoriesCurrentPage - 1) * categoriesPerPage;
+  const categoriesEndIndex = categoriesStartIndex + categoriesPerPage;
+  const currentPageCategories = categories.slice(categoriesStartIndex, categoriesEndIndex);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -296,6 +335,100 @@ const DocumentListPage: React.FC = () => {
     }
   };
 
+  // Category management functions
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCategoryLoading(true);
+    setError(null);
+    
+    try {
+      const url = editingCategory 
+        ? `/api/document-categories/${editingCategory.id}`
+        : '/api/document-categories';
+      
+      const method = editingCategory ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(categoryForm),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to save category');
+      }
+      
+      const savedCategory = await res.json();
+      
+      if (editingCategory) {
+        setCategories(categories.map(cat => 
+          cat.id === editingCategory.id ? savedCategory : cat
+        ));
+        setSuccess('Category updated successfully!');
+      } else {
+        setCategories([...categories, savedCategory]);
+        setSuccess('Category created successfully!');
+        // Reset to last page when adding new category
+        const newTotalPages = Math.ceil((categories.length + 1) / categoriesPerPage);
+        setCategoriesCurrentPage(newTotalPages);
+      }
+      
+      setShowCategoryModal(false);
+      setEditingCategory(null);
+      setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+      if (editingCategory) {
+        setShowCategoriesList(true);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to save category');
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+
+  const handleDeleteCategory = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    
+    try {
+      const res = await fetch(`/api/document-categories/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete category');
+      }
+      
+      setCategories(categories.filter(cat => cat.id !== id));
+      setSuccess('Category deleted successfully!');
+      
+      // Adjust pagination if needed
+      const newTotalPages = Math.ceil((categories.length - 1) / categoriesPerPage);
+      if (categoriesCurrentPage > newTotalPages && newTotalPages > 0) {
+        setCategoriesCurrentPage(newTotalPages);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete category');
+    }
+  };
+
+
+  const openCategoriesList = () => {
+    setShowCategoriesList(true);
+    setCategoriesCurrentPage(1); // Reset to first page when opening
+  };
+
+  const openAddCategoryModal = () => {
+    setEditingCategory(null);
+    setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+    setShowCategoryModal(true);
+    setShowCategoriesList(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -356,13 +489,22 @@ const DocumentListPage: React.FC = () => {
                   Manage your documents and files in one place
                 </p>
               </div>
-              <button
-                onClick={() => setShowModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <Icons.Plus />
-                <span className="ml-2">Add Document</span>
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={openCategoriesList}
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                >
+                  <Icons.Settings />
+                  <span className="ml-2">Manage Categories</span>
+                </button>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <Icons.Plus />
+                  <span className="ml-2">Add Document</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -370,7 +512,7 @@ const DocumentListPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 hidden">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -503,8 +645,8 @@ const DocumentListPage: React.FC = () => {
                     >
                       <option value="">All Categories</option>
                       {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
                         </option>
                       ))}
                     </select>
@@ -834,12 +976,11 @@ const DocumentListPage: React.FC = () => {
                     className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="">Select category</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Agreement">Agreement</option>
-                    <option value="Invoice">Invoice</option>
-                    <option value="Report">Report</option>
-                    <option value="Policy">Policy</option>
-                    <option value="Other">Other</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -907,6 +1048,327 @@ const DocumentListPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingCategory ? 'Edit Category' : 'Add New Category'}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {editingCategory ? 'Update category information' : 'Create a new document category'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setEditingCategory(null);
+                  setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+                  setError(null);
+                  if (editingCategory) {
+                    setShowCategoriesList(true);
+                  }
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={categoryLoading}
+              >
+                <Icons.X />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleCategorySubmit} className="px-6 py-6 space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Category Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="categoryName"
+                    required
+                    value={categoryForm.name}
+                    onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Enter category name"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="categoryDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    id="categoryDescription"
+                    rows={3}
+                    value={categoryForm.description}
+                    onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Enter category description (optional)"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="categoryColor" className="block text-sm font-medium text-gray-700 mb-2">
+                    Color
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="color"
+                      id="categoryColor"
+                      value={categoryForm.color}
+                      onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                      className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={categoryForm.color}
+                      onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+                      placeholder="#3B82F6"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCategoryModal(false);
+                    setEditingCategory(null);
+                    setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+                    setError(null);
+                    if (editingCategory) {
+                      setShowCategoriesList(true);
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={categoryLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={categoryLoading || !categoryForm.name}
+                  className={`px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
+                    categoryLoading || !categoryForm.name ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {categoryLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {editingCategory ? 'Updating...' : 'Creating...'}
+                    </div>
+                  ) : (
+                    editingCategory ? 'Update Category' : 'Create Category'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Categories List Modal */}
+      {showCategoriesList && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-screen overflow-y-auto">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Document Categories</h3>
+                <p className="text-sm text-gray-500 mt-1">Manage your document categories</p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={openAddCategoryModal}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Icons.Plus />
+                  <span className="ml-2">Add Category</span>
+                </button>
+                <button
+                  onClick={() => setShowCategoriesList(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <Icons.X />
+                </button>
+              </div>
+            </div>
+
+            {/* Categories Grid */}
+            <div className="px-6 py-6">
+              {categories.length === 0 ? (
+                <div className="text-center py-12">
+                  <Icons.Tag />
+                  <h3 className="mt-4 text-lg font-medium text-gray-900">No categories found</h3>
+                  <p className="mt-2 text-sm text-gray-500">Get started by creating your first category</p>
+                  <button
+                    onClick={openAddCategoryModal}
+                    className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Icons.Plus />
+                    <span className="ml-2">Add Category</span>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {currentPageCategories.map((cat) => (
+                    <div key={cat.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                            style={{ backgroundColor: cat.color }}
+                          ></div>
+                          <h4 className="font-semibold text-gray-900 text-lg">{cat.name}</h4>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingCategory(cat);
+                              setCategoryForm({
+                                name: cat.name,
+                                description: cat.description || '',
+                                color: cat.color
+                              });
+                              setShowCategoryModal(true);
+                              setShowCategoriesList(false);
+                            }}
+                            className="text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                            title="Edit Category"
+                          >
+                            <Icons.Edit />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                            title="Delete Category"
+                          >
+                            <Icons.Trash />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {cat.description && (
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{cat.description}</p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Created: {new Date(cat.created_at).toLocaleDateString()}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          cat.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {cat.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    ))}
+                  </div>
+
+                  {/* Categories Pagination */}
+                  {categoriesTotalPages > 1 && (
+                    <div className="mt-8 border-t border-gray-200 pt-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        {/* Results info */}
+                        <div className="text-sm text-gray-700">
+                          Showing {categoriesStartIndex + 1} to {Math.min(categoriesEndIndex, categoriesTotalItems)} of {categoriesTotalItems} categories
+                        </div>
+
+                        {/* Items per page selector */}
+                        <div className="flex items-center space-x-2">
+                          <label className="text-sm text-gray-600">Show:</label>
+                          <select
+                            value={categoriesPerPage}
+                            onChange={(e) => {
+                              setCategoriesPerPage(Number(e.target.value));
+                              setCategoriesCurrentPage(1);
+                            }}
+                            className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value={3}>3</option>
+                            <option value={6}>6</option>
+                            <option value={9}>9</option>
+                            <option value={12}>12</option>
+                            <option value={15}>15</option>
+                          </select>
+                        </div>
+
+                        {/* Pagination controls */}
+                        <div className="flex items-center space-x-2">
+                          {/* Previous button */}
+                          <button
+                            onClick={() => setCategoriesCurrentPage(Math.max(1, categoriesCurrentPage - 1))}
+                            disabled={categoriesCurrentPage === 1}
+                            className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Previous
+                          </button>
+
+                          {/* Page numbers */}
+                          <div className="flex space-x-1">
+                            {Array.from({ length: Math.min(5, categoriesTotalPages) }, (_, i) => {
+                              let pageNum;
+                              if (categoriesTotalPages <= 5) {
+                                pageNum = i + 1;
+                              } else if (categoriesCurrentPage <= 3) {
+                                pageNum = i + 1;
+                              } else if (categoriesCurrentPage >= categoriesTotalPages - 2) {
+                                pageNum = categoriesTotalPages - 4 + i;
+                              } else {
+                                pageNum = categoriesCurrentPage - 2 + i;
+                              }
+
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setCategoriesCurrentPage(pageNum)}
+                                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                                    categoriesCurrentPage === pageNum
+                                      ? 'bg-blue-600 text-white'
+                                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Next button */}
+                          <button
+                            onClick={() => setCategoriesCurrentPage(Math.min(categoriesTotalPages, categoriesCurrentPage + 1))}
+                            disabled={categoriesCurrentPage === categoriesTotalPages}
+                            className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

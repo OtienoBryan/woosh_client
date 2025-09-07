@@ -42,6 +42,7 @@ const StaffList: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [myDepartments, setMyDepartments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -57,6 +58,8 @@ const StaffList: React.FC = () => {
     business_email: '',
     department_email: '',
     salary: null,
+    department: '',
+    department_id: undefined,
   });
   const contentRef = useRef<HTMLDivElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -79,6 +82,7 @@ const StaffList: React.FC = () => {
   const [sortOrder] = useState<'asc' | 'desc'>('asc'); // Future use for sorting
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [actionMenuStaffId, setActionMenuStaffId] = useState<number | null>(null);
+  const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
 
   // Get current date in format: DD MMMM YYYY
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -104,17 +108,20 @@ const StaffList: React.FC = () => {
         setIsLoading(true);
         console.log('Fetching staff and departments data...');
         
-        const [staffData, departmentsData] = await Promise.all([
+        const [staffData, departmentsData, myDepartmentsData] = await Promise.all([
           staffService.getStaffList(),
-          fetch('/api/departments').then(res => res.json())
+          fetch('/api/departments').then(res => res.json()),
+          staffService.getDepartments()
         ]);
         
         console.log('Staff data:', staffData);
         console.log('Departments data:', departmentsData);
+        console.log('My Departments data:', myDepartmentsData);
         
         setStaff(staffData);
         setFilteredStaff(staffData);
         setDepartments(departmentsData);
+        setMyDepartments(myDepartmentsData);
         setError(null);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -261,6 +268,8 @@ const StaffList: React.FC = () => {
         business_email: '',
         department_email: '',
         salary: null,
+        department: '',
+        department_id: undefined,
       });
       setSelectedFile(null);
     } catch (err) {
@@ -315,6 +324,8 @@ const StaffList: React.FC = () => {
       business_email: staff.business_email || '',
       department_email: staff.department_email || '',
       salary: staff.salary || null,
+      department: staff.department || '',
+      department_id: staff.department_id,
     });
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -357,21 +368,10 @@ const StaffList: React.FC = () => {
     setSelectedGender('');
   };
 
-  const getRoleStats = () => {
-    const stats = staff.reduce((acc, member) => {
-      const role = member.role;
-      if (!acc[role]) {
-        acc[role] = { total: 0, active: 0 };
-      }
-      acc[role].total++;
-      if (member.status === 1) {
-        acc[role].active++;
-      }
-      return acc;
-    }, {} as Record<string, { total: number; active: number }>);
-    
-    return stats;
+  const handlePhotoClick = (photoUrl: string, staffName: string) => {
+    setExpandedPhoto({ url: photoUrl, name: staffName });
   };
+
 
   const getStatusBadgeColor = (status: number) => {
     return status === 1 
@@ -597,20 +597,15 @@ const StaffList: React.FC = () => {
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Icons.UserPlus />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Staff</p>
-                <p className="text-2xl font-semibold text-gray-900">{staff.length}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div 
+            className={`rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow ${
+              selectedStatus === 'active' 
+                ? 'bg-green-50 border-2 border-green-200' 
+                : 'bg-white'
+            }`}
+            onClick={() => setSelectedStatus(selectedStatus === 'active' ? 'all' : 'active')}
+          >
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
                 <Icons.Badge />
@@ -624,33 +619,22 @@ const StaffList: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6">
+          <div 
+            className={`rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow ${
+              selectedStatus === 'inactive' 
+                ? 'bg-red-50 border-2 border-red-200' 
+                : 'bg-white'
+            }`}
+            onClick={() => setSelectedStatus(selectedStatus === 'inactive' ? 'all' : 'inactive')}
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Icons.Document />
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Icons.UserMinus />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Roles</p>
+                <p className="text-sm font-medium text-gray-600">Inactive</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {Object.keys(getRoleStats()).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Icons.Clock />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Recently Added</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {staff.filter(s => {
-                    const oneWeekAgo = new Date();
-                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                    return new Date(s.created_at) > oneWeekAgo;
-                  }).length}
+                  {staff.filter(s => s.status === 0).length}
                 </p>
               </div>
             </div>
@@ -686,7 +670,7 @@ const StaffList: React.FC = () => {
                   <span className="ml-2">Filters</span>
                   {(selectedRole || selectedStatus !== 'all' || selectedEmploymentType || selectedGender) && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
-                      Active
+                      {selectedStatus === 'active' ? 'Active' : selectedStatus === 'inactive' ? 'Inactive' : 'Filtered'}
                     </span>
                   )}
                 </button>
@@ -886,6 +870,9 @@ const StaffList: React.FC = () => {
                         Role
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Department
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Employee #
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -924,7 +911,8 @@ const StaffList: React.FC = () => {
                                 <img
                                   src={member.photo_url}
                                   alt={member.name}
-                                  className="w-10 h-10 rounded-full object-cover"
+                                  className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => handlePhotoClick(member.photo_url, member.name)}
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -945,6 +933,11 @@ const StaffList: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{member.role}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {member.department_name || member.department || <span className="text-gray-500">-</span>}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 font-mono">{member.empl_no}</div>
@@ -1070,7 +1063,8 @@ const StaffList: React.FC = () => {
                           <img
                             src={member.photo_url}
                             alt={member.name}
-                            className="w-12 h-12 rounded-full object-cover"
+                            className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => handlePhotoClick(member.photo_url, member.name)}
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -1153,6 +1147,10 @@ const StaffList: React.FC = () => {
                         <span className="font-medium text-gray-900">{member.empl_no}</span>
                       </div>
                       <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Department:</span>
+                        <span className="font-medium text-gray-900">{member.department_name || member.department || '-'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-600">ID Number:</span>
                         <span className="font-medium text-gray-900">{member.id_no}</span>
                       </div>
@@ -1207,7 +1205,7 @@ const StaffList: React.FC = () => {
       {/* Enhanced Add/Edit Staff Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-screen overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
@@ -1234,6 +1232,8 @@ const StaffList: React.FC = () => {
                     business_email: '',
                     department_email: '',
                     salary: null,
+                    department: '',
+                    department_id: undefined,
                   });
                   setSelectedFile(null);
                 }}
@@ -1244,200 +1244,244 @@ const StaffList: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
-              {/* Photo Upload Section */}
-              <div className="text-center">
-                <div className="relative inline-block">
-                  {selectedFile ? (
-                    <img
-                      src={URL.createObjectURL(selectedFile)}
-                      alt="Preview"
-                      className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
+            <form onSubmit={handleSubmit} className="px-6 py-6">
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left Column - Photo and Basic Info */}
+                <div className="flex-shrink-0 w-full lg:w-48 flex justify-center lg:justify-start">
+                  {/* Photo Upload Section */}
+                  <div className="text-center">
+                    <div className="relative inline-block">
+                      {selectedFile ? (
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Preview"
+                          className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
+                        />
+                      ) : newStaff.photo_url ? (
+                        <img
+                          src={newStaff.photo_url}
+                          alt={newStaff.name}
+                          className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mx-auto border-4 border-white shadow-lg">
+                          <Icons.Photo />
+                        </div>
+                      )}
+                      <label
+                        htmlFor="photo"
+                        className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 cursor-pointer transition-colors"
+                      >
+                        <Icons.Upload />
+                      </label>
+                    </div>
+                    <input
+                      type="file"
+                      name="photo"
+                      id="photo"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
                     />
-                  ) : newStaff.photo_url ? (
-                    <img
-                      src={newStaff.photo_url}
-                      alt={newStaff.name}
-                      className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto border-4 border-white shadow-lg">
-                      <Icons.Photo />
-              </div>
-                  )}
-                  <label
-                    htmlFor="photo"
-                    className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 cursor-pointer transition-colors"
-                  >
-                    <Icons.Upload />
-                </label>
-                </div>
-                <input
-                  type="file"
-                  name="photo"
-                  id="photo"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <p className="text-sm text-gray-500 mt-2">Click to upload photo</p>
-              </div>
-
-              {/* Form Fields */}
-              <div className="grid grid-cols-1 gap-6">
-              <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    required
-                    value={newStaff.name}
-                    onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="Enter full name"
-                  />
+                    <p className="text-sm text-gray-500 mt-2">Click to upload photo</p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="empl_no" className="block text-sm font-medium text-gray-700 mb-2">
-                      Employee Number *
-                </label>
-                <input
-                  type="text"
-                  name="empl_no"
-                  id="empl_no"
-                  required
-                  value={newStaff.empl_no}
-                  onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder="EMP001"
-                />
-              </div>
-              <div>
-                    <label htmlFor="id_no" className="block text-sm font-medium text-gray-700 mb-2">
-                      ID Number *
-                </label>
-                <input
-                  type="number"
-                  name="id_no"
-                  id="id_no"
-                  required
-                  value={newStaff.id_no}
-                  onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder="123456789"
-                />
-              </div>
-                </div>
+                {/* Right Column - Form Fields */}
+                <div className="flex-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Full Name - spans both columns */}
+                    <div className="col-span-1 md:col-span-2">
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        required
+                        value={newStaff.name}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="Enter full name"
+                      />
+                    </div>
 
-              <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                    Role *
-                </label>
-                <select
-                  name="role"
-                  id="role"
-                  required
-                  value={newStaff.role}
-                  onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="">Select a role</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.name}>
-                      {department.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    {/* Employee Number */}
+                    <div>
+                      <label htmlFor="empl_no" className="block text-sm font-medium text-gray-700 mb-2">
+                        Employee Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="empl_no"
+                        id="empl_no"
+                        required
+                        value={newStaff.empl_no}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="EMP001"
+                      />
+                    </div>
 
-              <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Employment Type *
-                  </label>
-                <select
-                  name="employment_type"
-                  value={newStaff.employment_type}
-                  onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="Consultant">Consultant</option>
-                  <option value="Contract">Contract</option>
-                    <option value="Permanent">Permanent</option>
-                </select>
-              </div>
+                    {/* ID Number */}
+                    <div>
+                      <label htmlFor="id_no" className="block text-sm font-medium text-gray-700 mb-2">
+                        ID Number *
+                      </label>
+                      <input
+                        type="number"
+                        name="id_no"
+                        id="id_no"
+                        required
+                        value={newStaff.id_no}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="123456789"
+                      />
+                    </div>
 
-              <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gender
-                  </label>
-                <select
-                  name="gender"
-                  value={newStaff.gender}
-                  onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="">Select gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
+                    {/* Role */}
+                    <div>
+                      <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                        Role *
+                      </label>
+                      <select
+                        name="role"
+                        id="role"
+                        required
+                        value={newStaff.role}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="">Select a role</option>
+                        {departments.map((department) => (
+                          <option key={department.id} value={department.name}>
+                            {department.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-              <div>
-                  <label htmlFor="business_email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Business Email
-                  </label>
-                  <input
-                    type="email"
-                    name="business_email"
-                    id="business_email"
-                    value={newStaff.business_email || ''}
-                    onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="john.doe@company.com"
-                  />
-                </div>
+                    {/* Department */}
+                    <div>
+                      <label htmlFor="department_id" className="block text-sm font-medium text-gray-700 mb-2">
+                        Department *
+                      </label>
+                      <select
+                        name="department_id"
+                        id="department_id"
+                        required
+                        value={newStaff.department_id || ''}
+                        onChange={(e) => {
+                          const selectedDept = myDepartments.find(dept => dept.id === parseInt(e.target.value));
+                          setNewStaff(prev => ({
+                            ...prev,
+                            department_id: parseInt(e.target.value) || undefined,
+                            department: selectedDept?.name || ''
+                          }));
+                        }}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="">Select a department</option>
+                        {myDepartments.map((dept) => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label htmlFor="department_email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Department Email
-                  </label>
-                  <input
-                    type="email"
-                    name="department_email"
-                    id="department_email"
-                    value={newStaff.department_email || ''}
-                    onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="hr@company.com"
-                  />
-                </div>
+                    {/* Employment Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Employment Type *
+                      </label>
+                      <select
+                        name="employment_type"
+                        value={newStaff.employment_type}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="Consultant">Consultant</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Permanent">Permanent</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
-                    Salary
-                  </label>
-                  <input
-                    type="number"
-                    name="salary"
-                    id="salary"
-                    step="0.01"
-                    min="0"
-                    value={newStaff.salary || ''}
-                    onChange={handleInputChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="50000.00"
-                  />
+                    {/* Gender */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Gender
+                      </label>
+                      <select
+                        name="gender"
+                        value={newStaff.gender}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    {/* Business Email */}
+                    <div>
+                      <label htmlFor="business_email" className="block text-sm font-medium text-gray-700 mb-2">
+                        Business Email
+                      </label>
+                      <input
+                        type="email"
+                        name="business_email"
+                        id="business_email"
+                        value={newStaff.business_email || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="john.doe@company.com"
+                      />
+                    </div>
+
+                    {/* Department Email */}
+                    <div>
+                      <label htmlFor="department_email" className="block text-sm font-medium text-gray-700 mb-2">
+                        Department Email
+                      </label>
+                      <input
+                        type="email"
+                        name="department_email"
+                        id="department_email"
+                        value={newStaff.department_email || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="hr@company.com"
+                      />
+                    </div>
+
+                    {/* Salary */}
+                    <div>
+                      <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
+                        Salary
+                      </label>
+                      <input
+                        type="number"
+                        name="salary"
+                        id="salary"
+                        step="0.01"
+                        min="0"
+                        value={newStaff.salary || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="50000.00"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+              <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -1455,6 +1499,8 @@ const StaffList: React.FC = () => {
                       business_email: '',
                       department_email: '',
                       salary: null,
+                      department: '',
+                      department_id: undefined,
                     });
                     setSelectedFile(null);
                   }}
@@ -1553,6 +1599,53 @@ const StaffList: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Expansion Modal */}
+      {expandedPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {expandedPhoto.name}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Staff Photo
+                </p>
+              </div>
+              <button
+                onClick={() => setExpandedPhoto(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Icons.X />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-6 text-center">
+              <img
+                src={expandedPhoto.url}
+                alt={expandedPhoto.name}
+                className="max-w-full max-h-96 mx-auto rounded-lg shadow-lg object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/400x400?text=Photo+Not+Available';
+                }}
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setExpandedPhoto(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

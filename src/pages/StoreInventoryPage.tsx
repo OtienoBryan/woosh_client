@@ -19,10 +19,33 @@ const StoreInventoryPage: React.FC = () => {
   const [stockSummaryData, setStockSummaryData] = useState<any>(null);
   const [stockSummaryCategoryFilter, setStockSummaryCategoryFilter] = useState<string>('all');
   const [showStoreOverview, setShowStoreOverview] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(20);
+  const [sortField, setSortField] = useState<string>('category');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Set Delta Corner as default store when stores are loaded
+  useEffect(() => {
+    if (stores.length > 0) {
+      console.log('Available stores:', stores);
+      const deltaCornerStore = stores.find(store => 
+        store.store_name.toLowerCase().includes('delta corner') || 
+        store.store_code.toLowerCase().includes('delta')
+      );
+      console.log('Delta Corner store found:', deltaCornerStore);
+      if (deltaCornerStore) {
+        setSelectedStore(deltaCornerStore.id);
+      } else {
+        // If Delta Corner not found, select the first available store
+        console.log('Delta Corner not found, selecting first store:', stores[0]);
+        setSelectedStore(stores[0].id);
+      }
+    }
+  }, [stores]);
 
   useEffect(() => {
     if (allInventory.length > 0 && stores.length > 0) {
@@ -44,6 +67,16 @@ const StoreInventoryPage: React.FC = () => {
       setAsOfInventory(null);
     }
   }, [selectedDate, selectedStore]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStore, selectedCategory, selectedDate]);
+
+  // Reset to first page when sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortField, sortDirection]);
 
   const fetchInventoryAsOf = async (date: string, store: number | 'all') => {
     try {
@@ -108,17 +141,49 @@ const StoreInventoryPage: React.FC = () => {
 
   const getFilteredInventory = () => {
     let filtered = asOfInventory || allInventory;
+    console.log('Initial filtered data:', filtered.length, 'items');
+    console.log('Selected store:', selectedStore);
+    console.log('Selected category:', selectedCategory);
     
     // Filter by store
     if (selectedStore !== 'all') {
+      const beforeStoreFilter = filtered.length;
       filtered = filtered.filter(item => Number(item.store_id) === Number(selectedStore));
+      console.log(`After store filter (${selectedStore}): ${beforeStoreFilter} -> ${filtered.length} items`);
     }
     
     // Filter by category
     if (selectedCategory !== 'all') {
+      const beforeCategoryFilter = filtered.length;
       filtered = filtered.filter(item => item.category === selectedCategory);
+      console.log(`After category filter (${selectedCategory}): ${beforeCategoryFilter} -> ${filtered.length} items`);
     }
     
+    // Sort the filtered results
+    filtered.sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Handle null/undefined values
+      if (aValue === null || aValue === undefined) aValue = '';
+      if (bValue === null || bValue === undefined) bValue = '';
+      
+      // Convert to string for comparison if needed
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    
+    console.log('Final filtered data:', filtered.length, 'items');
     return filtered;
   };
 
@@ -168,6 +233,43 @@ const StoreInventoryPage: React.FC = () => {
     return new Set(getFilteredInventory().map(item => item.product_id)).size;
   };
 
+  // Pagination functions
+  const getPaginatedInventory = () => {
+    const filtered = getFilteredInventory();
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = () => {
+    return Math.ceil(getFilteredInventory().length / itemsPerPage);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < getTotalPages()) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
@@ -202,7 +304,9 @@ const StoreInventoryPage: React.FC = () => {
   }
 
   const filteredInventory = getFilteredInventory();
+  const paginatedInventory = getPaginatedInventory();
   const lowStockItems = getLowStockItems();
+  const totalPages = getTotalPages();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -441,7 +545,7 @@ const StoreInventoryPage: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-900">Inventory Details</h2>
               </div>
               <div className="text-sm text-gray-500">
-                {filteredInventory.length} items found
+                Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredInventory.length)} of {filteredInventory.length} items
               </div>
             </div>
           </div>
@@ -473,8 +577,36 @@ const StoreInventoryPage: React.FC = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Product
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Category
+                    <th 
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+                      onClick={() => handleSort('category')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Category</span>
+                        {sortField === 'category' && (
+                          <div className="flex flex-col">
+                            <svg 
+                              className={`w-3 h-3 ${sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-400'}`} 
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
+                            >
+                              <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
+                            <svg 
+                              className={`w-3 h-3 ${sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-400'}`} 
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
+                            >
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                        {sortField !== 'category' && (
+                          <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Quantity
@@ -491,7 +623,7 @@ const StoreInventoryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {filteredInventory.map((item) => (
+                  {paginatedInventory.map((item) => (
                     <tr key={`${item.store_id}-${item.product_id}`} className="hover:bg-gray-50 transition-colors duration-150">
                       {selectedStore === 'all' && (
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -549,6 +681,81 @@ const StoreInventoryPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {filteredInventory.length > itemsPerPage && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                      currentPage === 1
+                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                      currentPage === totalPages
+                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

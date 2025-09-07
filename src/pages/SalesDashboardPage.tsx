@@ -352,6 +352,7 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/financial/create-customer-order', label: 'Add Order', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200', badge: newOrdersCount },
     { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }
     
+    
   ];
 
   return (
