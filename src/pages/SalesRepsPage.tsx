@@ -355,7 +355,7 @@ const SalesRepsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [selectedSalesRepId, setSelectedSalesRepId] = useState<number | null>(null);
+  const [selectedSalesRepId] = useState<number | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>('Kenya'); // Default to Kenya
   const [regions, setRegions] = useState<Region[]>([]);
@@ -423,6 +423,18 @@ const SalesRepsPage: React.FC = () => {
     setFilterModalOpen(true);
   };
 
+  // Load regions when pending country changes in filter modal
+  useEffect(() => {
+    if (filterModalOpen && pendingCountry) {
+      const countryObj = countries.find(c => c.name === pendingCountry);
+      if (countryObj) {
+        salesService.getRegions(countryObj.id).then(setRegions);
+      } else {
+        setRegions([]);
+      }
+    }
+  }, [pendingCountry, countries, filterModalOpen]);
+
   // 8. When applying, set the real filter states and close the modal
   const applyFilters = () => {
     setSelectedCountry(pendingCountry);
@@ -446,6 +458,8 @@ const SalesRepsPage: React.FC = () => {
     setSelectedManager('');
     setSelectedStatus('1');
     setFilterModalOpen(false);
+    // Reset regions to empty array when clearing
+    setRegions([]);
   };
 
   const exportToCSV = () => {
@@ -884,19 +898,25 @@ const SalesRepsPage: React.FC = () => {
                   <button
                     type="button"
                     className={`px-3 py-1 rounded-md border text-sm ${pendingCountry === '' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-                    onClick={() => setPendingCountry('')}
+                    onClick={() => {
+                      setPendingCountry('');
+                      setPendingRegion(''); // Reset region when selecting all countries
+                    }}
                   >
                     All Countries
                   </button>
                   {countries.map(c => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${pendingCountry === c.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-                      onClick={() => setPendingCountry(c.name)}
-                    >
-                      {c.name}
-                    </button>
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`px-3 py-1 rounded-md border text-sm ${pendingCountry === c.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                    onClick={() => {
+                      setPendingCountry(c.name);
+                      setPendingRegion(''); // Reset region when country changes
+                    }}
+                  >
+                    {c.name}
+                  </button>
                   ))}
                 </div>
               </div>

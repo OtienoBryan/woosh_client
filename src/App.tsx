@@ -403,12 +403,12 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/credit-notes" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales'	]} fallbackPath="/sales-dashboard">
                 <CreditNotesPage />
               </RoleBasedRoute>
             } />
             <Route path="/credit-notes/:id" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales'	]} fallbackPath="/sales-dashboard">
                 <CreditNotesPage />
               </RoleBasedRoute>
             } />
@@ -418,17 +418,17 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/clients/:clientId/credit-notes" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales'	]} fallbackPath="/sales-dashboard">
                 <ClientCreditNotePage />
               </RoleBasedRoute>
             } />
             <Route path="/credit-note-summary" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'executive']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'executive', 'sales'	]} fallbackPath="/sales-dashboard">
                 <CreditNoteSummaryPage />
               </RoleBasedRoute>
             } />
             <Route path="/credit-note-details/:id" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'executive']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'executive', 'sales'	]} fallbackPath="/sales-dashboard">
                 <CreditNoteDetailsPage />
               </RoleBasedRoute>
             } />

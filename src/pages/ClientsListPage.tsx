@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Search, 
-  Plus, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Building2, 
-  Route, 
-  DollarSign, 
-  Calendar, 
-  Edit, 
-  Trash2, 
-  Filter,
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Search,
+  Plus,
+  Route,
+  DollarSign,
+  Edit,
+  Trash2,
   X,
   ChevronDown,
   Users,
   Map,
   Activity,
   Eye,
-  UserPlus
+  UserPlus,
+  ChevronUp,
+  ArrowUpDown
 } from 'lucide-react';
 
 interface Client {
@@ -66,7 +62,7 @@ const AddClientModal: React.FC<{
   countries: Country[];
   regions: Region[];
   routes: Route[];
-  outletAccounts: {id: number; name: string}[];
+  outletAccounts: { id: number; name: string }[];
   onCountryChange: (country: string) => void;
 }> = ({ isOpen, onClose, onSubmit, loading, countries, regions, routes, outletAccounts, onCountryChange }) => {
   const [form, setForm] = useState<Omit<Client, 'id' | 'created_at'>>({
@@ -101,7 +97,7 @@ const AddClientModal: React.FC<{
   }, [isOpen]);
 
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -109,64 +105,64 @@ const AddClientModal: React.FC<{
           <h2 className="text-xl font-semibold text-gray-900">Add New Client</h2>
           <p className="text-sm text-gray-600 mt-1">Enter client information below</p>
         </div>
-        
+
         <form onSubmit={e => { e.preventDefault(); onSubmit(form); }} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Client Name *</label>
-            <input 
-              type="text" 
-              required 
-              value={form.name} 
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               placeholder="Enter client name"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input 
-                type="email" 
-                required 
-                value={form.email} 
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 placeholder="email@example.com"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-              <input 
-                type="tel" 
-                required 
-                value={form.contact} 
-                onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+              <input
+                type="tel"
+                required
+                value={form.contact}
+                onChange={e => setForm(f => ({ ...f, contact: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 placeholder="+254 700 000 000"
               />
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <input 
-              type="text" 
-              value={form.address} 
-              onChange={e => setForm(f => ({ ...f, address: e.target.value }))} 
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+            <input
+              type="text"
+              value={form.address}
+              onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               placeholder="Enter address"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-            <select 
-              value={form.countryId} 
-              onChange={e => { 
-                setForm(f => ({ ...f, countryId: parseInt(e.target.value, 10) })); 
-                onCountryChange(e.target.value); 
-              }} 
+            <select
+              value={form.countryId}
+              onChange={e => {
+                setForm(f => ({ ...f, countryId: parseInt(e.target.value, 10) }));
+                onCountryChange(e.target.value);
+              }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             >
               <option value="">Select country</option>
@@ -175,14 +171,14 @@ const AddClientModal: React.FC<{
               ))}
             </select>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
-              <select 
-                value={form.region_id} 
-                onChange={e => setForm(f => ({ ...f, region_id: parseInt(e.target.value, 10) }))} 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+              <select
+                value={form.region_id}
+                onChange={e => setForm(f => ({ ...f, region_id: parseInt(e.target.value, 10) }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 disabled={!form.countryId}
               >
                 <option value="">{form.countryId ? 'Select region' : 'Select country first'}</option>
@@ -193,10 +189,10 @@ const AddClientModal: React.FC<{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Route</label>
-              <select 
-                value={form.route_id} 
-                onChange={e => setForm(f => ({ ...f, route_id: parseInt(e.target.value, 10) }))} 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+              <select
+                value={form.route_id}
+                onChange={e => setForm(f => ({ ...f, route_id: parseInt(e.target.value, 10) }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 disabled={!form.countryId}
               >
                 <option value="">{form.countryId ? 'Select route' : 'Select country first'}</option>
@@ -206,15 +202,15 @@ const AddClientModal: React.FC<{
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Credit Limit</label>
-              <input 
-                type="number" 
-                value={form.credit_limit || ''} 
-                onChange={e => setForm(f => ({ ...f, credit_limit: e.target.value ? parseFloat(e.target.value) : undefined }))} 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+              <input
+                type="number"
+                value={form.credit_limit || ''}
+                onChange={e => setForm(f => ({ ...f, credit_limit: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 placeholder="Enter credit limit"
                 min="0"
                 step="0.01"
@@ -222,21 +218,21 @@ const AddClientModal: React.FC<{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-              <input 
-                type="text" 
-                value={form.payment_terms || ''} 
-                onChange={e => setForm(f => ({ ...f, payment_terms: e.target.value }))} 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+              <input
+                type="text"
+                value={form.payment_terms || ''}
+                onChange={e => setForm(f => ({ ...f, payment_terms: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 placeholder="e.g., Net 30, COD, etc."
               />
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Outlet Account</label>
-            <select 
-              value={form.outlet_account || 0} 
-              onChange={e => setForm(f => ({ ...f, outlet_account: parseInt(e.target.value, 10) }))} 
+            <select
+              value={form.outlet_account || 0}
+              onChange={e => setForm(f => ({ ...f, outlet_account: parseInt(e.target.value, 10) }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             >
               <option value={0}>Not assigned</option>
@@ -245,18 +241,18 @@ const AddClientModal: React.FC<{
               ))}
             </select>
           </div>
-          
+
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              disabled={loading} 
+            <button
+              type="submit"
+              disabled={loading}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               {loading ? 'Saving...' : (
@@ -290,7 +286,7 @@ const AssignSalesRepModal: React.FC<{
     if (isOpen && client) {
       setLoading(true);
       setError(null);
-      
+
       // Fetch sales reps and current assignment
       Promise.all([
         fetch('/api/sales-reps?status=1').then(res => res.json()),
@@ -316,10 +312,10 @@ const AssignSalesRepModal: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!client || !selectedSalesRepId) return;
-    
+
     setSaving(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/client-assignments', {
         method: 'POST',
@@ -329,9 +325,9 @@ const AssignSalesRepModal: React.FC<{
           salesRepId: selectedSalesRepId
         })
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         onAssignmentSuccess(client.id);
         onClose();
@@ -346,7 +342,7 @@ const AssignSalesRepModal: React.FC<{
   };
 
   if (!isOpen || !client) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -354,7 +350,7 @@ const AssignSalesRepModal: React.FC<{
           <h2 className="text-xl font-semibold text-gray-900">Assign Sales Representative</h2>
           <p className="text-sm text-gray-600 mt-1">Assign a sales rep to {client.name}</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {loading ? (
             <div className="text-center py-4">
@@ -372,7 +368,7 @@ const AssignSalesRepModal: React.FC<{
                   </p>
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Sales Representative
@@ -391,7 +387,7 @@ const AssignSalesRepModal: React.FC<{
                   ))}
                 </select>
               </div>
-              
+
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-sm text-red-800">{error}</p>
@@ -399,7 +395,7 @@ const AssignSalesRepModal: React.FC<{
               )}
             </>
           )}
-          
+
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
@@ -424,6 +420,7 @@ const AssignSalesRepModal: React.FC<{
 };
 
 const ClientsListPage: React.FC = () => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -432,13 +429,12 @@ const ClientsListPage: React.FC = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [outletAccounts, setOutletAccounts] = useState<{id: number; name: string}[]>([]);
+  const [outletAccounts, setOutletAccounts] = useState<{ id: number; name: string }[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [jumpPage, setJumpPage] = useState('');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -448,6 +444,8 @@ const ClientsListPage: React.FC = () => {
   const [assignSalesRepModalOpen, setAssignSalesRepModalOpen] = useState(false);
   const [selectedClientForAssignment, setSelectedClientForAssignment] = useState<Client | null>(null);
   const [clientTypes, setClientTypes] = useState<{ id: number; name: string }[]>([]);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
 
   // Fetch countries when modal opens
@@ -507,7 +505,7 @@ const ClientsListPage: React.FC = () => {
       .catch(err => console.error('Failed to fetch outlet accounts:', err));
   }, []);
 
-  const fetchClients = async (pageNum = page, pageLimit = limit, searchTerm = search) => {
+  const fetchClients = async (pageNum = page, pageLimit = limit, searchTerm = search, sortFieldParam = sortField, sortOrderParam = sortOrder) => {
     setLoading(true);
     setError(null);
     try {
@@ -516,9 +514,13 @@ const ClientsListPage: React.FC = () => {
         limit: String(pageLimit),
       });
       if (searchTerm) params.append('search', searchTerm);
+      if (sortFieldParam) {
+        params.append('sortField', sortFieldParam);
+        params.append('sortOrder', sortOrderParam);
+      }
       const res = await fetch(`/api/clients?${params.toString()}`);
       const data = await res.json();
-      
+
       // Fetch sales rep assignments for all clients
       const clientsWithAssignments = await Promise.all(
         data.data.map(async (client: Client) => {
@@ -528,7 +530,7 @@ const ClientsListPage: React.FC = () => {
               throw new Error(`HTTP ${assignmentRes.status}`);
             }
             const assignmentData = await assignmentRes.json();
-            
+
             return {
               ...client,
               salesRepAssignment: assignmentData.success && assignmentData.data.length > 0 ? assignmentData.data[0] : null
@@ -542,7 +544,7 @@ const ClientsListPage: React.FC = () => {
           }
         })
       );
-      
+
       setClients(clientsWithAssignments);
       setPage(data.page);
       setLimit(data.limit);
@@ -554,24 +556,13 @@ const ClientsListPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(page, limit, search); }, [page, limit, search]);
+  useEffect(() => { fetchClients(page, limit, search, sortField, sortOrder); }, [page, limit, search, sortField, sortOrder]);
 
   const handlePrevPage = () => { if (page > 1) setPage(page - 1); };
   const handleNextPage = () => { if (page < totalPages) setPage(page + 1); };
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLimit(Number(e.target.value));
     setPage(1);
-  };
-  const handleJumpPageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setJumpPage(e.target.value.replace(/[^0-9]/g, ''));
-  };
-  const handleJumpPageSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const num = Number(jumpPage);
-    if (num >= 1 && num <= totalPages) {
-      setPage(num);
-    }
-    setJumpPage('');
   };
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value);
@@ -583,6 +574,16 @@ const ClientsListPage: React.FC = () => {
   const handleClearSearch = () => {
     setSearchInput('');
     setSearch('');
+    setPage(1);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
     setPage(1);
   };
 
@@ -649,23 +650,19 @@ const ClientsListPage: React.FC = () => {
     setAssignSalesRepModalOpen(true);
   };
 
-  const handleAssignmentSuccess = () => {
-    // Refresh clients to show updated assignment info
-    fetchClients(page, limit, search);
-  };
 
   const refreshClientAssignment = async (clientId: number) => {
     try {
       const assignmentRes = await fetch(`/api/client-assignments/outlet/${clientId}`);
       const assignmentData = await assignmentRes.json();
-      
-      setClients(prevClients => 
-        prevClients.map(client => 
-          client.id === clientId 
+
+      setClients(prevClients =>
+        prevClients.map(client =>
+          client.id === clientId
             ? {
-                ...client,
-                salesRepAssignment: assignmentData.success && assignmentData.data.length > 0 ? assignmentData.data[0] : null
-              }
+              ...client,
+              salesRepAssignment: assignmentData.success && assignmentData.data.length > 0 ? assignmentData.data[0] : null
+            }
             : client
         )
       );
@@ -685,10 +682,10 @@ const ClientsListPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
             <p className="text-gray-600 mt-1">Manage your client relationships and information</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
 
-            
+
             <Link
               to="/client-activity"
               className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -696,7 +693,7 @@ const ClientsListPage: React.FC = () => {
               <Activity className="h-4 w-4" />
               Activity
             </Link>
-            
+
             <button
               onClick={() => window.open('/clients-map', '_blank')}
               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -704,9 +701,9 @@ const ClientsListPage: React.FC = () => {
               <Map className="h-4 w-4" />
               Map View
             </button>
-            
-            <button 
-              onClick={() => setModalOpen(true)} 
+
+            <button
+              onClick={() => setModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
             >
               <Plus className="h-4 w-4" />
@@ -740,7 +737,7 @@ const ClientsListPage: React.FC = () => {
               )}
             </div>
           </form>
-          
+
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-green-600" />
@@ -772,7 +769,23 @@ const ClientsListPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                    <th 
+                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('balance')}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Balance
+                        {sortField === 'balance' ? (
+                          sortOrder === 'asc' ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </div>
+                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit Limit</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -803,18 +816,17 @@ const ClientsListPage: React.FC = () => {
                         <div className="text-sm text-gray-500">{client.route_name_update || 'No route'}</div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          Number(client.balance || 0) > 0 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${Number(client.balance || 0) > 0
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}>
+                          }`}>
                           {Number(client.balance || 0).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <span className="text-sm text-gray-900">
-                          {client.credit_limit ? 
-                            Number(client.credit_limit).toLocaleString(undefined, { style: 'currency', currency: 'KES' }) : 
+                          {client.credit_limit ?
+                            Number(client.credit_limit).toLocaleString(undefined, { style: 'currency', currency: 'KES' }) :
                             'Not set'
                           }
                         </span>
@@ -847,8 +859,15 @@ const ClientsListPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleAssignSalesRep(client)}
+                            onClick={() => navigate(`/dashboard/clients/${client.id}`)}
                             className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="View details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleAssignSalesRep(client)}
+                            className="p-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
                             title="Assign sales rep"
                           >
                             <UserPlus className="h-4 w-4" />
@@ -856,12 +875,14 @@ const ClientsListPage: React.FC = () => {
                           <button
                             onClick={() => handleEditClick(client)}
                             className="p-1 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                            title="Edit client"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteClient(client.id)}
                             className="p-1 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete client"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -889,34 +910,35 @@ const ClientsListPage: React.FC = () => {
               <div className="flex items-center gap-2 text-sm text-gray-700">
                 <span>Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} results</span>
               </div>
-              
+
               <div className="flex items-center gap-3">
-                <select 
-                  value={limit} 
-                  onChange={handlePageSizeChange} 
+                <select
+                  value={limit}
+                  onChange={handlePageSizeChange}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   {[10, 20, 50, 100].map(size => (
                     <option key={size} value={size}>{size} per page</option>
                   ))}
                 </select>
-                
+
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={handlePrevPage} 
-                    disabled={page === 1} 
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={page === 1}
                     className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                   >
                     <ChevronDown className="h-4 w-4 rotate-90" />
                   </button>
-                  
+
                   <span className="px-3 py-2 text-sm text-gray-700">
                     Page {page} of {totalPages}
                   </span>
-                  
-                  <button 
-                    onClick={handleNextPage} 
-                    disabled={page === totalPages} 
+
+
+                  <button
+                    onClick={handleNextPage}
+                    disabled={page === totalPages}
                     className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                   >
                     <ChevronDown className="h-4 w-4 -rotate-90" />
@@ -940,7 +962,7 @@ const ClientsListPage: React.FC = () => {
         outletAccounts={outletAccounts}
         onCountryChange={setSelectedCountry}
       />
-      
+
       {editModalOpen && editClient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -948,7 +970,7 @@ const ClientsListPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900">Edit Client</h2>
               <p className="text-sm text-gray-600 mt-1">Update client information</p>
             </div>
-            
+
             <form
               onSubmit={e => {
                 e.preventDefault();
@@ -966,7 +988,7 @@ const ClientsListPage: React.FC = () => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -987,7 +1009,7 @@ const ClientsListPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                 <input
@@ -997,7 +1019,7 @@ const ClientsListPage: React.FC = () => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                 <select
@@ -1015,7 +1037,7 @@ const ClientsListPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
@@ -1024,8 +1046,8 @@ const ClientsListPage: React.FC = () => {
                     onChange={e => {
                       const regionId = parseInt(e.target.value);
                       const region = regions.find(r => r.id === regionId);
-                      setEditClient({ 
-                        ...editClient, 
+                      setEditClient({
+                        ...editClient,
                         region_id: regionId,
                         region: region?.name || ''
                       });
@@ -1046,8 +1068,8 @@ const ClientsListPage: React.FC = () => {
                     onChange={e => {
                       const routeId = e.target.value ? parseInt(e.target.value) : undefined;
                       const route = routes.find(r => r.id === routeId);
-                      setEditClient({ 
-                        ...editClient, 
+                      setEditClient({
+                        ...editClient,
                         route_id: routeId,
                         route_name: route?.name || '',
                         route_id_update: routeId,
@@ -1064,7 +1086,7 @@ const ClientsListPage: React.FC = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tax PIN</label>
                 <input
@@ -1074,7 +1096,7 @@ const ClientsListPage: React.FC = () => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Credit Limit</label>
@@ -1099,7 +1121,7 @@ const ClientsListPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Client Type</label>
                 <select
@@ -1127,9 +1149,9 @@ const ClientsListPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               {editError && <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">{editError}</div>}
-              
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
