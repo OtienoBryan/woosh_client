@@ -97,6 +97,7 @@ import SalesRepLeavesPage from './pages/SalesRepLeavesPage';
 import SalesRepWorkingDaysPage from './pages/SalesRepWorkingDaysPage';
 import SalesRepAttendancePage from './pages/SalesRepAttendancePage';
 import OverallAttendancePage from './pages/OverallAttendancePage';
+import MyReportsPage from './pages/MyReportsPage';
 import SalesRepPerformancePage from './pages/SalesRepPerformancePage';
 import SharedPerformancePage from './pages/SharedPerformancePage';
 import ManagersPerformancePage from './pages/ManagersPerformancePage';
@@ -615,6 +616,7 @@ const App = () => {
             <Route path="/visibility-report" element={<VisibilityReportPage />} />
             <Route path="/my-visibility" element={<MyVisibilityPage />} />
             <Route path="/feedback-reports" element={<FeedbackReportPage />} />
+            <Route path="/my-reports" element={<MyReportsPage />} />
             <Route path="/availability-reports" element={<AvailabilityReportPage />} />
             <Route path="/client-activity" element={<ClientActivityPage />} />
             <Route path="/assets" element={

@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { DateTime } from 'luxon';
 import { salesService, Country, SalesRep } from '../services/salesService';
-import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity, Navigation } from 'lucide-react';
+import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity, Navigation, FileText } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -53,12 +55,13 @@ interface DashboardStats {
 }
 
 const OverallAttendancePage: React.FC = () => {
+  const navigate = useNavigate();
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const defaultStart = new Date(year, month, 1).toISOString().slice(0, 10);
-  const defaultEnd = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  const defaultStart = DateTime.now().startOf('month').toISODate();
+  const defaultEnd = DateTime.now().endOf('month').toISODate();
   
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(defaultEnd);
@@ -240,13 +243,71 @@ const OverallAttendancePage: React.FC = () => {
 
   // Helper function to format date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    if (!dateString) return 'N/A';
+    
+    // Extract date from the ISO string without any conversion
+    // Format: 2025-09-07T20:08:29.590Z
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const monthIndex = parseInt(month) - 1;
+      const dayIndex = new Date(parseInt(year), monthIndex, parseInt(day)).getDay();
+      return `${dayNames[dayIndex]}, ${parseInt(day)} ${monthNames[monthIndex]} ${year}`;
+    }
+    
+    const date = DateTime.fromISO(dateString);
+    if (!date.isValid) {
+      // Try parsing with native Date as fallback
+      const nativeDate = new Date(dateString);
+      if (isNaN(nativeDate.getTime())) {
+        return 'Invalid Date';
+      }
+      // Format manually to show the exact time from database
+      const year = nativeDate.getUTCFullYear();
+      const month = nativeDate.getUTCMonth() + 1;
+      const day = nativeDate.getUTCDate();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayOfWeek = dayNames[nativeDate.getUTCDay()];
+      return `${dayOfWeek}, ${day} ${monthNames[month - 1]} ${year}`;
+    }
+    // Display without timezone conversion
+    return date.toFormat('EEE, d MMM yyyy');
+  };
+
+  // Helper function to safely format date/time
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    
+    // Extract date and time from the ISO string without any conversion
+    // Format: 2025-09-07T20:08:29.590Z
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+    if (match) {
+      const [, year, month, day, hours, minutes] = match;
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthIndex = parseInt(month) - 1;
+      return `${parseInt(day)} ${monthNames[monthIndex]} ${year}, ${hours}:${minutes}`;
+    }
+    
+    const date = DateTime.fromISO(dateString);
+    if (!date.isValid) {
+      const nativeDate = new Date(dateString);
+      if (isNaN(nativeDate.getTime())) {
+        return 'Invalid Date';
+      }
+      // Format manually to show the exact time from database
+      const year = nativeDate.getUTCFullYear();
+      const month = nativeDate.getUTCMonth() + 1;
+      const day = nativeDate.getUTCDate();
+      const hours = nativeDate.getUTCHours();
+      const minutes = nativeDate.getUTCMinutes();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${day} ${monthNames[month - 1]} ${year}, ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+    // Display without timezone conversion
+    return date.toFormat('d MMM yyyy, HH:mm');
   };
 
   // Helper function to get clients for a specific date
@@ -966,6 +1027,9 @@ const OverallAttendancePage: React.FC = () => {
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Time Spent
                             </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -1038,6 +1102,26 @@ const OverallAttendancePage: React.FC = () => {
                                     <div className="text-xs text-gray-500">
                                       {jp.checkoutTime ? 'Completed' : 'In Progress'}
                                     </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation(); // Prevent row click
+                                        navigate('/my-reports', {
+                                          state: {
+                                            clientId: client.id,
+                                            clientName: client.name,
+                                            salesRepId: jp.userId,
+                                            salesRepName: salesRep?.name || 'Unknown',
+                                            visitDate: selectedDateForClients
+                                          }
+                                        });
+                                      }}
+                                      className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                                    >
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      Feedback
+                                    </button>
                                   </td>
                                 </tr>
                               );
@@ -1122,13 +1206,13 @@ const OverallAttendancePage: React.FC = () => {
                         <div>
                           <label className="text-sm font-medium text-gray-500">Check-in Time</label>
                           <p className="text-sm text-gray-900">
-                            {selectedVisit.journeyPlan.checkInTime ? new Date(selectedVisit.journeyPlan.checkInTime).toLocaleString() : 'N/A'}
+                            {formatDateTime(selectedVisit.journeyPlan.checkInTime || '')}
                           </p>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-500">Check-out Time</label>
                           <p className="text-sm text-gray-900">
-                            {selectedVisit.journeyPlan.checkoutTime ? new Date(selectedVisit.journeyPlan.checkoutTime).toLocaleString() : 'Still Active'}
+                            {selectedVisit.journeyPlan.checkoutTime ? formatDateTime(selectedVisit.journeyPlan.checkoutTime || '') : 'Still Active'}
                           </p>
                         </div>
                         <div>
