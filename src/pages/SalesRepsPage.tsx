@@ -783,12 +783,12 @@ const SalesRepsPage: React.FC = () => {
                       >
                         View Details
                       </Link>
-                      <button
+                      {/* <button
                         onClick={() => { setSelectedSalesRepId(rep.id); setAssignModalOpen(true); }}
                         className="bg-green-100 text-green-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-green-200 transition"
                       >
                         Assign Managers
-                      </button>
+                      </button> */}
                       <button
                         onClick={() => handleEdit(rep)}
                         className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-blue-200 transition"

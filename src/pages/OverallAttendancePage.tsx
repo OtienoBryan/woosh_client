@@ -361,7 +361,7 @@ const OverallAttendancePage: React.FC = () => {
         ) : (
           <>
             {/* Enhanced Dashboard Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
               <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <div className="p-6">
                   <div className="flex items-center">
@@ -587,7 +587,7 @@ const OverallAttendancePage: React.FC = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
               <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
                 <div className="flex items-center">
                   <div className="bg-blue-100 p-3 rounded-lg">
