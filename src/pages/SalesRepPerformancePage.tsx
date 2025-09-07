@@ -153,24 +153,80 @@ const SalesRepPerformancePage: React.FC = () => {
     let headers, rows;
     
     if (viewType === 'quantity') {
-      // Quantity view: Separate columns for vapes and pouches
-      const quantityHeaders: string[] = [];
-      monthLabels.forEach(month => {
-        quantityHeaders.push(`${month} (Vapes)`, `${month} (Pouches)`);
-      });
-      headers = ['Sales Rep', ...quantityHeaders, 'Total Vapes', 'Total Pouches'];
+      // Quantity view: Match page format - single column per month with vapes/pouches stacked
+      headers = ['Sales Rep', ...monthLabels, 'Total'];
       
       rows = sortedData.map(rep => {
         const row = [rep.sales_rep_name];
+        
+        // Add monthly data in the same format as the page
         months.forEach(month => {
           const vapesValue = parseFloat(String((rep as any)[`${month}_vapes`])) || 0;
           const pouchesValue = parseFloat(String((rep as any)[`${month}_pouches`])) || 0;
-          row.push(vapesValue.toLocaleString(), pouchesValue.toLocaleString());
+          const vapesTarget = parseFloat(String((rep as any)[`${month}_vapes_target`])) || 0;
+          const pouchesTarget = parseFloat(String((rep as any)[`${month}_pouches_target`])) || 0;
+          
+          const vapesPercentage = vapesTarget > 0 ? ((vapesValue / vapesTarget) * 100).toFixed(1) + '%' : '';
+          const pouchesPercentage = pouchesTarget > 0 ? ((pouchesValue / pouchesTarget) * 100).toFixed(1) + '%' : '';
+          
+          // Format like the page: Vapes (Target) % / Pouches (Target) %
+          let monthData = '';
+          if (vapesValue > 0 || vapesTarget > 0) {
+            monthData += `Vapes: ${vapesValue.toLocaleString()}`;
+            if (vapesTarget > 0) {
+              monthData += ` (Target: ${vapesTarget.toLocaleString()})`;
+              if (vapesPercentage) {
+                monthData += ` ${vapesPercentage}`;
+              }
+            }
+          }
+          
+          if (pouchesValue > 0 || pouchesTarget > 0) {
+            if (monthData) monthData += ' / ';
+            monthData += `Pouches: ${pouchesValue.toLocaleString()}`;
+            if (pouchesTarget > 0) {
+              monthData += ` (Target: ${pouchesTarget.toLocaleString()})`;
+              if (pouchesPercentage) {
+                monthData += ` ${pouchesPercentage}`;
+              }
+            }
+          }
+          
+          row.push(monthData || '0');
         });
-        row.push(
-          ((rep as any).total_vapes || 0).toLocaleString(),
-          ((rep as any).total_pouches || 0).toLocaleString()
-        );
+        
+        // Add total in the same format as the page
+        const totalVapes = (rep as any).total_vapes || 0;
+        const totalPouches = (rep as any).total_pouches || 0;
+        const totalVapesTarget = months.reduce((sum, month) => sum + (parseFloat(String((rep as any)[`${month}_vapes_target`])) || 0), 0);
+        const totalPouchesTarget = months.reduce((sum, month) => sum + (parseFloat(String((rep as any)[`${month}_pouches_target`])) || 0), 0);
+        
+        const totalVapesPercentage = totalVapesTarget > 0 ? ((totalVapes / totalVapesTarget) * 100).toFixed(1) + '%' : '';
+        const totalPouchesPercentage = totalPouchesTarget > 0 ? ((totalPouches / totalPouchesTarget) * 100).toFixed(1) + '%' : '';
+        
+        let totalData = '';
+        if (totalVapes > 0 || totalVapesTarget > 0) {
+          totalData += `Vapes: ${totalVapes.toLocaleString()}`;
+          if (totalVapesTarget > 0) {
+            totalData += ` (Target: ${totalVapesTarget.toLocaleString()})`;
+            if (totalVapesPercentage) {
+              totalData += ` ${totalVapesPercentage}`;
+            }
+          }
+        }
+        
+        if (totalPouches > 0 || totalPouchesTarget > 0) {
+          if (totalData) totalData += ' / ';
+          totalData += `Pouches: ${totalPouches.toLocaleString()}`;
+          if (totalPouchesTarget > 0) {
+            totalData += ` (Target: ${totalPouchesTarget.toLocaleString()})`;
+            if (totalPouchesPercentage) {
+              totalData += ` ${totalPouchesPercentage}`;
+            }
+          }
+        }
+        
+        row.push(totalData || '0');
         return row;
       });
     } else {
