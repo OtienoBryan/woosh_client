@@ -625,12 +625,12 @@ const SalesRepsPage: React.FC = () => {
         >
           Sales Rep Performance
         </Link> */}
-        <Link
+        {/* <Link
           to="/shared-performance"
           className="bg-pink-100 text-pink-700 font-semibold px-4 py-2 rounded shadow hover:bg-pink-200"
         >
           Sales Rep Performance
-        </Link>
+        </Link> */}
         {/* <Link
           to="/managers-performance"
           className="bg-green-100 text-green-700 font-semibold px-4 py-2 rounded shadow hover:bg-green-200"

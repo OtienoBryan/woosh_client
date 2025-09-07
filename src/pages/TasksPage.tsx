@@ -74,7 +74,7 @@ const TasksPage: React.FC = () => {
     const fetchSalesReps = async () => {
       setSalesRepsLoading(true);
       try {
-        const res = await axios.get('/api/sales/sales-reps');
+        const res = await axios.get('/api/sales/sales-reps?status=1');
         if (res.data && Array.isArray(res.data)) {
           setSalesReps(res.data);
         } else {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { salesService, Country, SalesRep } from '../services/salesService';
-import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity } from 'lucide-react';
+import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity, Navigation } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -23,12 +23,13 @@ interface JourneyPlan {
   userId: number;
   clientId: number;
   date: string; // yyyy-mm-dd
-  checkinTime?: string;
   checkInTime?: string;
-  startTime?: string;
   checkoutTime?: string;
-  checkOutTime?: string;
-  endTime?: string;
+  time?: string;
+  status?: number;
+  notes?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface Client {
@@ -81,6 +82,14 @@ const OverallAttendancePage: React.FC = () => {
   const [modalCountryFilter, setModalCountryFilter] = useState<string>('');
   const [clientsModalOpen, setClientsModalOpen] = useState(false);
   const [clientsForDate, setClientsForDate] = useState<Client[]>([]);
+  const [selectedDateForClients, setSelectedDateForClients] = useState<string>('');
+  const [clientsModalSalesRepFilter, setClientsModalSalesRepFilter] = useState<string>('');
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [selectedVisit, setSelectedVisit] = useState<{
+    client: Client;
+    journeyPlan: JourneyPlan;
+    salesRep: SalesRep | null;
+  } | null>(null);
 
   // Data fetching
   useEffect(() => {
@@ -166,7 +175,7 @@ const OverallAttendancePage: React.FC = () => {
         if (!activeSalesRepIds.has(lh.userId)) return;
         
         const date = lh.sessionStart.slice(0, 10);
-        if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set() };
+        if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set<number>() };
         dateMap[date].salesReps.add(lh.userId);
       });
     } else {
@@ -175,9 +184,12 @@ const OverallAttendancePage: React.FC = () => {
     
     if (Array.isArray(journeyPlans)) {
       journeyPlans.forEach(jp => {
-        const date = jp.date.slice(0, 10);
-        if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: Set<number>() };
-        dateMap[date].clients.add(jp.clientId);
+        // Only count clients that have been actually visited (have checkInTime)
+        if (jp.checkInTime) {
+          const date = jp.date.slice(0, 10);
+          if (!dateMap[date]) dateMap[date] = { salesReps: new Set(), clients: new Set<number>() };
+          dateMap[date].clients.add(jp.clientId);
+        }
       });
     } else {
       console.warn('journeyPlans is not an array:', journeyPlans);
@@ -192,6 +204,7 @@ const OverallAttendancePage: React.FC = () => {
       }));
      console.log('Generated attendance rows:', rows.length);
      console.log('Sample attendance row:', rows[0]);
+     console.log('Journey plans with checkInTime:', journeyPlans.filter(jp => jp.checkInTime).length);
     setAttendanceRows(rows);
   }, [loginHistory, journeyPlans, salesReps]);
 
@@ -236,6 +249,38 @@ const OverallAttendancePage: React.FC = () => {
     });
   };
 
+  // Helper function to get clients for a specific date
+  const getClientsForDate = (date: string) => {
+    if (!Array.isArray(journeyPlans) || !Array.isArray(clients)) return [];
+    
+    // Get client IDs that were visited on this date (have checkInTime)
+    const visitedClientIds = journeyPlans
+      .filter(jp => jp.date.slice(0, 10) === date && jp.checkInTime)
+      .map(jp => jp.clientId);
+    
+    // Get unique client IDs
+    const uniqueClientIds = [...new Set(visitedClientIds)];
+    
+    // Get client details
+    const visitedClients = uniqueClientIds
+      .map(clientId => clients.find(client => client.id === clientId))
+      .filter(client => client !== undefined) as Client[];
+    
+    return visitedClients;
+  };
+
+  // Helper function to handle visit row click
+  const handleVisitClick = (client: Client, journeyPlan: JourneyPlan) => {
+    const salesRep = Array.isArray(salesReps) ? salesReps.find(sr => sr.id === journeyPlan.userId) || null : null;
+    
+    setSelectedVisit({
+      client,
+      journeyPlan,
+      salesRep: salesRep || null
+    });
+    setLocationModalOpen(true);
+  };
+
   // Debug: Log modal state
   console.log('Modal state check - salesRepsModalOpen:', salesRepsModalOpen);
 
@@ -249,6 +294,25 @@ const OverallAttendancePage: React.FC = () => {
     
     return filteredReps;
   }, [modalCountryFilter, activeSalesRepsForDate, salesRepsModalOpen]);
+
+  // Memoized filtered clients for modal
+  const filteredClientsForDate = useMemo(() => {
+    if (!clientsModalOpen || !Array.isArray(clientsForDate)) return [];
+    
+    if (!clientsModalSalesRepFilter) return clientsForDate;
+    
+    // Filter clients by selected sales rep
+    const salesRepId = parseInt(clientsModalSalesRepFilter);
+    return clientsForDate.filter(client => {
+      // Check if this client was visited by the selected sales rep on the selected date
+      return Array.isArray(journeyPlans) && journeyPlans.some(jp => 
+        jp.clientId === client.id && 
+        jp.userId === salesRepId &&
+        jp.date.slice(0, 10) === selectedDateForClients &&
+        jp.checkInTime
+      );
+    });
+  }, [clientsModalOpen, clientsForDate, clientsModalSalesRepFilter, journeyPlans, selectedDateForClients]);
 
   // Helper functions for filter modal
   const openFilterModal = () => {
@@ -510,9 +574,19 @@ const OverallAttendancePage: React.FC = () => {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-gray-900">
+                                <button
+                                  onClick={() => {
+                                    console.log('Clients visited clicked for date:', row.date);
+                                    setSelectedDateForClients(row.date);
+                                    const clientsForDate = getClientsForDate(row.date);
+                                    console.log('Clients for date:', clientsForDate);
+                                    setClientsForDate(clientsForDate);
+                                    setClientsModalOpen(true);
+                                  }}
+                                  className="text-sm font-semibold text-green-600 hover:text-green-800 transition-colors duration-150 cursor-pointer"
+                                >
                                   {row.clientsVisited.toLocaleString()}
-                                </div>
+                                </button>
                                 <div className="text-xs text-gray-500">visits</div>
                               </td>
                                                              <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -532,7 +606,7 @@ const OverallAttendancePage: React.FC = () => {
                                            const clientsVisited = Array.isArray(journeyPlans) ? journeyPlans.filter(jp => 
                                              jp.userId === rep.id && 
                                              jp.date.slice(0, 10) === row.date &&
-                                             (jp.checkinTime || jp.checkInTime) // Check both possible field names
+                                             jp.checkInTime // Use correct field name from database
                                            ).length : 0;
                                           
                                           console.log(`Rep ${rep.name} (ID: ${rep.id}):`, {
@@ -543,7 +617,7 @@ const OverallAttendancePage: React.FC = () => {
                                              journeyPlansWithCheckin: Array.isArray(journeyPlans) ? journeyPlans.filter(jp => 
                                                jp.userId === rep.id && 
                                                jp.date.slice(0, 10) === row.date &&
-                                               (jp.checkinTime || jp.checkInTime)
+                                               jp.checkInTime
                                              ) : [],
                                              clientsVisited,
                                              targetDate: row.date,
@@ -795,6 +869,351 @@ const OverallAttendancePage: React.FC = () => {
                 </button>
         </div>
       </div>
+          </div>
+        )}
+
+        {/* Clients Modal - Full Page */}
+        {clientsModalOpen && (
+          <div className="fixed inset-0 bg-white z-[9999] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg">
+              <div className="flex items-center justify-between p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                    <MapPin className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold">
+                      Clients Visited
+                    </h1>
+                    <p className="text-green-100">
+                      {selectedDateForClients && formatDate(selectedDateForClients)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  {/* Sales Rep Filter */}
+                  <div className="relative">
+                    <select
+                      value={clientsModalSalesRepFilter}
+                      onChange={(e) => setClientsModalSalesRepFilter(e.target.value)}
+                      className="bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200"
+                    >
+                      <option value="">All Sales Reps</option>
+                      {Array.isArray(salesReps) && salesReps.filter(rep => rep.status === 1).map((rep) => (
+                        <option key={rep.id} value={rep.id} className="text-gray-900">
+                          {rep.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setClientsModalOpen(false)}
+                    className="text-white hover:text-green-100 transition-colors duration-150 p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+                  >
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="h-full overflow-y-auto bg-gray-50">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {filteredClientsForDate.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="bg-white rounded-full p-8 w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                      <MapPin className="h-16 w-16 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                      {clientsModalSalesRepFilter ? 'No Clients Visited by Selected Sales Rep' : 'No Clients Visited'}
+                    </h3>
+                    <p className="text-gray-500">
+                      {clientsModalSalesRepFilter 
+                        ? `No clients were visited by the selected sales representative on this date.`
+                        : 'No clients were visited on this date.'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Client Name
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Visit Details
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Sales Representative
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Check-in Time
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Check-out Time
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Time Spent
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredClientsForDate.map((client) => {
+                            // Get journey plan details for this client on this date
+                            const clientJourneyPlans = Array.isArray(journeyPlans) ? journeyPlans.filter(jp => 
+                              jp.clientId === client.id && 
+                              jp.date.slice(0, 10) === selectedDateForClients &&
+                              jp.checkInTime
+                            ) : [];
+                            
+                            return clientJourneyPlans.map((jp, jpIndex) => {
+                              const salesRep = Array.isArray(salesReps) ? salesReps.find(sr => sr.id === jp.userId) : null;
+                              
+                              return (
+                                <tr 
+                                  key={`${client.id}-${jpIndex}`} 
+                                  className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                  onClick={() => handleVisitClick(client, jp)}
+                                >
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <div className="flex-shrink-0">
+                                        <div className="bg-gradient-to-r from-green-500 to-green-600 p-2 rounded-full">
+                                          <MapPin className="h-4 w-4 text-white" />
+                                        </div>
+                                      </div>
+                                      <div className="ml-3">
+                                        <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                                        <div className="text-sm text-gray-500">Client ID: {client.id}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <div className="text-sm text-gray-900">
+                                      {jp.notes || 'No notes'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Status: {jp.status === 1 ? 'Completed' : 'Pending'}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {salesRep ? salesRep.name : 'Unknown'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {salesRep ? salesRep.email : ''}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <div className="text-sm text-gray-900">
+                                      {jp.checkInTime ? new Date(jp.checkInTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      }) : 'N/A'}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <div className="text-sm text-gray-900">
+                                      {jp.checkoutTime ? new Date(jp.checkoutTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      }) : 'Still Active'}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <div className="text-sm font-semibold text-blue-600">
+                                      {jp.checkInTime ? calculateTimeSpent(jp.checkInTime as string, jp.checkoutTime) : 'N/A'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {jp.checkoutTime ? 'Completed' : 'In Progress'}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-gray-200 px-6 py-4">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Showing {filteredClientsForDate.length} clients visited
+                  {selectedDateForClients && ` on ${formatDate(selectedDateForClients)}`}
+                  {clientsModalSalesRepFilter && ` by ${salesReps.find(rep => rep.id === parseInt(clientsModalSalesRepFilter))?.name || 'Selected Sales Rep'}`}
+                </div>
+                <button
+                  onClick={() => setClientsModalOpen(false)}
+                  className="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Location Modal - Full Page */}
+        {locationModalOpen && selectedVisit && (
+          <div className="fixed inset-0 bg-white z-[9999] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+              <div className="flex items-center justify-between p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                    <Navigation className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold">
+                      Visit Location
+                    </h1>
+                    <p className="text-blue-100">
+                      {selectedVisit.client.name} - {selectedDateForClients && formatDate(selectedDateForClients)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setLocationModalOpen(false)}
+                    className="text-white hover:text-blue-100 transition-colors duration-150 p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+                  >
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="h-full overflow-y-auto bg-gray-50">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {selectedVisit.journeyPlan.latitude && selectedVisit.journeyPlan.longitude ? (
+                  <div className="space-y-6">
+                    {/* Visit Details Card */}
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Visit Details</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Client</label>
+                          <p className="text-sm text-gray-900">{selectedVisit.client.name}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Sales Representative</label>
+                          <p className="text-sm text-gray-900">{selectedVisit.salesRep?.name || 'Unknown'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Check-in Time</label>
+                          <p className="text-sm text-gray-900">
+                            {selectedVisit.journeyPlan.checkInTime ? new Date(selectedVisit.journeyPlan.checkInTime).toLocaleString() : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Check-out Time</label>
+                          <p className="text-sm text-gray-900">
+                            {selectedVisit.journeyPlan.checkoutTime ? new Date(selectedVisit.journeyPlan.checkoutTime).toLocaleString() : 'Still Active'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Time Spent</label>
+                          <p className="text-sm text-gray-900">
+                            {selectedVisit.journeyPlan.checkInTime ? calculateTimeSpent(selectedVisit.journeyPlan.checkInTime as string, selectedVisit.journeyPlan.checkoutTime) : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Notes</label>
+                          <p className="text-sm text-gray-900">{selectedVisit.journeyPlan.notes || 'No notes'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Map Container */}
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                      <div className="p-6 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900">Visit Location</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Coordinates: {selectedVisit.journeyPlan.latitude}, {selectedVisit.journeyPlan.longitude}
+                        </p>
+                      </div>
+                      <div className="h-96 bg-gray-100 flex items-center justify-center">
+                        <div className="text-center">
+                          <Navigation className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <h4 className="text-lg font-medium text-gray-900 mb-2">Interactive Map</h4>
+                          <p className="text-gray-600 mb-4">
+                            Location: {selectedVisit.journeyPlan.latitude}, {selectedVisit.journeyPlan.longitude}
+                          </p>
+                          <div className="space-x-4">
+                            <a
+                              href={`https://www.google.com/maps?q=${selectedVisit.journeyPlan.latitude},${selectedVisit.journeyPlan.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                            >
+                              <MapPin className="h-4 w-4 mr-2" />
+                              Open in Google Maps
+                            </a>
+                            <a
+                              href={`https://www.openstreetmap.org/?mlat=${selectedVisit.journeyPlan.latitude}&mlon=${selectedVisit.journeyPlan.longitude}&zoom=15`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                            >
+                              <Navigation className="h-4 w-4 mr-2" />
+                              Open in OpenStreetMap
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="bg-white rounded-full p-8 w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                      <Navigation className="h-16 w-16 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                      No Location Data
+                    </h3>
+                    <p className="text-gray-500">
+                      This visit does not have GPS coordinates recorded.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-gray-200 px-6 py-4">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Visit location for {selectedVisit.client.name}
+                  {selectedDateForClients && ` on ${formatDate(selectedDateForClients)}`}
+                </div>
+                <button
+                  onClick={() => setLocationModalOpen(false)}
+                  className="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
