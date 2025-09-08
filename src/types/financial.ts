@@ -602,3 +602,45 @@ export interface CreateMerchandiseAssignment {
   date_assigned: string;
   comment?: string;
 }
+
+export interface UpliftSaleItem {
+  id: number;
+  upliftSaleId: number;
+  productId: number;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  createdAt: string;
+  product?: Product;
+  product_name?: string;
+  product_code?: string;
+}
+
+export interface OutletAccount {
+  id: number;
+  account_name: string;
+  description?: string;
+}
+
+export interface SalesRep {
+  id: number;
+  name: string;
+}
+
+export interface UpliftSale {
+  id: number;
+  clientId: number;
+  userId: number;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  totalAmount: number;
+  createdAt: string;
+  client?: Customer;
+  salesRep?: {
+    id: number;
+    name: string;
+  };
+  client_name?: string;
+  user_name?: string;
+  username?: string;
+  items?: UpliftSaleItem[];
+}

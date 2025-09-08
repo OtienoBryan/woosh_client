@@ -140,6 +140,7 @@ import ClientCreditNotePage from './pages/ClientCreditNotePage';
 import CreditNoteSummaryPage from './pages/CreditNoteSummaryPage';
 import CreditNoteDetailsPage from './pages/CreditNoteDetailsPage';
 import RoutesPage from './pages/RoutesPage';
+import UpliftSalesPage from './pages/UpliftSalesPage';
 
 // Protected route wrapper
 const ProtectedRoute = () => {
@@ -566,6 +567,11 @@ const App = () => {
             <Route path="/clients-list" element={<ClientsListPage />} />
             <Route path="/clients-map" element={<ClientsMapPage />} />
             <Route path="/routes" element={<RoutesPage />} />
+            <Route path="/uplift-sales" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'sales', 'executive']} fallbackPath="/sales-dashboard">
+                <UpliftSalesPage />
+              </RoleBasedRoute>
+            } />
             <Route path="/suppliers" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'sales', 'executive']} fallbackPath="/sales-dashboard">
                 <SuppliersPage />
