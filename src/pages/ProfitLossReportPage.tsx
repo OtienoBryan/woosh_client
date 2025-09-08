@@ -132,6 +132,92 @@ const ProfitLossReportPage: React.FC = () => {
     }
   };
 
+  const fetchDateComparisonData = async (startDate: string, endDate: string): Promise<MultiMonthComparisonData | null> => {
+    try {
+      const currentData = reportData;
+      if (!currentData) {
+        throw new Error('Current period data not available');
+      }
+
+      console.log('Fetching date comparison data for:', startDate, 'to', endDate);
+
+      // Fetch data for the selected date range
+      const params = new URLSearchParams();
+      params.append('start_date', startDate);
+      params.append('end_date', endDate);
+      
+      console.log(`Fetching data for date range: ${startDate} to ${endDate}`);
+      
+      const res = await axios.get(`${API_BASE_URL}/financial/reports/profit-loss?${params}`);
+      console.log(`Response for date range:`, res.data);
+      
+      if (!res.data.success) {
+        throw new Error(`Failed to fetch data for date range ${startDate} to ${endDate}`);
+      }
+
+      const comparisonData = res.data.data;
+
+      // Calculate comparison data
+      const calculatePercentageChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / Math.abs(previous)) * 100;
+      };
+
+      const formatDateRangeLabel = (start: string, end: string) => {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+      };
+
+      const multiMonthComparisonData: MultiMonthComparisonData = {
+        current: currentData,
+        comparisons: [{
+          month: `${startDate}_to_${endDate}`,
+          monthLabel: formatDateRangeLabel(startDate, endDate),
+          data: comparisonData,
+          changes: {
+            revenue: {
+              sales_revenue: currentData.revenue.sales_revenue - comparisonData.revenue.sales_revenue,
+              other_income: currentData.revenue.other_income - comparisonData.revenue.other_income,
+              total_revenue: currentData.revenue.total_revenue - comparisonData.revenue.total_revenue,
+            },
+            expenses: {
+              cost_of_goods_sold: currentData.expenses.cost_of_goods_sold - comparisonData.expenses.cost_of_goods_sold,
+              total_operating_expenses: currentData.expenses.total_operating_expenses - comparisonData.expenses.total_operating_expenses,
+              total_expenses: currentData.expenses.total_expenses - comparisonData.expenses.total_expenses,
+            },
+            net_profit: currentData.net_profit - comparisonData.net_profit,
+            gross_profit: currentData.gross_profit - comparisonData.gross_profit,
+            gross_margin: currentData.gross_margin - comparisonData.gross_margin,
+            net_margin: currentData.net_margin - comparisonData.net_margin,
+          },
+          percentage_changes: {
+            revenue: {
+              sales_revenue: calculatePercentageChange(currentData.revenue.sales_revenue, comparisonData.revenue.sales_revenue),
+              other_income: calculatePercentageChange(currentData.revenue.other_income, comparisonData.revenue.other_income),
+              total_revenue: calculatePercentageChange(currentData.revenue.total_revenue, comparisonData.revenue.total_revenue),
+            },
+            expenses: {
+              cost_of_goods_sold: calculatePercentageChange(currentData.expenses.cost_of_goods_sold, comparisonData.expenses.cost_of_goods_sold),
+              total_operating_expenses: calculatePercentageChange(currentData.expenses.total_operating_expenses, comparisonData.expenses.total_operating_expenses),
+              total_expenses: calculatePercentageChange(currentData.expenses.total_expenses, comparisonData.expenses.total_expenses),
+            },
+            net_profit: calculatePercentageChange(currentData.net_profit, comparisonData.net_profit),
+            gross_profit: calculatePercentageChange(currentData.gross_profit, comparisonData.gross_profit),
+            gross_margin: calculatePercentageChange(currentData.gross_margin, comparisonData.gross_margin),
+            net_margin: calculatePercentageChange(currentData.net_margin, comparisonData.net_margin),
+          }
+        }]
+      };
+
+      return multiMonthComparisonData;
+
+    } catch (err: any) {
+      console.error('Error fetching date comparison data:', err);
+      throw new Error(`Failed to fetch date comparison data: ${err.message}`);
+    }
+  };
+
   const fetchComparisonData = async (selectedMonths: string[]): Promise<MultiMonthComparisonData | null> => {
     try {
       const currentData = reportData;
@@ -590,12 +676,13 @@ const ProfitLossReportPage: React.FC = () => {
         customEndDate={customEndDate}
       />
 
-      <MonthlyComparisonModal
-        isOpen={showComparisonModal}
-        onClose={() => setShowComparisonModal(false)}
-        currentPeriodLabel={getPeriodLabel()}
-        onFetchComparisonData={fetchComparisonData}
-      />
+        <MonthlyComparisonModal
+          isOpen={showComparisonModal}
+          onClose={() => setShowComparisonModal(false)}
+          currentPeriodLabel={getPeriodLabel()}
+          onFetchComparisonData={fetchComparisonData}
+          onFetchDateComparisonData={fetchDateComparisonData}
+        />
     </div>
   );
 };

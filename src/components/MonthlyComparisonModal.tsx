@@ -66,6 +66,7 @@ interface MonthlyComparisonModalProps {
   onClose: () => void;
   currentPeriodLabel: string;
   onFetchComparisonData: (selectedMonths: string[]) => Promise<MultiMonthComparisonData | null>;
+  onFetchDateComparisonData: (startDate: string, endDate: string) => Promise<MultiMonthComparisonData | null>;
 }
 
 interface MultiMonthComparisonData {
@@ -120,9 +121,13 @@ const MonthlyComparisonModal: React.FC<MonthlyComparisonModalProps> = ({
   isOpen,
   onClose,
   currentPeriodLabel,
-  onFetchComparisonData
+  onFetchComparisonData,
+  onFetchDateComparisonData
 }) => {
+  const [comparisonMode, setComparisonMode] = useState<'months' | 'dates'>('months');
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [comparisonData, setComparisonData] = useState<MultiMonthComparisonData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -162,19 +167,27 @@ const MonthlyComparisonModal: React.FC<MonthlyComparisonModalProps> = ({
     });
   };
 
-  const handleMonthSelect = async () => {
-    if (selectedMonths.length === 0) return;
+  const handleCompare = async () => {
+    if (comparisonMode === 'months' && selectedMonths.length === 0) return;
+    if (comparisonMode === 'dates' && (!startDate || !endDate)) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const data = await onFetchComparisonData(selectedMonths);
+      let data: MultiMonthComparisonData | null = null;
+      
+      if (comparisonMode === 'months') {
+        data = await onFetchComparisonData(selectedMonths);
+      } else {
+        data = await onFetchDateComparisonData(startDate, endDate);
+      }
+      
       if (data) {
         setComparisonData(data);
         setShowComparison(true);
       } else {
-        setError('No data available for the selected months');
+        setError(`No data available for the selected ${comparisonMode === 'months' ? 'months' : 'date range'}`);
       }
     } catch (err: any) {
       console.error('Error fetching comparison data:', err);
@@ -187,8 +200,11 @@ const MonthlyComparisonModal: React.FC<MonthlyComparisonModalProps> = ({
   const handleClose = () => {
     setShowComparison(false);
     setSelectedMonths([]);
+    setStartDate('');
+    setEndDate('');
     setComparisonData(null);
     setError(null);
+    setComparisonMode('months');
     onClose();
   };
 
@@ -292,43 +308,108 @@ const MonthlyComparisonModal: React.FC<MonthlyComparisonModalProps> = ({
         <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
           <div className="p-6">
             {!showComparison ? (
-              /* Month Selection Interface */
+              /* Selection Interface */
               <div className="space-y-6">
                 <div className="text-center">
                   <Calendar className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Months to Compare</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Compare Financial Data</h3>
                   <p className="text-gray-600 mb-6">
-                    Choose one or more months to compare with <strong>{currentPeriodLabel}</strong>
+                    Choose comparison mode and select periods to compare with <strong>{currentPeriodLabel}</strong>
                   </p>
                 </div>
 
-                <div className="max-w-4xl mx-auto">
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Select Months ({selectedMonths.length} selected)
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {monthOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleMonthToggle(option.value)}
-                        className={`p-3 rounded-lg border-2 text-left transition-all ${
-                          selectedMonths.includes(option.value)
-                            ? 'border-blue-500 bg-blue-50 text-blue-900'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{option.label}</span>
-                          {selectedMonths.includes(option.value) && (
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs">✓</span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                {/* Mode Toggle */}
+                <div className="max-w-2xl mx-auto">
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setComparisonMode('months')}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                        comparisonMode === 'months'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Compare Months
+                    </button>
+                    <button
+                      onClick={() => setComparisonMode('dates')}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                        comparisonMode === 'dates'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Compare Date Ranges
+                    </button>
                   </div>
                 </div>
+
+                {comparisonMode === 'months' ? (
+                  /* Month Selection */
+                  <div className="max-w-4xl mx-auto">
+                    <label className="block text-sm font-medium text-gray-700 mb-4">
+                      Select Months ({selectedMonths.length} selected)
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {monthOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleMonthToggle(option.value)}
+                          className={`p-3 rounded-lg border-2 text-left transition-all ${
+                            selectedMonths.includes(option.value)
+                              ? 'border-blue-500 bg-blue-50 text-blue-900'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{option.label}</span>
+                            {selectedMonths.includes(option.value) && (
+                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs">✓</span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* Date Selection */
+                  <div className="max-w-2xl mx-auto">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          min={startDate}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      {startDate && endDate && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-700">
+                            <strong>Selected Period:</strong> {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {error && (
                   <div className="max-w-2xl mx-auto">
@@ -351,8 +432,12 @@ const MonthlyComparisonModal: React.FC<MonthlyComparisonModalProps> = ({
 
                 <div className="max-w-2xl mx-auto">
                   <button
-                    onClick={handleMonthSelect}
-                    disabled={selectedMonths.length === 0 || loading}
+                    onClick={handleCompare}
+                    disabled={
+                      (comparisonMode === 'months' && selectedMonths.length === 0) ||
+                      (comparisonMode === 'dates' && (!startDate || !endDate)) ||
+                      loading
+                    }
                     className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {loading ? (
@@ -363,7 +448,10 @@ const MonthlyComparisonModal: React.FC<MonthlyComparisonModalProps> = ({
                     ) : (
                       <>
                         <ChevronRight className="w-5 h-5 mr-2" />
-                        Compare with {selectedMonths.length} Selected Month{selectedMonths.length !== 1 ? 's' : ''}
+                        {comparisonMode === 'months' 
+                          ? `Compare with ${selectedMonths.length} Selected Month${selectedMonths.length !== 1 ? 's' : ''}`
+                          : 'Compare Date Ranges'
+                        }
                       </>
                     )}
                   </button>

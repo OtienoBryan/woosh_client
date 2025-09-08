@@ -23,6 +23,7 @@ const StoreInventoryPage: React.FC = () => {
   const [itemsPerPage] = useState<number>(20);
   const [sortField, setSortField] = useState<string>('category');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [inTransitProducts, setInTransitProducts] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -132,6 +133,12 @@ const StoreInventoryPage: React.FC = () => {
       if (stockSummaryResponse.success) {
         setStockSummaryData(stockSummaryResponse.data);
       }
+
+      // Fetch in-transit products
+      const inTransitResponse = await storeService.getInTransitProducts();
+      if (inTransitResponse.success) {
+        setInTransitProducts(inTransitResponse.data || []);
+      }
     } catch (err) {
       setError('Failed to fetch inventory data');
     } finally {
@@ -204,6 +211,11 @@ const StoreInventoryPage: React.FC = () => {
   const getStoreName = (storeId: number) => {
     const store = stores.find(s => Number(s.id) === Number(storeId));
     return store ? store.store_name : 'Unknown Store';
+  };
+
+  const getInTransitQuantity = (productId: number) => {
+    const inTransitProduct = inTransitProducts.find(item => item.product_id === productId);
+    return inTransitProduct ? inTransitProduct.in_transit_quantity : 0;
   };
 
   const number_format = (amount: number) => {
@@ -612,6 +624,9 @@ const StoreInventoryPage: React.FC = () => {
                       Quantity
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      In Transit
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Unit
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -665,6 +680,18 @@ const StoreInventoryPage: React.FC = () => {
                         }`}>
                           {item.quantity.toLocaleString()}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(() => {
+                          const inTransitQty = getInTransitQuantity(item.product_id);
+                          return inTransitQty > 0 ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                              {inTransitQty.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-500">-</span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {item.unit_of_measure}

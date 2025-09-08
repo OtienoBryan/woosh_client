@@ -55,6 +55,12 @@ export const storeService = {
     return response.data;
   },
 
+  // Get in-transit products
+  getInTransitProducts: async (): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/financial/inventory/in-transit');
+    return response.data;
+  },
+
   // Update stock quantity
   updateStockQuantity: async (data: {
     store_id: number;
