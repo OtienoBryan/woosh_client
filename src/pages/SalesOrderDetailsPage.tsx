@@ -482,6 +482,7 @@ const SalesOrderDetailsPage: React.FC = () => {
                     <th className="item-col">Item</th>
                     <th className="qty-col">Qty</th>
                     <th className="price-col">Unit Price</th>
+                    <th className="price-col">Price</th>
                     <th className="tax-col">Tax</th>
                     <th className="total-col">Total</th>
                   </tr>
@@ -493,6 +494,9 @@ const SalesOrderDetailsPage: React.FC = () => {
                       <td className="qty-col">{item.quantity}</td>
                       <td className="price-col">
                         {formatCurrency((item.total_price - (item.tax_amount || 0)) / item.quantity)}
+                      </td>
+                      <td className="price-col">
+                        {formatCurrency((item.total_price - (item.tax_amount || 0)))}
                       </td>
                       <td className="tax-col">{formatCurrency(item.tax_amount || 0)}</td>
                       <td className="total-col">{formatCurrency(item.total_price)}</td>
