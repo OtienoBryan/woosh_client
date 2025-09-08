@@ -396,9 +396,7 @@ const MasterSalesPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-blue-600" />
-              </div>
+               
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
                   {viewType === 'sales' ? 'Total Sales' : 'Total Quantities'}
@@ -410,7 +408,7 @@ const MasterSalesPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center">
               <div className="p-3 bg-green-100 rounded-lg">
                 <Users className="h-6 w-6 text-green-600" />
@@ -420,8 +418,8 @@ const MasterSalesPage: React.FC = () => {
                 <p className="text-2xl font-bold text-gray-900">{totalClients.toLocaleString()}</p>
               </div>
             </div>
-          </div>
-
+          </div> */}
+{/* 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center">
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -436,9 +434,9 @@ const MasterSalesPage: React.FC = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center">
               <div className="p-3 bg-orange-100 rounded-lg">
                 <Calendar className="h-6 w-6 text-orange-600" />
@@ -448,7 +446,7 @@ const MasterSalesPage: React.FC = () => {
                 <p className="text-2xl font-bold text-gray-900">{selectedYear}</p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Enhanced Search Bar */}
