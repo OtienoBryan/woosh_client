@@ -287,7 +287,7 @@ const FinancialDashboardPage = () => {
 
           <StatCard
             title="Payables"
-            value={stats ? formatCurrency(stats.totalPayables) : '$0.00'}
+            value={stats ? formatCurrency(stats.totalPayables) : '0.00'}
             icon={<FileTextIcon className="h-6 w-6" />}
             bgColor="bg-gradient-to-r from-red-600 to-red-700"
             onClick={() => navigate('/payables')}
