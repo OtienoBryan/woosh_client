@@ -229,3 +229,40 @@
   .a4-invoice-print { box-shadow: none !important; }
   .a4-invoice-print tr, .a4-invoice-print table { page-break-inside: avoid; }
 }
+
+/* Custom animations for chat */
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out 0.3s ease-in-out;
+}
+
+/* Pulse animation for connection status */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s infinite;
+}
+
+/* Connection status indicator */
+.connection-indicator {
+  position: relative;
+}
+
+.connection-indicator::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: pulse-green 2s infinite;
+}

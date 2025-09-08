@@ -1,12 +1,19 @@
-// NOTE: You may need to install socket.io-client: npm install socket.io-client
 import React, { useEffect, useState, useRef } from 'react';
-import io from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
-import { Pencil, Trash2, Plus, ChevronLeft, Check, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, ChevronLeft, Check, X, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { DateTime } from 'luxon';
-
-import { API_BASE_URL, SOCKET_URL } from '../config/api';
+import {
+  useChatRooms,
+  useMessages,
+  useStaff,
+  useSendMessage,
+  useCreateGroup,
+  useEditMessage,
+  useDeleteMessage,
+  useSocket,
+  useUnreadCounts,
+  useReadMessages,
+} from '../hooks/useChat';
 
 interface ChatRoom {
   id: number;
@@ -26,10 +33,7 @@ interface Message {
   is_read?: boolean;
 }
 
-interface Staff {
-  id: number;
-  name: string;
-}
+// Staff interface is now imported from useChat hook
 
 // Utility function to format time consistently using Luxon
 const formatTime = (timeString: string): string => {
@@ -145,324 +149,207 @@ const formatMessageTime = (timeString: string): string => {
 
 const ChatRoomPage: React.FC = () => {
   const { user } = useAuth();
-  const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [groupName, setGroupName] = useState('');
-  const [allStaff, setAllStaff] = useState<Staff[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<number[]>([]);
-  const socketRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editMessageText, setEditMessageText] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [staffError, setStaffError] = useState<string | null>(null);
-  const [unreadCounts, setUnreadCounts] = useState<{ [roomId: number]: number }>({});
-  const [lastReadTimestamps, setLastReadTimestamps] = useState<{ [roomId: number]: string }>({});
+  const [isRetrying, setIsRetrying] = useState(false);
 
-  // Fetch chat rooms for user
-  const fetchRooms = async () => {
-    const token = localStorage.getItem('token');
-          const res = await axios.get(`${API_BASE_URL}/chat/my-rooms`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setRooms(res.data);
-  };
+  // Use React Query hooks
+  const { data: rooms = [], isLoading: roomsLoading, error: roomsError, refetch: refetchRooms } = useChatRooms();
+  const { data: messages = [], isLoading: messagesLoading, error: messagesError, refetch: refetchMessages } = useMessages(selectedRoom?.id || null);
+  const { data: allStaff = [], error: staffError } = useStaff();
+  const { unreadCounts, markRoomAsRead, getTotalUnreadCount } = useUnreadCounts(user?.id);
+  const { isMessageRead, markMessageAsRead, markRoomMessagesAsRead } = useReadMessages(user?.id);
+  
+  // Socket connection
+  const { isConnected, joinRoom, leaveRoom } = useSocket(user?.id);
+  
+  // Mutations
+  const sendMessageMutation = useSendMessage();
+  const createGroupMutation = useCreateGroup();
+  const editMessageMutation = useEditMessage();
+  const deleteMessageMutation = useDeleteMessage();
 
-  // Fetch messages for a room
-  const fetchMessages = async (roomId: number) => {
-    const token = localStorage.getItem('token');
-          const res = await axios.get(`${API_BASE_URL}/chat/rooms/${roomId}/messages`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setMessages(res.data);
+  // Handle room selection
+  const handleRoomSelect = (room: ChatRoom) => {
+    if (selectedRoom) {
+      leaveRoom(selectedRoom.id);
+    }
+    setSelectedRoom(room);
+    joinRoom(room.id);
     
-    // Mark messages as read immediately when room is opened
-    markRoomAsRead(roomId);
+    // Mark all messages in the room as read when selecting it
+    setTimeout(() => {
+      if (messages.length > 0) {
+        const messageIds = messages.map(msg => msg.id!).filter(id => id);
+        console.log('Marking all messages as read for room:', room.id, messageIds);
+        markRoomMessagesAsRead(room.id, messageIds);
+      }
+    }, 500); // Small delay to ensure messages are loaded
   };
 
-  // Check for new messages in all rooms
-  const checkForNewMessages = async () => {
-    const token = localStorage.getItem('token');
+  // Handle retry connection
+  const handleRetryConnection = async () => {
+    setIsRetrying(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/chat/my-rooms`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      const newUnreadCounts: { [roomId: number]: number } = {};
-      let hasNewMessages = false;
-      
-      for (const room of res.data) {
-        const lastRead = lastReadTimestamps[room.id] || room.created_at;
-        const messagesRes = await axios.get(`${API_BASE_URL}/chat/rooms/${room.id}/messages`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        const unreadMessages = messagesRes.data.filter((msg: Message) => 
-          msg.sent_at && new Date(msg.sent_at) > new Date(lastRead) && msg.sender_id !== user?.id
-        );
-        
-        newUnreadCounts[room.id] = unreadMessages.length;
-        
-        // Check if there are new unread messages
-        if (unreadMessages.length > 0) {
-          hasNewMessages = true;
-        }
-      }
-      
-      console.log('Checking for new messages:', {
-        lastReadTimestamps,
-        newUnreadCounts,
-        hasNewMessages
-      });
-      
-      setUnreadCounts(newUnreadCounts);
-      
-      // Show toast if there are new messages
-      if (hasNewMessages) {
-        const totalNew = Object.values(newUnreadCounts).reduce((total, count) => total + count, 0);
-        setToast(`You have ${totalNew} new message${totalNew > 1 ? 's' : ''}!`);
-        setTimeout(() => setToast(null), 3000);
-      }
+      await refetchRooms();
+      await refetchMessages();
+      setToast('Connection restored!');
+      setTimeout(() => setToast(null), 2000);
     } catch (error) {
-      console.error('Error checking for new messages:', error);
+      setToast('Failed to restore connection. Please try again.');
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setIsRetrying(false);
     }
   };
 
-  // Mark a room as read
-  const markRoomAsRead = (roomId: number) => {
-    const now = new Date().toISOString();
-    console.log(`Marking room ${roomId} as read at ${now}`);
-    
-    // Update both states immediately and synchronously
-    setLastReadTimestamps(prev => {
-      const newTimestamps = { ...prev, [roomId]: now };
-      console.log('Updated last read timestamps:', newTimestamps);
-      return newTimestamps;
-    });
-    
-    setUnreadCounts(prev => {
-      const newCounts = { ...prev };
-      newCounts[roomId] = 0;
-      console.log(`Room ${roomId} unread count reset to 0`);
-      console.log(`Updated unread counts:`, newCounts);
-      return newCounts;
-    });
-    
-    // Force immediate re-render
-    setTimeout(() => {
-      console.log(`Forcing re-render for room ${roomId}`);
-      setUnreadCounts(current => ({ ...current }));
-    }, 10);
-  };
-
-  // Check for new messages periodically
-  useEffect(() => {
-    if (!user) return;
-    
-    // Check immediately
-    checkForNewMessages();
-    
-    // Check every 30 seconds
-    const interval = setInterval(checkForNewMessages, 30000);
-    
-    return () => clearInterval(interval);
-  }, [user]); // Removed lastReadTimestamps dependency to prevent infinite loops
-
-  // Get total unread count for dashboard badge
-  const getTotalUnreadCount = (): number => {
-    return Object.values(unreadCounts).reduce((total, count) => total + count, 0);
-  };
-
-  // Expose unread count to parent components (for dashboard badge)
-  useEffect(() => {
-    const totalUnread = getTotalUnreadCount();
-    // You can emit this to parent components or store in localStorage
-    localStorage.setItem('chat_total_unread', totalUnread.toString());
-    
-    console.log('Total unread count updated:', totalUnread);
-  }, [unreadCounts]);
-
-  // Function to mark all rooms as read
+  // Mark all rooms as read
   const markAllRoomsAsRead = () => {
-    const now = new Date().toISOString();
-    const newLastReadTimestamps: { [roomId: number]: string } = {};
-    const newUnreadCounts: { [roomId: number]: number } = {};
-    
-    rooms.forEach(room => {
-      newLastReadTimestamps[room.id] = now;
-      newUnreadCounts[room.id] = 0;
+    rooms.forEach((room: ChatRoom) => {
+      markRoomAsRead(room.id);
     });
-    
-    setLastReadTimestamps(newLastReadTimestamps);
-    setUnreadCounts(newUnreadCounts);
-    
-    console.log('Marked all rooms as read');
     setToast('All messages marked as read!');
     setTimeout(() => setToast(null), 2000);
+  };
+
+  // Mark current room as read with all message IDs
+  const markCurrentRoomAsRead = () => {
+    if (selectedRoom && messages.length > 0) {
+      const messageIds = messages.map(msg => msg.id!).filter(id => id);
+      markRoomMessagesAsRead(selectedRoom.id, messageIds);
+      markRoomAsRead(selectedRoom.id, messageIds);
+      setToast('Messages marked as read!');
+      setTimeout(() => setToast(null), 2000);
+    }
   };
 
   // Debug function to show current state
   const debugUnreadCounts = () => {
     console.log('=== DEBUG: Current State ===');
     console.log('Unread Counts:', unreadCounts);
-    console.log('Last Read Timestamps:', lastReadTimestamps);
     console.log('Selected Room:', selectedRoom?.id);
     console.log('Total Unread:', getTotalUnreadCount());
+    console.log('Socket Connected:', isConnected);
     console.log('===========================');
   };
 
-  // Fetch all staff for group creation
-  const fetchStaff = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/staff`, { withCredentials: true });
-      setAllStaff(res.data);
-      setStaffError(null);
-    } catch (err: any) {
-      setStaffError('Failed to load staff list. Please try again.');
-      setAllStaff([]);
-    }
-  };
-
-  // Initialize socket
-  useEffect(() => {
-    if (!user) return;
-    const socket = io(SOCKET_URL);
-    socketRef.current = socket;
-    return () => { socket.disconnect(); };
-  }, [user]);
-
-  // Join/leave room on selection
-  useEffect(() => {
-    if (!selectedRoom || !socketRef.current) return;
-    socketRef.current.emit('joinRoom', selectedRoom.id);
-    fetchMessages(selectedRoom.id);
-    // Listen for new messages
-    socketRef.current.on('newMessage', (msg: Message) => {
-      if (msg.room_id === selectedRoom.id) {
-        setMessages((prev) => [...prev, msg]);
-      }
-      
-      // Update unread count for other rooms
-      if (msg.room_id !== selectedRoom.id && msg.sender_id !== user?.id) {
-        setUnreadCounts(prev => ({
-          ...prev,
-          [msg.room_id]: (prev[msg.room_id] || 0) + 1
-        }));
-      }
-    });
-    return () => {
-      socketRef.current?.emit('leaveRoom', selectedRoom.id);
-      socketRef.current?.off('newMessage');
-    };
-    // eslint-disable-next-line
-  }, [selectedRoom]);
-
-  // Scroll to bottom on new message
+  // Scroll to bottom on new message and mark messages as read when they come into view
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  useEffect(() => { 
-    fetchRooms(); 
-    fetchStaff(); 
-  }, []);
-
-  // Initialize unread counts when rooms are loaded
-  useEffect(() => {
-    if (rooms.length > 0 && user) {
-      // Initialize last read timestamps for rooms that don't have them
-      const newLastReadTimestamps = { ...lastReadTimestamps };
-      let hasChanges = false;
-      
-      rooms.forEach(room => {
-        if (!newLastReadTimestamps[room.id]) {
-          newLastReadTimestamps[room.id] = room.created_at;
-          hasChanges = true;
-        }
-      });
-      
-      if (hasChanges) {
-        setLastReadTimestamps(newLastReadTimestamps);
-        console.log('Initialized last read timestamps:', newLastReadTimestamps);
-      }
-      
-      // Check for new messages after initialization
-      setTimeout(() => checkForNewMessages(), 1000);
+    
+    // Mark all messages as read when they are loaded (for the selected room)
+    if (selectedRoom && messages.length > 0) {
+      const messageIds = messages.map(msg => msg.id!).filter(id => id);
+      console.log('Auto-marking messages as read when loaded:', messageIds);
+      markRoomMessagesAsRead(selectedRoom.id, messageIds);
     }
-  }, [rooms, user]);
+  }, [messages, selectedRoom, markRoomMessagesAsRead]);
 
-  // Mark chat last visited for dashboard badge and check for new messages
+  // Mark messages as read when they come into view
   useEffect(() => {
-    // When page mounts or user interacts, update last visited timestamp
-    const markVisited = () => {
-      localStorage.setItem('chat_last_visited_ts', String(Date.now()));
-      // Check for new messages when user becomes active
-      checkForNewMessages();
-    };
-    markVisited();
-    const onVisibility = () => { if (!document.hidden) markVisited(); };
-    const onFocus = () => markVisited();
+    if (!messages.length) return;
+
+    const messageElements = document.querySelectorAll('[data-message-id]');
     
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const messageId = parseInt(entry.target.getAttribute('data-message-id') || '0');
+            if (messageId > 0) {
+              console.log('Marking message as read:', messageId);
+              markMessageAsRead(messageId);
+            }
+          }
+        });
+      },
+      { threshold: 0.1 } // Mark as read when 10% visible
+    );
+
+    messageElements.forEach((el) => observer.observe(el));
+
     return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
+      messageElements.forEach((el) => observer.unobserve(el));
     };
-  }, []);
+  }, [messages, markMessageAsRead]);
+
+  // Update localStorage with unread count for dashboard badge
+  useEffect(() => {
+    const totalUnread = getTotalUnreadCount();
+    localStorage.setItem('chat_total_unread', totalUnread.toString());
+  }, [unreadCounts, getTotalUnreadCount]);
+
+  // Show connection status notifications
+  useEffect(() => {
+    if (isConnected) {
+      setToast('Connected to chat server');
+      setTimeout(() => setToast(null), 2000);
+    } else {
+      setToast('Disconnected from chat server');
+      setTimeout(() => setToast(null), 3000);
+    }
+  }, [isConnected]);
 
   // Send message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedRoom || !user) return;
-    // Emit to socket with correct property names
-    socketRef.current?.emit('sendMessage', {
+    
+    const messageText = newMessage.trim();
+    setNewMessage('');
+    
+    // Send via API with optimistic updates
+    try {
+      await sendMessageMutation.mutateAsync({
       roomId: selectedRoom.id,
+        message: messageText,
       sender_id: user.id,
       sender_name: user.username || 'You',
-      message: newMessage.trim(),
-      sentAt: new Date().toISOString(),
-    });
-    // Save to backend
-    const token = localStorage.getItem('token');
-    await axios.post(`${API_BASE_URL}/chat/rooms/${selectedRoom.id}/messages`, { roomId: selectedRoom.id, message: newMessage }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setNewMessage('');
-    // Show toast notification
+      });
     setToast('Message sent!');
     setTimeout(() => setToast(null), 2000);
+    } catch (error) {
+      setToast('Failed to send message. Please try again.');
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   // Create group chat
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupName.trim() || selectedStaff.length === 0) return;
-    const token = localStorage.getItem('token');
-    const res = await axios.post(`${API_BASE_URL}/chat/rooms`, {
+    
+    try {
+      const res = await createGroupMutation.mutateAsync({
       name: groupName,
-      is_group: true,
       memberIds: selectedStaff,
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
     });
+      
     setShowCreateModal(false);
     setGroupName('');
     setSelectedStaff([]);
-    // Fetch rooms and select the new one
-    await fetchRooms();
-    // Find the new room by id (from response) or by name
-    const newRoomId = res.data.roomId;
-    const newRoom = rooms.find(r => r.id === newRoomId) || (await axios.get(`${API_BASE_URL}/chat/my-rooms`, { headers: { Authorization: `Bearer ${token}` } })).data.find((r: any) => r.id === newRoomId);
-    if (newRoom) setSelectedRoom(newRoom);
-    // Show toast notification
+      
+      // Find and select the new room
+      const newRoomId = res.roomId;
+      const newRoom = rooms.find((r: ChatRoom) => r.id === newRoomId);
+      if (newRoom) {
+        handleRoomSelect(newRoom);
+      }
+      
     setToast('Group chat created!');
     setTimeout(() => setToast(null), 2000);
+    } catch (error) {
+      setToast('Failed to create group chat. Please try again.');
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   // Edit message handler
@@ -472,13 +359,19 @@ const ChatRoomPage: React.FC = () => {
   };
 
   const handleEditMessageSave = async (msg: Message) => {
-    const token = localStorage.getItem('token');
-    await axios.patch(`${API_BASE_URL}/chat/messages/${msg.id}`, { message: editMessageText }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setMessages((prev) => prev.map(m => m.id === msg.id ? { ...m, message: editMessageText } : m));
+    try {
+      await editMessageMutation.mutateAsync({
+        messageId: msg.id!,
+        message: editMessageText,
+      });
     setEditingMessageId(null);
     setEditMessageText('');
+      setToast('Message updated!');
+      setTimeout(() => setToast(null), 2000);
+    } catch (error) {
+      setToast('Failed to update message. Please try again.');
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   const handleEditMessageCancel = () => {
@@ -489,15 +382,19 @@ const ChatRoomPage: React.FC = () => {
   // Delete message handler
   const handleDeleteMessage = async (msg: Message) => {
     if (!window.confirm('Are you sure you want to delete this message?')) return;
-    const token = localStorage.getItem('token');
-    await axios.delete(`${API_BASE_URL}/chat/messages/${msg.id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setMessages((prev) => prev.filter(m => m.id !== msg.id));
+    
+    try {
+      await deleteMessageMutation.mutateAsync(msg.id!);
+      setToast('Message deleted!');
+      setTimeout(() => setToast(null), 2000);
+    } catch (error) {
+      setToast('Failed to delete message. Please try again.');
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   // Filter rooms based on search term
-  const filteredRooms = rooms.filter(room => 
+  const filteredRooms = rooms.filter((room: ChatRoom) => 
     room.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (room.is_group ? 'group chat' : 'private chat').includes(searchTerm.toLowerCase())
   );
@@ -515,16 +412,23 @@ const ChatRoomPage: React.FC = () => {
                    {getTotalUnreadCount()}
                  </div>
                )}
+              {/* Connection status indicator */}
+              <div className="flex items-center gap-1" title={isConnected ? "Connected" : "Disconnected"}>
+                {isConnected ? (
+                  <Wifi className="w-4 h-4 text-green-500 animate-pulse-green" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-red-500" />
+                )}
+              </div>
              </div>
                            <div className="flex gap-2">
                 <button 
-                  className="bg-gray-600 text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
-                  onClick={checkForNewMessages}
+                className="bg-gray-600 text-white p-2 rounded-full hover:bg-gray-700 transition-colors disabled:opacity-50"
+                onClick={handleRetryConnection}
+                disabled={isRetrying}
                   title="Refresh messages"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
                 </button>
                 <button 
                   className="bg-yellow-600 text-white p-2 rounded-full hover:bg-yellow-700 transition-colors"
@@ -580,15 +484,34 @@ const ChatRoomPage: React.FC = () => {
           </div>
         </div>
         <div className="overflow-y-auto h-[calc(100%-110px)]">
-          {filteredRooms.map(room => (
+          {roomsLoading ? (
+            <div className="p-4 text-center text-gray-500">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Loading rooms...
+            </div>
+          ) : roomsError ? (
+            <div className="p-4 text-center text-red-500">
+              <WifiOff className="w-6 h-6 mx-auto mb-2" />
+              Failed to load rooms
+              <button 
+                onClick={handleRetryConnection}
+                className="block mx-auto mt-2 text-blue-600 hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : filteredRooms.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              No chats found {searchTerm && `matching "${searchTerm}"`}
+            </div>
+          ) : (
+            filteredRooms.map((room: ChatRoom) => (
             <div
               key={room.id}
               className={`p-3 flex items-center border-b cursor-pointer hover:bg-gray-50 ${
                 selectedRoom?.id === room.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
               }`}
-                             onClick={() => {
-                 setSelectedRoom(room);
-               }}
+                onClick={() => handleRoomSelect(room)}
             >
               <div className="bg-blue-100 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center mr-3">
                 {room.is_group ? 
@@ -615,11 +538,7 @@ const ChatRoomPage: React.FC = () => {
                  </div>
                </div>
             </div>
-          ))}
-          {filteredRooms.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No chats found {searchTerm && `matching "${searchTerm}"`}
-            </div>
+            ))
           )}
         </div>
       </div>
@@ -629,51 +548,107 @@ const ChatRoomPage: React.FC = () => {
         {selectedRoom ? (
           <>
             {/* Chat header */}
-            <div className="bg-white p-4 border-b flex items-center">
-              <button 
-                className="md:hidden mr-2 text-gray-500 hover:text-gray-700"
-                onClick={() => setSelectedRoom(null)}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <div className="bg-blue-100 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center mr-3">
-                {selectedRoom.is_group ? 
-                  <span className="font-medium">G</span> : 
-                  <span className="font-medium">P</span>
-                }
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-800">
-                  {selectedRoom.is_group ? (selectedRoom.name || 'Group Chat') : 'Private Chat'}
-                </h2>
-                <div className="text-xs text-gray-500">
-                  {messages.length > 0 ? `${messages.length} messages` : 'No messages yet'}
+            <div className="bg-white p-4 border-b flex items-center justify-between">
+              <div className="flex items-center">
+                <button 
+                  className="md:hidden mr-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setSelectedRoom(null)}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <div className="bg-blue-100 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center mr-3">
+                  {selectedRoom.is_group ? 
+                    <span className="font-medium">G</span> : 
+                    <span className="font-medium">P</span>
+                  }
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-800">
+                    {selectedRoom.is_group ? (selectedRoom.name || 'Group Chat') : 'Private Chat'}
+                  </h2>
+                  <div className="text-xs text-gray-500">
+                    {unreadCounts[selectedRoom.id] > 0 ? `${unreadCounts[selectedRoom.id]} new message${unreadCounts[selectedRoom.id] > 1 ? 's' : ''}` : 'No new messages'}
+                    {/* Debug info - remove in production */}
+                    <div className="text-xs text-gray-400 mt-1">
+                      Debug: Unread: {unreadCounts[selectedRoom.id] || 0}, Total: {messages.length}
+                      <br />
+                      Read Status: {messages.filter(msg => isMessageRead(msg)).length}/{messages.length} read
+                    </div>
+                  </div>
                 </div>
               </div>
+              
+              {/* Mark as read button */}
+              {unreadCounts[selectedRoom.id] > 0 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={markCurrentRoomAsRead}
+                    className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-700 transition-colors"
+                  >
+                    Mark as Read
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log('Manual test - marking all messages as read');
+                      messages.forEach(msg => {
+                        if (msg.id) {
+                          markMessageAsRead(msg.id);
+                        }
+                      });
+                    }}
+                    className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    Test Read
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-              {messages.length === 0 ? (
+              {messagesLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <RefreshCw className="w-8 h-8 animate-spin mb-2" />
+                  <div>Loading messages...</div>
+                </div>
+              ) : messagesError ? (
+                <div className="flex flex-col items-center justify-center h-full text-red-500">
+                  <WifiOff className="w-8 h-8 mb-2" />
+                  <div className="mb-2">Failed to load messages</div>
+                  <button 
+                    onClick={handleRetryConnection}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400">
                   <div className="mb-2">No messages yet</div>
                   <div className="text-sm">Send a message to start the conversation</div>
                 </div>
               ) : (
-                messages.map((msg, idx) => {
+                messages.map((msg: Message, idx: number) => {
                   // Only allow edit/delete if there is no later message from another user
                   let canEditOrDelete = false;
                   if (msg.sender_id === user?.id) {
                     // Check if all later messages are from the same user
-                    canEditOrDelete = messages.slice(idx + 1).every(m => m.sender_id === user.id);
+                    canEditOrDelete = messages.slice(idx + 1).every((m: Message) => m.sender_id === user?.id);
                   }
                   return (
-                    <div key={idx} className={`mb-4 flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
+                    <div 
+                      key={idx} 
+                      className={`mb-4 flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                      data-message-id={msg.id}
+                    >
                       <div className={`max-w-xs lg:max-w-md relative ${msg.sender_id === user?.id ? 'ml-auto' : 'mr-auto'}`}>
-                        <div className={`px-4 py-3 rounded-2xl ${msg.sender_id === user?.id ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none shadow-sm'}`}>
+                        <div className={`px-4 py-3 rounded-2xl ${msg.sender_id === user?.id ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none shadow-sm'} ${!isMessageRead(msg) && msg.sender_id !== user?.id ? 'ring-2 ring-blue-200 bg-blue-50' : ''}`}>
                           {msg.sender_id !== user?.id && (
-                            <div className="text-sm font-semibold mb-1">
-                              {msg.sender_name || 'User'}
+                            <div className="text-sm font-semibold mb-1 flex items-center gap-2">
+                              <span>{msg.sender_name || 'User'}</span>
+                              {!isMessageRead(msg) && (
+                                <span className="w-2 h-2 bg-blue-500 rounded-full" title="Unread"></span>
+                              )}
                             </div>
                           )}
                           {editingMessageId === msg.id ? (
@@ -704,6 +679,15 @@ const ChatRoomPage: React.FC = () => {
                               <div className="text-sm">{msg.message}</div>
                               <div className={`text-xs mt-1 flex items-center justify-end ${msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'}`}>
                                 {msg.sent_at && formatMessageTime(msg.sent_at)}
+                                {msg.sender_id === user?.id && (
+                                  <div className="ml-1 flex items-center">
+                                    {msg.is_read ? (
+                                      <span className="text-green-300" title="Read">✓✓</span>
+                                    ) : (
+                                      <span className="text-blue-200" title="Sent">✓</span>
+                                    )}
+                                  </div>
+                                )}
                                 {canEditOrDelete && (
                                   <div className="ml-2 flex gap-1">
                                     <button 
@@ -746,7 +730,7 @@ const ChatRoomPage: React.FC = () => {
                 <button 
                   type="submit" 
                   className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  disabled={!newMessage.trim()}
+                  disabled={!newMessage.trim() || sendMessageMutation.isPending}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -813,7 +797,9 @@ const ChatRoomPage: React.FC = () => {
                 </button>
               </div>
               {staffError && (
-                <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 text-sm">{staffError}</div>
+                <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+                  {staffError instanceof Error ? staffError.message : String(staffError)}
+                </div>
               )}
               <form onSubmit={handleCreateGroup}>
                 <div className="mb-4">
@@ -829,7 +815,7 @@ const ChatRoomPage: React.FC = () => {
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Add Members</label>
                   <div className="max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50">
-                    {allStaff.map(staff => (
+                    {allStaff.map((staff: any) => (
                       <div key={staff.id} className="flex items-center p-2 hover:bg-gray-100 rounded-lg">
                         <input
                           type="checkbox"
@@ -859,9 +845,16 @@ const ChatRoomPage: React.FC = () => {
                   <button 
                     type="submit" 
                     className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    disabled={!groupName.trim() || selectedStaff.length === 0}
+                    disabled={!groupName.trim() || selectedStaff.length === 0 || createGroupMutation.isPending}
                   >
-                    Create Group
+                    {createGroupMutation.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Creating...
+                      </div>
+                    ) : (
+                      'Create Group'
+                    )}
                   </button>
                 </div>
               </form>

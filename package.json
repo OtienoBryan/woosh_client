@@ -15,6 +15,8 @@
     "@headlessui/react": "latest",
     "@mui/material": "^7.1.1",
     "@react-google-maps/api": "^2.20.7",
+    "@tanstack/react-query": "^5.87.1",
+    "@tanstack/react-query-devtools": "^5.87.3",
     "@types/leaflet": "^1.9.19",
     "axios": "^1.6.2",
     "chart.js": "^4.5.0",
