@@ -354,9 +354,7 @@ const CreditNoteDetailsPage: React.FC = () => {
                           <Package className="h-4 w-4 text-gray-400 mr-2" />
                           <div>
                             <div className="font-medium">{item.product_name || `Product ${item.product_id}`}</div>
-                            {item.product_code && (
-                              <div className="text-sm text-gray-500">{item.product_code}</div>
-                            )}
+                            
                           </div>
                         </div>
                       </td>

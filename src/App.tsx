@@ -344,52 +344,52 @@ const App = () => {
               } 
             />
             <Route path="/payables" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <PayablesPage />
               </RoleBasedRoute>
             } />
             <Route path="/receivables" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <ReceivablesPage />
               </RoleBasedRoute>
             } />
             <Route path="/receivables/customer/:customerId" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock'	]} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'stock', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <ReceivablesCustomerPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <FinancialReportsIndexPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports/profit-loss" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <ProfitLossReportPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports/balance-sheet" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <BalanceSheetReportPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports/cash-flow" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <CashFlowReportPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports/general-ledger" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <GeneralLedgerReportPage />
               </RoleBasedRoute>
             } />
                     <Route path="/reports/collection-report" element={
-          <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+          <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
             <CollectionReportPage />
           </RoleBasedRoute>
         } />
         <Route path="/reports/unconfirmed-payments" element={
-          <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+          <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
             <UnconfirmedPaymentsPage />
           </RoleBasedRoute>
         } />
@@ -504,12 +504,12 @@ const App = () => {
               </RoleBasedRoute>
             } />
             <Route path="/journal-entries" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <JournalEntriesPage />
               </RoleBasedRoute>
             } />
             <Route path="/payroll-management" element={
-              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant']} fallbackPath="/sales-dashboard">
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <PayrollManagementPage />
               </RoleBasedRoute>
             } />

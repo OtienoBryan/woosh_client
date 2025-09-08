@@ -29,7 +29,8 @@ import {
   EyeIcon,
   ArrowUpRightIcon,
   ArrowDownRightIcon,
-  AwardIcon
+  AwardIcon,
+  TargetIcon
 } from 'lucide-react';
 import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
@@ -206,16 +207,26 @@ const FinancialDashboardPage = () => {
     { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
     { to: '/dashboard/reports/product-performance', label: 'Products Performance', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/receipts', label: 'Receipts', icon: <ReceiptIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    //{ to: '/receipts', label: 'Receipts', icon: <ReceiptIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/payables', label: 'Payables', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    //{ to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/payables', label: 'Payables', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
     { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/cash-equivalents', label: 'Cash & Equivalents', icon: <PiggyBankIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/employee-working-hours', label: 'Employees Attendance', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/employee-working-days', label: 'Employees Working Days', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+       
     
   ];
 
@@ -250,9 +261,9 @@ const FinancialDashboardPage = () => {
           <StatCard
             title="Total Sales"
             value={stats ? formatCurrency(stats.totalSales) : '$0.00'}
-            icon={<DollarSignIcon className="h-6 w-6" />}
+            icon={<FileTextIcon className="h-6 w-6" />}
             bgColor="bg-gradient-to-r from-green-600 to-green-700"
-            onClick={() => navigate('/reports')}
+            onClick={() => navigate('/invoice-list')}
             change={{ value: 12.5, positive: true }}
           />
           
@@ -277,7 +288,7 @@ const FinancialDashboardPage = () => {
           <StatCard
             title="Payables"
             value={stats ? formatCurrency(stats.totalPayables) : '$0.00'}
-            icon={<DollarSignIcon className="h-6 w-6" />}
+            icon={<FileTextIcon className="h-6 w-6" />}
             bgColor="bg-gradient-to-r from-red-600 to-red-700"
             onClick={() => navigate('/payables')}
             change={{ value: 3.1, positive: false }}

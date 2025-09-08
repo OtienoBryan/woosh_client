@@ -112,22 +112,22 @@ const FinancialReportsIndexPage: React.FC = () => {
       ],
       lastUpdated: '2024-07-01'
     },
-    {
-      id: 'sales-report',
-      title: 'Sales Report',
-      description: 'Detailed report of all sales orders, including totals, status, and outstanding balances.',
-      icon: <BarChart3 className="w-8 h-8" />, // reuse icon for now
-      color: 'bg-orange-500',
-      route: '/reports/sales-report',
-      features: [
-        'Sales order listing',
-        'Date and status filters',
-        'Summary totals',
-        'Outstanding balances',
-        'CSV export',
-      ],
-      lastUpdated: '2024-06-10'
-    },
+    // {
+    //   id: 'sales-report',
+    //   title: 'Sales Report',
+    //   description: 'Detailed report of all sales orders, including totals, status, and outstanding balances.',
+    //   icon: <BarChart3 className="w-8 h-8" />, // reuse icon for now
+    //   color: 'bg-orange-500',
+    //   route: '/reports/sales-report',
+    //   features: [
+    //     'Sales order listing',
+    //     'Date and status filters',
+    //     'Summary totals',
+    //     'Outstanding balances',
+    //     'CSV export',
+    //   ],
+    //   lastUpdated: '2024-06-10'
+    // },
             {
           id: 'collection-report',
           title: 'Collection Report',

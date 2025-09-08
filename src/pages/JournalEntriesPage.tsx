@@ -32,8 +32,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const JournalEntriesPage: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntryLine[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>('Please select an account to view journal entries');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [accountId, setAccountId] = useState('');
@@ -42,7 +42,7 @@ const JournalEntriesPage: React.FC = () => {
 
   useEffect(() => {
     fetchAccounts();
-    fetchEntries();
+    // Don't fetch entries on initial load - require account selection first
   }, []);
 
   const fetchAccounts = async () => {
@@ -57,6 +57,13 @@ const JournalEntriesPage: React.FC = () => {
   };
 
   const fetchEntries = async () => {
+    // Require account selection first
+    if (!accountId) {
+      setError('Please select an account to view journal entries');
+      setEntries([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -90,7 +97,8 @@ const JournalEntriesPage: React.FC = () => {
     setAccountId('');
     setReference('');
     setDescription('');
-    setTimeout(fetchEntries, 0);
+    setEntries([]);
+    setError('Please select an account to view journal entries');
   };
 
   const formatCurrency = (amount: number) => {
@@ -144,10 +152,19 @@ const JournalEntriesPage: React.FC = () => {
             <label className="text-sm font-medium text-gray-700 mb-1">Account</label>
             <select
               value={accountId}
-              onChange={e => setAccountId(e.target.value)}
+              onChange={e => {
+                setAccountId(e.target.value);
+                if (e.target.value) {
+                  // Automatically fetch entries when account is selected
+                  setTimeout(() => fetchEntries(), 100);
+                } else {
+                  setEntries([]);
+                  setError('Please select an account to view journal entries');
+                }
+              }}
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Accounts</option>
+              <option value="">Select an Account</option>
               {accounts.map(acc => (
                 <option key={acc.id} value={acc.id}>{acc.account_code} - {acc.account_name}</option>
               ))}
@@ -194,6 +211,11 @@ const JournalEntriesPage: React.FC = () => {
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : !accountId ? (
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-6 py-8 rounded-lg text-center">
+            <div className="text-lg font-medium mb-2">Select an Account</div>
+            <p className="text-sm">Please select an account from the dropdown above to view journal entries for that account.</p>
           </div>
         ) : error ? (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
