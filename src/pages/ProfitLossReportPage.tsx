@@ -10,6 +10,7 @@ import {
 import COGSDetailsModal from '../components/COGSDetailsModal';
 import SalesRevenueDetailsModal from '../components/SalesRevenueDetailsModal';
 import GrossMarginDetailsModal from '../components/GrossMarginDetailsModal';
+import MonthlyComparisonModal from '../components/MonthlyComparisonModal';
 
 interface ProfitLossData {
   period: string;
@@ -34,6 +35,47 @@ interface ProfitLossData {
   net_margin: number;
 }
 
+interface MultiMonthComparisonData {
+  current: ProfitLossData;
+  comparisons: {
+    month: string;
+    monthLabel: string;
+    data: ProfitLossData;
+    changes: {
+      revenue: {
+        sales_revenue: number;
+        other_income: number;
+        total_revenue: number;
+      };
+      expenses: {
+        cost_of_goods_sold: number;
+        total_operating_expenses: number;
+        total_expenses: number;
+      };
+      net_profit: number;
+      gross_profit: number;
+      gross_margin: number;
+      net_margin: number;
+    };
+    percentage_changes: {
+      revenue: {
+        sales_revenue: number;
+        other_income: number;
+        total_revenue: number;
+      };
+      expenses: {
+        cost_of_goods_sold: number;
+        total_operating_expenses: number;
+        total_expenses: number;
+      };
+      net_profit: number;
+      gross_profit: number;
+      gross_margin: number;
+      net_margin: number;
+    };
+  }[];
+}
+
 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -45,10 +87,12 @@ const ProfitLossReportPage: React.FC = () => {
   const [period, setPeriod] = useState('current_month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [enableComparison, setEnableComparison] = useState(false);
 
   const [showCOGSModal, setShowCOGSModal] = useState(false);
   const [showSalesRevenueModal, setShowSalesRevenueModal] = useState(false);
   const [showGrossMarginModal, setShowGrossMarginModal] = useState(false);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
 
   useEffect(() => {
     fetchProfitLossReport();
@@ -60,6 +104,7 @@ const ProfitLossReportPage: React.FC = () => {
       console.log('Net Profit Value:', reportData.net_profit, 'Type:', typeof reportData.net_profit);
     }
   }, [reportData]);
+
 
   const fetchProfitLossReport = async () => {
     setLoading(true);
@@ -87,6 +132,106 @@ const ProfitLossReportPage: React.FC = () => {
     }
   };
 
+  const fetchComparisonData = async (selectedMonths: string[]): Promise<MultiMonthComparisonData | null> => {
+    try {
+      const currentData = reportData;
+      if (!currentData) {
+        throw new Error('Current period data not available');
+      }
+
+      console.log('Fetching comparison data for months:', selectedMonths);
+
+      // Fetch data for all selected months
+      const monthDataPromises = selectedMonths.map(async (month) => {
+        // Convert YYYY-MM format to start_date and end_date
+        const [year, monthNum] = month.split('-');
+        const startDate = `${year}-${monthNum}-01`;
+        const endDate = new Date(parseInt(year), parseInt(monthNum), 0).toISOString().split('T')[0]; // Last day of month
+        
+        const params = new URLSearchParams();
+        params.append('start_date', startDate);
+        params.append('end_date', endDate);
+        
+        console.log(`Fetching data for month: ${month} with dates: ${startDate} to ${endDate}`);
+        
+        const res = await axios.get(`${API_BASE_URL}/financial/reports/profit-loss?${params}`);
+        console.log(`Response for ${month}:`, res.data);
+        
+        if (!res.data.success) {
+          throw new Error(`Failed to fetch data for ${month}`);
+        }
+        
+        return {
+          month,
+          data: res.data.data
+        };
+      });
+
+      const monthDataResults = await Promise.all(monthDataPromises);
+
+      // Calculate comparison data for each month
+      const calculatePercentageChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / Math.abs(previous)) * 100;
+      };
+
+      const formatMonthLabel = (monthValue: string) => {
+        const [year, month] = monthValue.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      };
+
+      const comparisons = monthDataResults.map(({ month, data }) => ({
+        month,
+        monthLabel: formatMonthLabel(month),
+        data,
+        changes: {
+          revenue: {
+            sales_revenue: currentData.revenue.sales_revenue - data.revenue.sales_revenue,
+            other_income: currentData.revenue.other_income - data.revenue.other_income,
+            total_revenue: currentData.revenue.total_revenue - data.revenue.total_revenue,
+          },
+          expenses: {
+            cost_of_goods_sold: currentData.expenses.cost_of_goods_sold - data.expenses.cost_of_goods_sold,
+            total_operating_expenses: currentData.expenses.total_operating_expenses - data.expenses.total_operating_expenses,
+            total_expenses: currentData.expenses.total_expenses - data.expenses.total_expenses,
+          },
+          net_profit: currentData.net_profit - data.net_profit,
+          gross_profit: currentData.gross_profit - data.gross_profit,
+          gross_margin: currentData.gross_margin - data.gross_margin,
+          net_margin: currentData.net_margin - data.net_margin,
+        },
+        percentage_changes: {
+          revenue: {
+            sales_revenue: calculatePercentageChange(currentData.revenue.sales_revenue, data.revenue.sales_revenue),
+            other_income: calculatePercentageChange(currentData.revenue.other_income, data.revenue.other_income),
+            total_revenue: calculatePercentageChange(currentData.revenue.total_revenue, data.revenue.total_revenue),
+          },
+          expenses: {
+            cost_of_goods_sold: calculatePercentageChange(currentData.expenses.cost_of_goods_sold, data.expenses.cost_of_goods_sold),
+            total_operating_expenses: calculatePercentageChange(currentData.expenses.total_operating_expenses, data.expenses.total_operating_expenses),
+            total_expenses: calculatePercentageChange(currentData.expenses.total_expenses, data.expenses.total_expenses),
+          },
+          net_profit: calculatePercentageChange(currentData.net_profit, data.net_profit),
+          gross_profit: calculatePercentageChange(currentData.gross_profit, data.gross_profit),
+          gross_margin: calculatePercentageChange(currentData.gross_margin, data.gross_margin),
+          net_margin: calculatePercentageChange(currentData.net_margin, data.net_margin),
+        }
+      }));
+
+      const multiMonthComparisonData: MultiMonthComparisonData = {
+        current: currentData,
+        comparisons
+      };
+
+      return multiMonthComparisonData;
+
+    } catch (err: any) {
+      console.error('Error fetching comparison data:', err);
+      throw new Error(`Failed to fetch comparison data: ${err.message}`);
+    }
+  };
+
   const number_format = (amount: number) => {
     if (amount === null || amount === undefined || isNaN(amount)) {
       return '0.00';
@@ -97,6 +242,9 @@ const ProfitLossReportPage: React.FC = () => {
   const formatPercentage = (value: number) => {
     return `${(value * 100).toFixed(2)}%`;
   };
+
+
+
 
   const getPeriodLabel = () => {
     switch (period) {
@@ -114,6 +262,7 @@ const ProfitLossReportPage: React.FC = () => {
         return 'Current Month';
     }
   };
+
 
   const exportToCSV = () => {
     if (!reportData) return;
@@ -135,7 +284,7 @@ const ProfitLossReportPage: React.FC = () => {
       ...reportData.expenses.operating_expenses_breakdown.map(exp => 
         [exp.account_name, number_format(exp.balance)]
       ),
-      ['Total Operating Expenses', number_format(reportData.expenses.total_expenses)],
+      ['Total Operating Expenses', number_format(reportData.expenses.total_operating_expenses)],
       [''],
       ['Net Profit', number_format(reportData.net_profit)],
       ['Net Margin', formatPercentage(reportData.net_margin)]
@@ -166,9 +315,24 @@ const ProfitLossReportPage: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Profit & Loss Report</h1>
-              <p className="text-gray-600 mt-1">Financial performance analysis</p>
+              <p className="text-gray-600 mt-1">
+                Financial performance analysis
+                {enableComparison && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    Comparison Mode
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex space-x-3">
+              <button
+                onClick={() => setShowComparisonModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Compare with Previous Month
+              </button>
               <button
                 onClick={exportToCSV}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
@@ -184,7 +348,7 @@ const ProfitLossReportPage: React.FC = () => {
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 flex-wrap">
             <Filter className="w-5 h-5 text-gray-500" />
             <label className="text-sm font-medium text-gray-700">Period:</label>
             <select
@@ -216,6 +380,19 @@ const ProfitLossReportPage: React.FC = () => {
                 />
               </div>
             )}
+
+            <div className="flex items-center space-x-2 ml-4">
+              <input
+                type="checkbox"
+                id="enableComparison"
+                checked={enableComparison}
+                onChange={(e) => setEnableComparison(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="enableComparison" className="text-sm font-medium text-gray-700">
+                Compare with Previous Period
+              </label>
+            </div>
           </div>
         </div>
 
@@ -283,6 +460,7 @@ const ProfitLossReportPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
 
             {/* Detailed Report */}
             <div className="bg-white rounded-lg shadow">
@@ -410,6 +588,13 @@ const ProfitLossReportPage: React.FC = () => {
         period={period}
         customStartDate={customStartDate}
         customEndDate={customEndDate}
+      />
+
+      <MonthlyComparisonModal
+        isOpen={showComparisonModal}
+        onClose={() => setShowComparisonModal(false)}
+        currentPeriodLabel={getPeriodLabel()}
+        onFetchComparisonData={fetchComparisonData}
       />
     </div>
   );
