@@ -42,6 +42,7 @@ import AddAssetPage from './pages/AddAssetPage';
 import BalanceSheetReportPage from './pages/BalanceSheetReportPage';
 import CashFlowReportPage from './pages/CashFlowReportPage';
 import FinancialReportsIndexPage from './pages/FinancialReportsIndexPage';
+import SalesTaxReportPage from './pages/SalesTaxReportPage';
 import AssetDepreciationPage from './pages/AssetDepreciationPage';
 import DepreciationManagementPage from './pages/DepreciationManagementPage';
 import AddEquityPage from './pages/AddEquityPage';
@@ -376,6 +377,11 @@ const App = () => {
             <Route path="/reports/cash-flow" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <CashFlowReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/sales-tax" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
+                <SalesTaxReportPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports/general-ledger" element={

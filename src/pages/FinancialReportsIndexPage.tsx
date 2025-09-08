@@ -13,7 +13,9 @@ import {
   Calendar,
   PieChart,
   LineChart,
-  AlertCircle
+  AlertCircle,
+  Receipt,
+  FileText as TaxIcon
 } from 'lucide-react';
 
 interface ReportCard {
@@ -111,6 +113,23 @@ const FinancialReportsIndexPage: React.FC = () => {
         'Export support'
       ],
       lastUpdated: '2024-07-01'
+    },
+    {
+      id: 'sales-tax',
+      title: 'Sales Tax Report',
+      description: 'Detailed report of all sales tax transactions from journal entries for Sales Tax Payable account.',
+      icon: <TaxIcon className="w-8 h-8" />,
+      color: 'bg-red-500',
+      route: '/reports/sales-tax',
+      features: [
+        'Sales tax payable transactions',
+        'Date range filtering',
+        'Debit and credit breakdown',
+        'Net tax payable calculation',
+        'Entry search and filtering',
+        'Export capabilities'
+      ],
+      lastUpdated: '2024-01-15'
     },
     // {
     //   id: 'sales-report',
