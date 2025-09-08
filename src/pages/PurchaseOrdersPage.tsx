@@ -229,32 +229,86 @@ const PurchaseOrdersPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Filter Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all duration-200 hover:shadow-md ${
+              statusFilter === 'all' 
+                ? 'border-green-500 bg-green-50 ring-2 ring-green-200' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
             <div className="text-sm font-medium text-gray-600">Total Orders</div>
-            <div className="text-2xl font-bold text-gray-900">{statusCounts.all}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className={`text-2xl font-bold ${statusFilter === 'all' ? 'text-green-600' : 'text-gray-900'}`}>
+              {statusCounts.all}
+            </div>
+          </button>
+          <button
+            onClick={() => setStatusFilter('draft')}
+            className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all duration-200 hover:shadow-md ${
+              statusFilter === 'draft' 
+                ? 'border-gray-500 bg-gray-50 ring-2 ring-gray-200' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
             <div className="text-sm font-medium text-gray-600">Draft</div>
-            <div className="text-2xl font-bold text-gray-500">{statusCounts.draft}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className={`text-2xl font-bold ${statusFilter === 'draft' ? 'text-gray-600' : 'text-gray-500'}`}>
+              {statusCounts.draft}
+            </div>
+          </button>
+          <button
+            onClick={() => setStatusFilter('sent')}
+            className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all duration-200 hover:shadow-md ${
+              statusFilter === 'sent' 
+                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
             <div className="text-sm font-medium text-gray-600">Sent</div>
-            <div className="text-2xl font-bold text-blue-600">{statusCounts.sent}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className={`text-2xl font-bold ${statusFilter === 'sent' ? 'text-blue-600' : 'text-blue-600'}`}>
+              {statusCounts.sent}
+            </div>
+          </button>
+          <button
+            onClick={() => setStatusFilter('partially_received')}
+            className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all duration-200 hover:shadow-md ${
+              statusFilter === 'partially_received' 
+                ? 'border-yellow-500 bg-yellow-50 ring-2 ring-yellow-200' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
             <div className="text-sm font-medium text-gray-600">Partial</div>
-            <div className="text-2xl font-bold text-yellow-600">{statusCounts.partially_received}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className={`text-2xl font-bold ${statusFilter === 'partially_received' ? 'text-yellow-600' : 'text-yellow-600'}`}>
+              {statusCounts.partially_received}
+            </div>
+          </button>
+          <button
+            onClick={() => setStatusFilter('received')}
+            className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all duration-200 hover:shadow-md ${
+              statusFilter === 'received' 
+                ? 'border-green-500 bg-green-50 ring-2 ring-green-200' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
             <div className="text-sm font-medium text-gray-600">Received</div>
-            <div className="text-2xl font-bold text-green-600">{statusCounts.received}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className={`text-2xl font-bold ${statusFilter === 'received' ? 'text-green-600' : 'text-green-600'}`}>
+              {statusCounts.received}
+            </div>
+          </button>
+          <button
+            onClick={() => setStatusFilter('cancelled')}
+            className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all duration-200 hover:shadow-md ${
+              statusFilter === 'cancelled' 
+                ? 'border-red-500 bg-red-50 ring-2 ring-red-200' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
             <div className="text-sm font-medium text-gray-600">Cancelled</div>
-            <div className="text-2xl font-bold text-red-600">{statusCounts.cancelled}</div>
-          </div>
+            <div className={`text-2xl font-bold ${statusFilter === 'cancelled' ? 'text-red-600' : 'text-red-600'}`}>
+              {statusCounts.cancelled}
+            </div>
+          </button>
         </div>
 
         {/* Filters Section */}

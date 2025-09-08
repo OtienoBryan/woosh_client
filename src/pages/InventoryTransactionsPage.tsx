@@ -100,7 +100,7 @@ const InventoryTransactionsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Inventory Transactions</h1>
         <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-center gap-2">
@@ -158,7 +158,6 @@ const InventoryTransactionsPage: React.FC = () => {
                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Total Cost</th>
                     <th className="px-4 py-2 text-right text-xs font-medium text-indigo-700 uppercase bg-indigo-50">Balance</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Store</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -173,7 +172,6 @@ const InventoryTransactionsPage: React.FC = () => {
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{tx.total_cost ? tx.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-indigo-900 font-bold text-right bg-indigo-50">{tx.balance.toLocaleString()}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.store_name || '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.staff_name || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
