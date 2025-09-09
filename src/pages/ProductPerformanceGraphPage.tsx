@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { Search } from 'lucide-react';
 
 interface ProductPerformance {
   product_id: number;
   product_name: string;
+  category_id: number;
+  category_name: string;
   total_quantity_sold: number;
   total_sales_value: number;
 }
@@ -20,14 +23,22 @@ const ProductPerformanceGraphPage: React.FC = () => {
   const [countries, setCountries] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [region, setRegion] = useState<string>('');
+  const [client, setClient] = useState<string>('');
+  const [clients, setClients] = useState<{id: number, name: string}[]>([]);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+  const [sku, setSku] = useState<string>('');
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [tempStartDate, setTempStartDate] = useState<string>('');
   const [tempEndDate, setTempEndDate] = useState<string>('');
   const [tempProductType, setTempProductType] = useState<string>('');
   const [tempCountry, setTempCountry] = useState<string>('');
   const [tempRegion, setTempRegion] = useState<string>('');
+  const [tempClient, setTempClient] = useState<string>('');
+  const [tempSku, setTempSku] = useState<string>('');
 
-  const fetchData = async (start?: string, end?: string, type?: string, countryName?: string, regionName?: string) => {
+  const fetchData = async (start?: string, end?: string, type?: string, countryName?: string, regionName?: string, clientId?: string, skuId?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -38,6 +49,8 @@ const ProductPerformanceGraphPage: React.FC = () => {
       if (type) params.productType = type;
       if (countryName) params.country = countryName;
       if (regionName) params.region = regionName;
+      if (clientId) params.client = clientId;
+      if (skuId) params.sku = skuId;
       const query = new URLSearchParams(params).toString();
       if (query) url += `?${query}`;
       const response = await axios.get(url);
@@ -54,9 +67,9 @@ const ProductPerformanceGraphPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData(startDate, endDate, productType, country, region);
+    fetchData(startDate, endDate, productType, country, region, client, sku);
     // eslint-disable-next-line
-  }, [startDate, endDate, productType, country, region]);
+  }, [startDate, endDate, productType, country, region, client, sku]);
 
   useEffect(() => {
     // Fetch country and region options on mount
@@ -76,9 +89,62 @@ const ProductPerformanceGraphPage: React.FC = () => {
         }
       } catch {}
     };
+    const fetchClients = async () => {
+      try {
+        const res = await axios.get('/api/clients?limit=10000');
+        if (res.data && res.data.data) {
+          const clientsData = res.data.data
+            .filter((client: {id: number, name: string}) => client && client.id && client.name) // Filter out null/undefined clients
+            .map((client: {id: number, name: string}) => ({
+              id: client.id,
+              name: client.name
+            }));
+          setClients(clientsData);
+        }
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+      }
+    };
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get('/api/financial/categories');
+        if (res.data.success) {
+          setCategories(res.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
     fetchCountries();
     fetchRegions();
+    fetchClients();
+    fetchCategories();
   }, []);
+
+  // Filtered clients based on search
+  const filteredClients = useMemo(() => {
+    if (!clientSearchQuery.trim()) {
+      return clients;
+    }
+    return clients.filter(client =>
+      client && client.name && client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
+  }, [clients, clientSearchQuery]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isClientDropdownOpen && !target.closest('.client-dropdown-container')) {
+        setIsClientDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isClientDropdownOpen]);
 
   useEffect(() => {
     if (modalOpen) {
@@ -87,9 +153,26 @@ const ProductPerformanceGraphPage: React.FC = () => {
       setTempProductType(productType);
       setTempCountry(country);
       setTempRegion(region);
+      setTempClient(client);
     }
     // eslint-disable-next-line
   }, [modalOpen]);
+
+  // Handle client selection
+  const handleClientSelect = (clientId: string, clientName: string) => {
+    setTempClient(clientId);
+    setClientSearchQuery(clientName);
+    setIsClientDropdownOpen(false);
+  };
+
+  // Handle search input change
+  const handleClientSearchChange = (value: string) => {
+    setClientSearchQuery(value);
+    if (value === '') {
+      setTempClient('');
+    }
+    setIsClientDropdownOpen(true);
+  };
 
   return (
     <div className="max-w-8xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -97,7 +180,16 @@ const ProductPerformanceGraphPage: React.FC = () => {
         <h1 className="text-2xl font-semibold text-gray-900">Product Performance Graph</h1>
         <button
           className="ml-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            setTempStartDate(startDate);
+            setTempEndDate(endDate);
+            setTempProductType(productType);
+            setTempCountry(country);
+            setTempRegion(region);
+            setTempClient(client);
+            setTempSku(sku);
+            setModalOpen(true);
+          }}
         >
           Filter
         </button>
@@ -157,7 +249,7 @@ const ProductPerformanceGraphPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
                 <select
                   value={tempRegion}
@@ -170,12 +262,65 @@ const ProductPerformanceGraphPage: React.FC = () => {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                <div className="relative client-dropdown-container">
+                  <input
+                    type="text"
+                    placeholder="Search clients..."
+                    value={clientSearchQuery}
+                    onChange={e => handleClientSearchChange(e.target.value)}
+                    onFocus={() => setIsClientDropdownOpen(true)}
+                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 pr-8"
+                  />
+                  <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                  
+                  {/* Dropdown List */}
+                  {isClientDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto">
+                      <div
+                        className="px-3 py-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleClientSelect('', 'All Clients')}
+                      >
+                        All Clients
+                      </div>
+                      {filteredClients.map((clientItem) => (
+                        <div
+                          key={clientItem.id}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                          onClick={() => handleClientSelect(clientItem.id.toString(), clientItem.name)}
+                        >
+                          {clientItem.name}
+                        </div>
+                      ))}
+                      {filteredClients.length === 0 && clientSearchQuery && (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          No clients found matching "{clientSearchQuery}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Category)</label>
+                <select
+                  value={tempSku}
+                  onChange={e => setTempSku(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">All SKUs</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id.toString()}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
                 onClick={() => {
-                  setStartDate(''); setEndDate(''); setProductType(''); setCountry(''); setRegion(''); setModalOpen(false);
+                  setStartDate(''); setEndDate(''); setProductType(''); setCountry(''); setRegion(''); setClient(''); setClientSearchQuery(''); setIsClientDropdownOpen(false); setSku(''); setModalOpen(false);
                 }}
               >
                 Clear
@@ -188,6 +333,8 @@ const ProductPerformanceGraphPage: React.FC = () => {
                   setProductType(tempProductType);
                   setCountry(tempCountry);
                   setRegion(tempRegion);
+                  setClient(tempClient);
+                  setSku(tempSku);
                   setModalOpen(false);
                 }}
               >

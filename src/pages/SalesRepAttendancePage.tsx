@@ -118,9 +118,15 @@ const SalesRepAttendancePage: React.FC = () => {
   const [year, monthNum] = month.split('-').map(Number);
   const daysInMonth = new Date(year, monthNum, 0).getDate();
   const days: string[] = [];
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // Set to end of today to include today
+  
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, monthNum - 1, d);
-    days.push(date.toISOString().slice(0, 10));
+    // Only include dates that are not in the future for statistics calculation
+    if (date <= today) {
+      days.push(date.toISOString().slice(0, 10));
+    }
   }
 
   // Build attendance records with enhanced data

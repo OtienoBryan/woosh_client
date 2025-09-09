@@ -109,12 +109,17 @@ const SalesRepWorkingDaysPage: React.FC = () => {
   }, []);
 
   // Helper: get all working days in range as string yyyy-mm-dd, excluding Sundays
+  // Only include dates up to today to prevent counting future dates as absent
   const getWorkingDaysInRange = () => {
     const days: string[] = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of today to include today
+    
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      if (d.getDay() !== 0) {
+      // Only include dates that are not in the future
+      if (d.getDay() !== 0 && d <= today) {
         days.push(d.toISOString().slice(0, 10));
       }
     }
@@ -155,11 +160,15 @@ const SalesRepWorkingDaysPage: React.FC = () => {
     // Leave days: sum of working days in range covered by approved leaves
     const repLeaves = leaves.filter(lv => String(lv.userId) === String(rep.id) && (lv.status === 1 || lv.status === '1'));
     let leaveDays = 0;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of today to include today
+    
     repLeaves.forEach(lv => {
       const leaveStart = new Date(lv.startDate) < rangeStart ? rangeStart : new Date(lv.startDate);
       const leaveEnd = new Date(lv.endDate) > rangeEnd ? rangeEnd : new Date(lv.endDate);
       for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
-        if (d.getDay() !== 0 && d >= rangeStart && d <= rangeEnd) {
+        // Only count leave days that are not in the future
+        if (d.getDay() !== 0 && d >= rangeStart && d <= rangeEnd && d <= today) {
           leaveDays++;
         }
       }
