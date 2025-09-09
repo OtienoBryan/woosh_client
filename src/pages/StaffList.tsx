@@ -597,7 +597,7 @@ const StaffList: React.FC = () => {
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 hidden">
           <div 
             className={`rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow ${
               selectedStatus === 'active' 
@@ -802,7 +802,7 @@ const StaffList: React.FC = () => {
                       <option value="">All Types</option>
                       <option value="Consultant">Consultant</option>
                       <option value="Contract">Contract</option>
-                      <option value="Permanent">Permanent</option>
+                      <option value="Probation ">Probation</option>
                     </select>
                   </div>
                   

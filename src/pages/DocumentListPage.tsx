@@ -9,6 +9,8 @@ interface Document {
   uploaded_at: string;
   file_size?: number;
   file_type?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 interface DocumentCategory {
@@ -48,6 +50,7 @@ const DocumentListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [expiringFilter, setExpiringFilter] = useState(false);
   
   // Category management state
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
@@ -65,7 +68,6 @@ const DocumentListPage: React.FC = () => {
   const [categoriesCurrentPage, setCategoriesCurrentPage] = useState(1);
   const [categoriesPerPage, setCategoriesPerPage] = useState(6);
 
-  const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
@@ -79,6 +81,8 @@ const DocumentListPage: React.FC = () => {
   const [modalCategory, setModalCategory] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +154,19 @@ const DocumentListPage: React.FC = () => {
       filtered = filtered.filter(doc => doc.category === category);
     }
     
+    // Apply expiring filter
+    if (expiringFilter) {
+      const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+      
+      filtered = filtered.filter(doc => {
+        if (!doc.end_date) return false;
+        const endDate = new Date(doc.end_date);
+        return endDate >= today && endDate <= thirtyDaysFromNow;
+      });
+    }
+    
     // Apply sorting
     filtered.sort((a, b) => {
       let aValue: string | number = '';
@@ -183,7 +200,7 @@ const DocumentListPage: React.FC = () => {
     setFilteredDocuments(filtered);
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [documents, searchTerm, category, sortBy, sortOrder]);
+  }, [documents, searchTerm, category, expiringFilter, sortBy, sortOrder]);
 
 
   // Pagination calculations
@@ -203,9 +220,25 @@ const DocumentListPage: React.FC = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setCategory('');
+    setExpiringFilter(false);
     setSortBy('date');
     setSortOrder('desc');
     setCurrentPage(1);
+  };
+
+  // Calculate expiring documents count
+  const getExpiringDocumentsCount = () => {
+    if (!Array.isArray(documents)) return 0;
+    
+    const today = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+    
+    return documents.filter(doc => {
+      if (!doc.end_date) return false;
+      const endDate = new Date(doc.end_date);
+      return endDate >= today && endDate <= thirtyDaysFromNow;
+    }).length;
   };
 
   const getFileIcon = (fileName: string) => {
@@ -258,6 +291,16 @@ const DocumentListPage: React.FC = () => {
     });
   };
 
+  const formatDateOnly = (dateString: string | undefined) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -295,6 +338,8 @@ const DocumentListPage: React.FC = () => {
     formData.append('category', modalCategory);
     formData.append('file', file);
     formData.append('description', description);
+    formData.append('start_date', startDate);
+    formData.append('end_date', endDate);
     
     try {
       const res = await fetch('/api/documents', {
@@ -309,6 +354,8 @@ const DocumentListPage: React.FC = () => {
       setModalCategory('');
       setFile(null);
       setDescription('');
+      setStartDate('');
+      setEndDate('');
       setShowModal(false);
       fetchDocuments();
     } catch (err: any) {
@@ -484,10 +531,32 @@ const DocumentListPage: React.FC = () => {
           <div className="py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Document Management</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Manage your documents and files in one place
-                </p>
+                <div className="flex items-center space-x-4">
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Document Management</h1>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Manage your documents and files in one place
+                    </p>
+                  </div>
+                  {getExpiringDocumentsCount() > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <div className="bg-orange-100 border border-orange-200 rounded-lg px-3 py-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-orange-800">
+                            {getExpiringDocumentsCount()} document{getExpiringDocumentsCount() !== 1 ? 's' : ''} expiring soon
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setExpiringFilter(true)}
+                        className="text-xs text-orange-600 hover:text-orange-800 font-medium underline"
+                      >
+                        View expiring
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex space-x-3">
                 <button
@@ -614,28 +683,71 @@ const DocumentListPage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Filters Toggle */}
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  <Icons.Filter />
-                  <span className="ml-2">Filters</span>
-                  {(category || searchTerm) && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
-                      Active
-                    </span>
-                  )}
-                </button>
+                {/* Active Filters Indicator */}
+                {(category || searchTerm || expiringFilter) && (
+                  <div className="inline-flex items-center px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                    <Icons.Filter />
+                    <span className="ml-2">Filters Active</span>
+                  </div>
+                )}
 
 
               </div>
             </div>
 
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Expiring Documents Alert */}
+            {getExpiringDocumentsCount() > 0 && !expiringFilter && (
+              <div className="mt-6 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-orange-800">
+                        {getExpiringDocumentsCount()} document{getExpiringDocumentsCount() !== 1 ? 's' : ''} expiring within 30 days
+                      </h3>
+                      <p className="text-sm text-orange-700">
+                        Review and take action on documents that need attention
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setExpiringFilter(true)}
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      View Expiring
+                    </button>
+                    <button
+                      onClick={() => setExpiringFilter(false)}
+                      className="px-4 py-2 bg-white text-orange-600 text-sm font-medium rounded-lg border border-orange-300 hover:bg-orange-50 transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Filters - Always Visible */}
+            <div className="mt-6 bg-gray-50 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Filters</h3>
+                {(category || searchTerm || expiringFilter) && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                     <select
@@ -649,6 +761,18 @@ const DocumentListPage: React.FC = () => {
                           {cat.name}
                         </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiring</label>
+                    <select
+                      value={expiringFilter ? 'expiring' : ''}
+                      onChange={(e) => setExpiringFilter(e.target.value === 'expiring')}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">All Documents</option>
+                      <option value="expiring">Expiring (within 30 days)</option>
                     </select>
                   </div>
                   
@@ -676,18 +800,8 @@ const DocumentListPage: React.FC = () => {
                       <option value="asc">Oldest First</option>
                     </select>
                   </div>
-                  
-                  <div className="flex items-end">
-                    <button
-                      onClick={clearFilters}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
                 </div>
               </div>
-            )}
           </div>
         </div>
 
@@ -698,11 +812,11 @@ const DocumentListPage: React.FC = () => {
             <Icons.Document />
             <h3 className="mt-4 text-lg font-medium text-gray-900">No documents found</h3>
             <p className="mt-2 text-sm text-gray-500">
-              {searchTerm || category
+              {searchTerm || category || expiringFilter
                 ? 'Try adjusting your search or filters'
                 : 'Get started by uploading your first document'}
             </p>
-            {!searchTerm && !category && (
+            {!searchTerm && !category && !expiringFilter && (
               <button
                 onClick={() => setShowModal(true)}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -730,6 +844,12 @@ const DocumentListPage: React.FC = () => {
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Upload Date
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Start Date
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      End Date
                     </th>
                     <th scope="col" className="relative px-6 py-3">
                       <span className="sr-only">Actions</span>
@@ -764,6 +884,16 @@ const DocumentListPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{formatDate(doc.uploaded_at)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatDateOnly(doc.start_date)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatDateOnly(doc.end_date)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex space-x-2 justify-end">
@@ -802,65 +932,115 @@ const DocumentListPage: React.FC = () => {
         )}
 
         {/* Pagination */}
-        {Array.isArray(filteredDocuments) && filteredDocuments.length > 0 && totalPages > 1 && (
+        {Array.isArray(filteredDocuments) && filteredDocuments.length > 0 && (
           <div className="bg-white rounded-lg shadow mt-6">
             <div className="px-6 py-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 {/* Results info */}
                 <div className="text-sm text-gray-700">
                   Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                  {totalPages > 1 && (
+                    <span className="ml-2 text-gray-500">
+                      (Page {currentPage} of {totalPages})
+                    </span>
+                  )}
                 </div>
 
-                {/* Pagination controls */}
-                <div className="flex items-center space-x-2">
-                  {/* Previous button */}
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
+                {/* Pagination controls - only show if more than 1 page */}
+                {totalPages > 1 && (
+                  <div className="flex items-center space-x-2">
+                    {/* First page button - only show if not on first page */}
+                    {currentPage > 1 && (
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        title="First page"
+                      >
+                        ««
+                      </button>
+                    )}
 
-                  {/* Page numbers */}
-                  <div className="flex space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
+                    {/* Previous button */}
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
 
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                            currentPage === pageNum
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
+                    {/* Page numbers */}
+                    <div className="flex space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                              currentPage === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Next button */}
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+
+                    {/* Last page button - only show if not on last page */}
+                    {currentPage < totalPages && (
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        title="Last page"
+                      >
+                        »»
+                      </button>
+                    )}
+
+                    {/* Go to page input - only show if more than 10 pages */}
+                    {totalPages > 10 && (
+                      <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-300">
+                        <span className="text-sm text-gray-600">Go to:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          value={currentPage}
+                          onChange={(e) => {
+                            const page = parseInt(e.target.value);
+                            if (page >= 1 && page <= totalPages) {
+                              setCurrentPage(page);
+                            }
+                          }}
+                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">of {totalPages}</span>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Next button */}
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -886,6 +1066,8 @@ const DocumentListPage: React.FC = () => {
                   setModalCategory('');
                   setFile(null);
                   setDescription('');
+                  setStartDate('');
+                  setEndDate('');
                   setError(null);
                   setSuccess(null);
                 }}
@@ -997,6 +1179,34 @@ const DocumentListPage: React.FC = () => {
                     placeholder="Enter document description (optional)"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      id="startDate"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      id="endDate"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Error/Success Messages */}
@@ -1022,6 +1232,8 @@ const DocumentListPage: React.FC = () => {
                     setModalCategory('');
                     setFile(null);
                     setDescription('');
+                    setStartDate('');
+                    setEndDate('');
                     setError(null);
                     setSuccess(null);
                   }}
