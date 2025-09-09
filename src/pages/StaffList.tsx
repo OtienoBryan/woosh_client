@@ -53,6 +53,7 @@ const StaffList: React.FC = () => {
     empl_no: '',
     id_no: 0,
     role: '',
+    designation: '',
     employment_type: 'Consultant',
     gender: '',
     business_email: '',
@@ -263,6 +264,7 @@ const StaffList: React.FC = () => {
         empl_no: '',
         id_no: 0,
         role: '',
+        designation: '',
         employment_type: 'Permanent',
         gender: '',
         business_email: '',
@@ -319,6 +321,7 @@ const StaffList: React.FC = () => {
       empl_no: staff.empl_no,
       id_no: staff.id_no,
       role: staff.role,
+      designation: staff.designation || '',
       employment_type: staff.employment_type,
       gender: staff.gender || '',
       business_email: staff.business_email || '',
@@ -866,8 +869,11 @@ const StaffList: React.FC = () => {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Staff Member
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">
                         Role
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Designation
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Department
@@ -931,8 +937,11 @@ const StaffList: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap hidden">
                           <div className="text-sm text-gray-900">{member.role}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{member.designation || member.role || <span className="text-gray-500">-</span>}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
@@ -1227,6 +1236,7 @@ const StaffList: React.FC = () => {
                     empl_no: '',
                     id_no: 0,
                     role: '',
+                    designation: '',
                     employment_type: 'Consultant',
                     gender: '',
                     business_email: '',
@@ -1341,8 +1351,25 @@ const StaffList: React.FC = () => {
                       />
                     </div>
 
-                    {/* Role */}
+                    {/* Designation */}
                     <div>
+                      <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-2">
+                        Designation *
+                      </label>
+                      <input
+                        type="text"
+                        name="designation"
+                        id="designation"
+                        required
+                        value={newStaff.designation || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="e.g., Manager, Supervisor, Officer"
+                      />
+                    </div>
+
+                    {/* Role - Hidden */}
+                    <div className="hidden">
                       <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
                         Role *
                       </label>
@@ -1494,6 +1521,7 @@ const StaffList: React.FC = () => {
                       empl_no: '',
                       id_no: 0,
                       role: '',
+                      designation: '',
                       employment_type: 'Consultant',
                       gender: '',
                       business_email: '',

@@ -6,6 +6,7 @@ export interface Staff {
   name: string;
   photo_url: string;
   position: string;
+  designation?: string;
   empl_no: string;
   id_no: number;
   role: string;
@@ -29,6 +30,7 @@ export interface CreateStaffData {
   empl_no: string;
   id_no: number;
   role: string;
+  designation?: string;
   employment_type?: string;
   gender?: string;
   business_email?: string;
