@@ -32,6 +32,7 @@ import {
   AwardIcon,
   TargetIcon
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
 import type { DashboardStats } from '../types/financial';
@@ -50,6 +51,24 @@ interface StatCardProps {
   textColor?: string;
   onClick?: () => void;
   badge?: React.ReactNode;
+}
+
+interface SalesData {
+  date: string;
+  order_count: number;
+  total_amount: number;
+  subtotal: number;
+  tax_amount: number;
+}
+
+interface SalesSummary {
+  total_orders: number;
+  total_sales: number;
+  avg_order_value: number;
+  first_order_date: string;
+  last_order_date: string;
+  growth_percentage: number;
+  previous_month_sales: number;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -118,6 +137,10 @@ const FinancialDashboardPage = () => {
   const [hasNewChat, setHasNewChat] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [salesSummary, setSalesSummary] = useState<SalesSummary | null>(null);
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [salesError, setSalesError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -178,6 +201,33 @@ const FinancialDashboardPage = () => {
     fetchNewOrders();
     fetchNewCreditNotes();
     fetchChatLatest();
+  }, []);
+
+  useEffect(() => {
+    // Fetch current month sales data
+    const fetchSalesData = async () => {
+      setSalesLoading(true);
+      setSalesError(null);
+      try {
+        const url = API_CONFIG.getUrl('/financial/sales-orders/current-month-data');
+        const res = await fetch(url, { 
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
+        });
+        const data = await res.json();
+        if (res.ok && data && data.success) {
+          setSalesData(data.data.dailyData);
+          setSalesSummary(data.data.summary);
+        } else {
+          setSalesError(data.error || 'Failed to load sales data');
+        }
+      } catch (err) {
+        setSalesError('Failed to load sales data');
+      } finally {
+        setSalesLoading(false);
+      }
+    };
+
+    fetchSalesData();
   }, []);
 
   const formatCurrency = (amount: number): string => {
@@ -381,7 +431,121 @@ const FinancialDashboardPage = () => {
           </div>
             </div>
 
-        
+        {/* Sales Graph Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Current Month Sales</h3>
+              <p className="text-sm text-gray-600">Daily sales performance for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+            </div>
+            {salesSummary && (
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(salesSummary.total_sales)}
+                </div>
+                <div className="flex items-center text-sm">
+                  {salesSummary.growth_percentage >= 0 ? (
+                    <ArrowUpRightIcon className="h-4 w-4 text-green-500 mr-1" />
+                  ) : (
+                    <ArrowDownRightIcon className="h-4 w-4 text-red-500 mr-1" />
+                  )}
+                  <span className={salesSummary.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
+                  </span>
+                  <span className="text-gray-500 ml-1">vs last month</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {salesLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : salesError ? (
+            <div className="text-red-500 text-center h-64 flex items-center justify-center">
+              <div className="text-center">
+                <AlertTriangleIcon className="h-8 w-8 mx-auto mb-2" />
+                <p>{salesError}</p>
+              </div>
+            </div>
+          ) : salesData.length === 0 ? (
+            <div className="text-gray-500 text-center h-64 flex items-center justify-center">
+              <div className="text-center">
+                <BarChart3Icon className="h-8 w-8 mx-auto mb-2" />
+                <p>No sales data available for this month</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={salesData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#6b7280"
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis 
+                    stroke="#6b7280"
+                    tickFormatter={(value) => `KES ${(value / 1000).toFixed(0)}K`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                    formatter={(value: number, name: string) => [
+                      name === 'total_amount' ? formatCurrency(value) : value,
+                      name === 'total_amount' ? 'Sales' : 'Orders'
+                    ]}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total_amount" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Sales Summary Cards */}
+          {salesSummary && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{salesSummary.total_orders}</div>
+                <div className="text-sm text-gray-600">Total Orders</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(salesSummary.avg_order_value)}</div>
+                <div className="text-sm text-gray-600">Avg Order Value</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {salesData.length > 0 ? (salesSummary.total_orders / salesData.length).toFixed(1) : '0'}
+                </div>
+                <div className="text-sm text-gray-600">Orders/Day</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600">Growth Rate</div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Quick Actions & Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 hidden">
