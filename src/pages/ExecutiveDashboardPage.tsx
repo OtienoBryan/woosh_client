@@ -13,26 +13,18 @@ import {
   BarChart3Icon,
   BoxIcon,
   ClockIcon,
-  PlusIcon,
   ChevronRightIcon,
   ActivityIcon,
   ZapIcon,
-  SettingsIcon,
-  BellIcon,
-  SearchIcon,
-  FilterIcon,
   NotebookIcon,
-  ReceiptIcon,
   CalculatorIcon,
   PiggyBankIcon,
-  TrendingDownIcon,
-  EyeIcon,
   ArrowUpRightIcon,
   ArrowDownRightIcon,
   AwardIcon,
   TargetIcon
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
 import type { DashboardStats } from '../types/financial';
@@ -69,6 +61,22 @@ interface SalesSummary {
   last_order_date: string;
   growth_percentage: number;
   previous_month_sales: number;
+}
+
+interface CategoryPerformance {
+  name: string;
+  value: number;
+  percentage: string;
+  orderCount: number;
+  totalQuantity: number;
+  avgSaleValue: number;
+  color: string;
+}
+
+interface CategorySummary {
+  totalCategories: number;
+  topCategory: string | null;
+  topCategoryPercentage: string;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -141,6 +149,10 @@ const FinancialDashboardPage = () => {
   const [salesSummary, setSalesSummary] = useState<SalesSummary | null>(null);
   const [salesLoading, setSalesLoading] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
+  const [categoryData, setCategoryData] = useState<CategoryPerformance[]>([]);
+  const [categorySummary, setCategorySummary] = useState<CategorySummary | null>(null);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -228,6 +240,33 @@ const FinancialDashboardPage = () => {
     };
 
     fetchSalesData();
+  }, []);
+
+  useEffect(() => {
+    // Fetch category performance data
+    const fetchCategoryData = async () => {
+      setCategoryLoading(true);
+      setCategoryError(null);
+      try {
+        const url = API_CONFIG.getUrl('/financial/sales-orders/category-performance');
+        const res = await fetch(url, { 
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
+        });
+        const data = await res.json();
+        if (res.ok && data && data.success) {
+          setCategoryData(data.data.chartData);
+          setCategorySummary(data.data.summary);
+        } else {
+          setCategoryError(data.error || 'Failed to load category data');
+        }
+      } catch (err) {
+        setCategoryError('Failed to load category data');
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+
+    fetchCategoryData();
   }, []);
 
   const formatCurrency = (amount: number): string => {
@@ -542,6 +581,131 @@ const FinancialDashboardPage = () => {
                   {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
                 </div>
                 <div className="text-sm text-gray-600">Growth Rate</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Category Performance Pie Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Category Performance</h3>
+              <p className="text-sm text-gray-600">Sales distribution by product category for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+            </div>
+            {categorySummary && (
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600">
+                  {categorySummary.totalCategories} Categories
+                </div>
+                <div className="text-sm text-gray-600">
+                  Top: {categorySummary.topCategory} ({categorySummary.topCategoryPercentage}%)
+                </div>
+              </div>
+            )}
+          </div>
+
+          {categoryLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : categoryError ? (
+            <div className="text-red-500 text-center h-64 flex items-center justify-center">
+              <div className="text-center">
+                <AlertTriangleIcon className="h-8 w-8 mx-auto mb-2" />
+                <p>{categoryError}</p>
+              </div>
+            </div>
+          ) : categoryData.length === 0 ? (
+            <div className="text-gray-500 text-center h-64 flex items-center justify-center">
+              <div className="text-center">
+                <BarChart3Icon className="h-8 w-8 mx-auto mb-2" />
+                <p>No category data available for this month</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Pie Chart */}
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percentage }) => `${name} (${percentage}%)`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [
+                        formatCurrency(value),
+                        'Sales'
+                      ]}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Category Details */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Category Breakdown</h4>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {categoryData.map((category, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        ></div>
+                        <div>
+                          <div className="font-medium text-gray-900">{category.name}</div>
+                          <div className="text-sm text-gray-600">
+                            {category.orderCount} orders • {category.totalQuantity} units
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-gray-900">
+                          {formatCurrency(category.value)}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {category.percentage}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Category Summary Stats */}
+          {categorySummary && categoryData.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{categorySummary.totalCategories}</div>
+                <div className="text-sm text-gray-600">Total Categories</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{categorySummary.topCategory}</div>
+                <div className="text-sm text-gray-600">Top Category</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{categorySummary.topCategoryPercentage}%</div>
+                <div className="text-sm text-gray-600">Top Category Share</div>
               </div>
             </div>
           )}
