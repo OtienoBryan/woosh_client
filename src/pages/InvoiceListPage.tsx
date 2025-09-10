@@ -221,7 +221,7 @@ const InvoiceListPage: React.FC = () => {
       order.salesrep || 'N/A',
       formatDate(order.order_date),
       getStatusBadgeText(order.my_status || 0),
-      formatCurrency(safeNumber(order.subtotal)),
+      formatCurrency(safeNumber(order.total_amount) - safeNumber(order.tax_amount)),
       formatCurrency(safeNumber(order.tax_amount)),
       formatCurrency(safeNumber(order.total_amount)),
       formatCurrency(safeNumber(amountsPaid[order.id])),
@@ -548,7 +548,7 @@ const InvoiceListPage: React.FC = () => {
                         {getStatusBadge(order.my_status || 0)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(safeNumber(order.subtotal))}
+                        {formatCurrency(safeNumber(order.total_amount) - safeNumber(order.tax_amount))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(safeNumber(order.tax_amount))}

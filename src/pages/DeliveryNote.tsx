@@ -458,7 +458,7 @@ const SalesOrderDetailsPage: React.FC = () => {
                 <tbody>
                   <tr>
                     <td className="label">Subtotal:</td>
-                    <td className="amount">{formatCurrency(salesOrder?.subtotal || 0)}</td>
+                    <td className="amount">{formatCurrency((salesOrder?.total_amount || 0) - (salesOrder?.tax_amount || 0))}</td>
                   </tr>
                   <tr>
                     <td className="label">VAT (16%):</td>
