@@ -143,6 +143,7 @@ export interface User {
     rider_name?: string;
     rider_contact?: string;
     assigned_at?: string;
+    delivery_image?: string;
     customer_balance?: string;
     received_by?: number;
     returned_at?: string;

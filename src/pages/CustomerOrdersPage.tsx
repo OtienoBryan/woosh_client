@@ -101,6 +101,10 @@ const CustomerOrdersPage: React.FC = () => {
   const [completeDeliveryLoading, setCompleteDeliveryLoading] = useState(false);
   const [completeDeliveryError, setCompleteDeliveryError] = useState<string | null>(null);
 
+  // Delivery Details Modal state
+  const [showDeliveryDetailsModal, setShowDeliveryDetailsModal] = useState(false);
+  const [deliveryDetailsOrder, setDeliveryDetailsOrder] = useState<SalesOrder | null>(null);
+
   useEffect(() => {
     fetchOrders();
     fetchProducts();
@@ -656,12 +660,12 @@ const CustomerOrdersPage: React.FC = () => {
       const response = await salesOrdersService.assignRider(assigningOrder.id, selectedRider);
       
       if (response.success) {
-        setSuccessMessage('Rider assigned successfully!');
+        setSuccessMessage('Rider assigned successfully! Order status updated to shipped and stock quantities reduced in store ID 1.');
         await fetchOrders();
         closeAssignRiderModal();
         setTimeout(() => {
           setSuccessMessage('');
-        }, 3000);
+        }, 5000); // Increased timeout to show the longer message
       } else {
         setAssignError(response.error || 'Failed to assign rider');
       }
@@ -856,26 +860,46 @@ const CustomerOrdersPage: React.FC = () => {
       setCompleteDeliveryLoading(true);
       setCompleteDeliveryError(null);
 
-      // Create form data for image upload
-      const formData = new FormData();
-      formData.append('order_id', completingOrder.id.toString());
-      formData.append('recipient_name', completeDeliveryForm.recipient_name);
-      formData.append('recipient_phone', completeDeliveryForm.recipient_phone);
-      formData.append('notes', completeDeliveryForm.notes || '');
+      let deliveryImageFilename = null;
+      
+      // Upload delivery image first if provided
       if (completeDeliveryForm.delivery_image) {
-        formData.append('delivery_image', completeDeliveryForm.delivery_image);
+        const imageFormData = new FormData();
+        imageFormData.append('delivery_image', completeDeliveryForm.delivery_image);
+        imageFormData.append('order_id', completingOrder.id.toString());
+        imageFormData.append('recipient_name', completeDeliveryForm.recipient_name);
+        imageFormData.append('recipient_phone', completeDeliveryForm.recipient_phone);
+        imageFormData.append('notes', completeDeliveryForm.notes || '');
+
+        const imageResponse = await fetch(API_CONFIG.getUrl('/financial/upload-delivery-image'), {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: imageFormData
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          deliveryImageFilename = imageData.filename;
+          console.log('Delivery image uploaded successfully:', deliveryImageFilename);
+        } else {
+          const errorData = await imageResponse.json().catch(() => ({}));
+          console.warn('Failed to upload delivery image:', errorData);
+          // Continue with delivery completion even if image upload fails
+        }
       }
 
-      // Complete delivery using the dedicated endpoint
       const requestBody = {
         recipient_name: completeDeliveryForm.recipient_name,
         recipient_phone: completeDeliveryForm.recipient_phone,
-        notes: completeDeliveryForm.notes || ''
+        notes: completeDeliveryForm.notes || '',
+        delivery_image_filename: deliveryImageFilename
       };
       
       console.log('Completing delivery for order:', completingOrder.id, 'with data:', requestBody);
       
-      const completeResponse = await fetch(API_CONFIG.getUrl(`/sales-orders/${completingOrder.id}/complete-delivery`), {
+      const completeResponse = await fetch(API_CONFIG.getUrl(`/financial/sales-orders/${completingOrder.id}/complete-delivery`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -885,22 +909,7 @@ const CustomerOrdersPage: React.FC = () => {
       });
 
       if (completeResponse.ok) {
-        // Upload delivery image if provided
-        if (completeDeliveryForm.delivery_image) {
-          const imageResponse = await fetch(API_CONFIG.getUrl('/upload-delivery-image'), {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: formData
-          });
-
-          if (!imageResponse.ok) {
-            console.warn('Failed to upload delivery image, but order was completed');
-          }
-        }
-
-        setSuccessMessage('Delivery completed successfully!');
+        setSuccessMessage('Delivery completed successfully! Order status updated to delivered.');
         await fetchOrders();
         closeCompleteDeliveryModal();
         setTimeout(() => {
@@ -921,6 +930,17 @@ const CustomerOrdersPage: React.FC = () => {
     } finally {
       setCompleteDeliveryLoading(false);
     }
+  };
+
+  // Delivery Details Modal functions
+  const openDeliveryDetailsModal = (order: SalesOrder) => {
+    setDeliveryDetailsOrder(order);
+    setShowDeliveryDetailsModal(true);
+  };
+
+  const closeDeliveryDetailsModal = () => {
+    setShowDeliveryDetailsModal(false);
+    setDeliveryDetailsOrder(null);
   };
 
   if (loading) {
@@ -1298,6 +1318,15 @@ const CustomerOrdersPage: React.FC = () => {
                              >
                                <Package className="h-4 w-4 mr-1" />
                                Complete Delivery
+                             </button>
+                           )}
+                           {order.status === 'delivered' && (
+                             <button
+                               onClick={() => openDeliveryDetailsModal(order)}
+                               className="text-green-600 hover:text-green-900 flex items-center bg-green-50 hover:bg-green-100 px-2 py-1 rounded"
+                             >
+                               <Truck className="h-4 w-4 mr-1" />
+                               View Delivery Details
                              </button>
                            )}
                            {(order.my_status === 4 || order.my_status === 6) && user?.role === 'stock' && (
@@ -2535,6 +2564,161 @@ const CustomerOrdersPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delivery Details Modal */}
+        {showDeliveryDetailsModal && deliveryDetailsOrder && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-green-600">Delivery Details - Order {deliveryDetailsOrder.so_number}</h2>
+                <button
+                  onClick={closeDeliveryDetailsModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Order Information */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Order Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Order Number</label>
+                      <p className="text-sm text-gray-900">{deliveryDetailsOrder.so_number}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Customer</label>
+                      <p className="text-sm text-gray-900">{deliveryDetailsOrder.customer_name || deliveryDetailsOrder.customer?.name}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Order Date</label>
+                      <p className="text-sm text-gray-900">{formatDate(deliveryDetailsOrder.order_date)}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Expected Delivery Date</label>
+                      <p className="text-sm text-gray-900">{deliveryDetailsOrder.expected_delivery_date ? formatDate(deliveryDetailsOrder.expected_delivery_date) : 'Not specified'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Delivery Information */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivery Information</h3>
+                  <div className="space-y-3">
+                    {deliveryDetailsOrder.rider_name && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Rider</label>
+                        <p className="text-sm text-gray-900">{deliveryDetailsOrder.rider_name}</p>
+                        {deliveryDetailsOrder.rider_contact && (
+                          <p className="text-xs text-gray-600">Contact: {deliveryDetailsOrder.rider_contact}</p>
+                        )}
+                      </div>
+                    )}
+                    {deliveryDetailsOrder.assigned_at && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Assigned At</label>
+                        <p className="text-sm text-gray-900">{formatDate(deliveryDetailsOrder.assigned_at)}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Delivery Status</label>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Delivered
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Delivery Notes */}
+                {deliveryDetailsOrder.delivery_notes && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivery Notes</h3>
+                    <div className="bg-white p-3 rounded border">
+                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{deliveryDetailsOrder.delivery_notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Delivery Image */}
+                {deliveryDetailsOrder.delivery_image && (
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivery Image</h3>
+                    <div className="bg-white p-3 rounded border">
+                      <img 
+                        src={deliveryDetailsOrder.delivery_image.startsWith('http') 
+                          ? deliveryDetailsOrder.delivery_image 
+                          : `/uploads/products/${deliveryDetailsOrder.delivery_image}`}
+                        alt="Delivery Image"
+                        className="max-w-full h-auto rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => window.open(
+                          deliveryDetailsOrder.delivery_image.startsWith('http') 
+                            ? deliveryDetailsOrder.delivery_image 
+                            : `/uploads/products/${deliveryDetailsOrder.delivery_image}`, 
+                          '_blank'
+                        )}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<p class="text-sm text-gray-500 italic">Image not found or failed to load</p>';
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-gray-500 mt-2">Click image to view full size</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Order Items */}
+                {deliveryDetailsOrder.items && deliveryDetailsOrder.items.length > 0 && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivered Items</h3>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {deliveryDetailsOrder.items.map((item, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-2 text-sm text-gray-900">{item.product_name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{item.quantity}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(item.unit_price)}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(item.total_price)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-gray-100">
+                          <tr>
+                            <td colSpan={3} className="px-4 py-2 text-right text-sm font-medium text-gray-900">Total Amount:</td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900">{formatCurrency(deliveryDetailsOrder.total_amount)}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={closeDeliveryDetailsModal}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

@@ -78,7 +78,10 @@ const InventorySalesOrderDetailsPage: React.FC = () => {
     setAssignLoading(true);
     setAssignError(null);
     try {
-      await salesOrdersService.assignRider(order.id, selectedRider);
+      const response = await salesOrdersService.assignRider(order.id, selectedRider);
+      if (response.success) {
+        alert('Rider assigned successfully! Order status updated to shipped and stock quantities reduced in store ID 1.');
+      }
       closeAssignModal();
       fetchOrderDetails(); // Refresh order details
     } catch (err) {

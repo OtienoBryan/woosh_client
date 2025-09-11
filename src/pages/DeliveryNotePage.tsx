@@ -153,7 +153,7 @@ const DeliveryNotePage: React.FC = () => {
     try {
       const res = await deliveryNotesService.markAsDelivered(deliveryNote.id);
       if (res.success) {
-        alert('Delivery note marked as delivered successfully.');
+        alert('Delivery note and sales order marked as delivered successfully.');
         fetchDeliveryNotes();
       } else {
         alert(res.error || 'Failed to mark delivery note as delivered.');

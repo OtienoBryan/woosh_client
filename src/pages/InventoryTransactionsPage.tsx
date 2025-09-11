@@ -16,8 +16,6 @@ interface InventoryTransaction {
   product_name?: string;
   store_name?: string;
   staff_name?: string;
-  unit_cost?: number;
-  total_cost?: number;
 }
 
 interface Product {
@@ -62,6 +60,8 @@ const InventoryTransactionsPage: React.FC = () => {
       if (selectedStore) params.store_id = selectedStore;
       params.page = page;
       params.limit = pageSize;
+      params.orderBy = 'id';
+      params.orderDirection = 'DESC';
       const response = await inventoryTransactionsService.getAll(params);
       if (response.success && response.data) {
         setTransactions(response.data);
@@ -154,8 +154,6 @@ const InventoryTransactionsPage: React.FC = () => {
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
                     <th className="px-4 py-2 text-right text-xs font-medium text-green-700 uppercase">Amount In</th>
                     <th className="px-4 py-2 text-right text-xs font-medium text-red-700 uppercase">Amount Out</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Unit Cost</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Total Cost</th>
                     <th className="px-4 py-2 text-right text-xs font-medium text-indigo-700 uppercase bg-indigo-50">Balance</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Store</th>
                   </tr>
@@ -168,8 +166,6 @@ const InventoryTransactionsPage: React.FC = () => {
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.reference || '-'}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-green-700 text-right font-medium">{tx.amount_in ? tx.amount_in.toLocaleString() : '-'}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-red-700 text-right font-medium">{tx.amount_out ? tx.amount_out.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{tx.unit_cost ? tx.unit_cost.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{tx.total_cost ? tx.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-indigo-900 font-bold text-right bg-indigo-50">{tx.balance.toLocaleString()}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.store_name || '-'}</td>
                     </tr>
