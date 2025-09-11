@@ -15,7 +15,7 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
     to_store_id: '',
     transfer_date: new Date().toISOString().split('T')[0],
     staff_id: 1, // Replace with actual user ID in production
-    reference: '',
+    reference: 'Stock Transfer',
     notes: '',
     items: [
       { product_id: '', quantity: '' }
@@ -73,7 +73,7 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
       const res: typeof stockTransferService.transfer extends (data: any) => Promise<infer R> ? R & { details?: any[] } : any = await stockTransferService.transfer(data);
       if (res.success) {
         setSuccess('Stock transfer recorded successfully!');
-        setForm({ ...form, reference: '', notes: '', items: [{ product_id: '', quantity: '' }] });
+        setForm({ ...form, reference: 'Stock Transfer', notes: '', items: [{ product_id: '', quantity: '' }] });
         if (onSuccess) onSuccess();
       } else {
         // Check for insufficient quantity error
