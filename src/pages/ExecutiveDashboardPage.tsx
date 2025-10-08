@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   TrendingUpIcon, 
@@ -27,7 +27,6 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
-import type { DashboardStats } from '../types/financial';
 
 interface StatCardProps {
   title: string;
@@ -79,7 +78,8 @@ interface CategorySummary {
   topCategoryPercentage: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
+// Memoized StatCard component for better performance
+const StatCard: React.FC<StatCardProps> = memo(({
   title,
   value,
   icon,
@@ -136,10 +136,34 @@ const StatCard: React.FC<StatCardProps> = ({
       )}
     </div>
   );
+});
+
+StatCard.displayName = 'StatCard';
+
+// Data cache to prevent unnecessary refetches
+const dataCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+// Cache TTL in milliseconds (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
+// Helper function to check if cached data is still valid
+const isCacheValid = (timestamp: number, ttl: number): boolean => {
+  return Date.now() - timestamp < ttl;
+};
+
+// Optimized API call with caching
+const fetchWithCache = async (key: string, fetcher: () => Promise<any>, ttl: number = CACHE_TTL) => {
+  const cached = dataCache.get(key);
+  if (cached && isCacheValid(cached.timestamp, cached.ttl)) {
+    return cached.data;
+  }
+  
+  const data = await fetcher();
+  dataCache.set(key, { data, timestamp: Date.now(), ttl });
+  return data;
 };
 
 const FinancialDashboardPage = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
   const [newCreditNotesCount, setNewCreditNotesCount] = useState<number>(0);
   const [hasNewChat, setHasNewChat] = useState<boolean>(false);
@@ -155,150 +179,155 @@ const FinancialDashboardPage = () => {
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Optimized parallel data fetching with caching
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    dashboardService.getStats()
-      .then(res => {
-        if (res.success && res.data) {
-          setStats(res.data);
-        } else {
-          setError(res.error || 'Failed to load dashboard stats');
-        }
-      })
-      .catch(() => setError('Failed to load dashboard stats'))
-      .finally(() => setLoading(false));
-  }, []);
+    setSalesLoading(true);
+    setCategoryLoading(true);
 
-  useEffect(() => {
-    // Fetch count of new (my_status = 0) orders for badge on Customer Orders card
-    const fetchNewOrders = async () => {
-      try {
-        const url = API_CONFIG.getUrl('/financial/sales-orders-all');
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-        const data = await res.json();
-        if (res.ok && data && data.success && Array.isArray(data.data)) {
-          const count = data.data.filter((o: any) => String(o.my_status || '0') === '0').length;
-          setNewOrdersCount(count);
-        }
-      } catch {}
-    };
-    
-    // Fetch count of new (my_status = 0) credit notes for badge on Credit Notes card
-    const fetchNewCreditNotes = async () => {
-      try {
-        const url = API_CONFIG.getUrl('/financial/credit-notes');
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-        const data = await res.json();
-        if (res.ok && data && data.success && Array.isArray(data.data)) {
-          // Count credit notes with my_status = 0 (new/unprocessed)
-          const count = data.data.filter((cn: any) => String(cn.my_status || '0') === '0').length;
-          setNewCreditNotesCount(count);
-        }
-      } catch {}
-    };
-    
-    const fetchChatLatest = async () => {
-      try {
-        const url = API_CONFIG.getUrl('/chat/latest');
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-        const data = await res.json();
-        if (res.ok && data && data.success) {
-          const lastMessage = data.last_message_at ? new Date(data.last_message_at).getTime() : 0;
-          const lastVisited = Number(localStorage.getItem('chat_last_visited_ts') || 0);
-          setHasNewChat(lastMessage > lastVisited);
-        }
-      } catch {}
-    };
-    fetchNewOrders();
-    fetchNewCreditNotes();
-    fetchChatLatest();
-  }, []);
+    try {
+      // Parallel API calls for better performance
+      const [
+        statsResult,
+        newOrdersResult,
+        newCreditNotesResult,
+        chatResult,
+        salesResult,
+        categoryResult
+      ] = await Promise.allSettled([
+        // Dashboard stats with cache
+        fetchWithCache('dashboard-stats', () => dashboardService.getStats()),
+        
+        // New orders count with cache
+        fetchWithCache('new-orders', async () => {
+          const url = API_CONFIG.getUrl('/financial/sales-orders-all');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success && Array.isArray(data.data)) {
+            return data.data.filter((o: any) => String(o.my_status || '0') === '0').length;
+          }
+          return 0;
+        }),
+        
+        // New credit notes count with cache
+        fetchWithCache('new-credit-notes', async () => {
+          const url = API_CONFIG.getUrl('/financial/credit-notes');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success && Array.isArray(data.data)) {
+            return data.data.filter((cn: any) => String(cn.my_status || '0') === '0').length;
+          }
+          return 0;
+        }),
+        
+        // Chat status with cache
+        fetchWithCache('chat-status', async () => {
+          const url = API_CONFIG.getUrl('/chat/latest');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success) {
+            const lastMessage = data.last_message_at ? new Date(data.last_message_at).getTime() : 0;
+            const lastVisited = Number(localStorage.getItem('chat_last_visited_ts') || 0);
+            return lastMessage > lastVisited;
+          }
+          return false;
+        }),
+        
+        // Sales data with cache
+        fetchWithCache('sales-data', async () => {
+          const url = API_CONFIG.getUrl('/financial/sales-orders/current-month-data');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success) {
+            return { dailyData: data.data.dailyData, summary: data.data.summary };
+          }
+          throw new Error(data.error || 'Failed to load sales data');
+        }),
+        
+        // Category data with cache
+        fetchWithCache('category-data', async () => {
+          const url = API_CONFIG.getUrl('/financial/sales-orders/category-performance');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success) {
+            return { chartData: data.data.chartData, summary: data.data.summary };
+          }
+          throw new Error(data.error || 'Failed to load category data');
+        })
+      ]);
 
-  useEffect(() => {
-    // Fetch current month sales data
-    const fetchSalesData = async () => {
-      setSalesLoading(true);
-      setSalesError(null);
-      try {
-        const url = API_CONFIG.getUrl('/financial/sales-orders/current-month-data');
-        const res = await fetch(url, { 
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
-        });
-        const data = await res.json();
-        if (res.ok && data && data.success) {
-          setSalesData(data.data.dailyData);
-          setSalesSummary(data.data.summary);
-        } else {
-          setSalesError(data.error || 'Failed to load sales data');
-        }
-      } catch (err) {
-        setSalesError('Failed to load sales data');
-      } finally {
-        setSalesLoading(false);
+      // Process results
+      if (statsResult.status === 'rejected') {
+        setError('Failed to load dashboard stats');
       }
-    };
 
-    fetchSalesData();
+      if (newOrdersResult.status === 'fulfilled') {
+        setNewOrdersCount(newOrdersResult.value);
+      }
+
+      if (newCreditNotesResult.status === 'fulfilled') {
+        setNewCreditNotesCount(newCreditNotesResult.value);
+      }
+
+      if (chatResult.status === 'fulfilled') {
+        setHasNewChat(chatResult.value);
+      }
+
+      if (salesResult.status === 'fulfilled') {
+        setSalesData(salesResult.value.dailyData);
+        setSalesSummary(salesResult.value.summary);
+        setSalesError(null);
+      } else {
+        setSalesError(salesResult.status === 'rejected' ? salesResult.reason?.message : 'Failed to load sales data');
+      }
+
+      if (categoryResult.status === 'fulfilled') {
+        setCategoryData(categoryResult.value.chartData);
+        setCategorySummary(categoryResult.value.summary);
+        setCategoryError(null);
+      } else {
+        setCategoryError(categoryResult.status === 'rejected' ? categoryResult.reason?.message : 'Failed to load category data');
+      }
+
+    } catch (err) {
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+      setSalesLoading(false);
+      setCategoryLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    // Fetch category performance data
-    const fetchCategoryData = async () => {
-      setCategoryLoading(true);
-      setCategoryError(null);
-      try {
-        const url = API_CONFIG.getUrl('/financial/sales-orders/category-performance');
-        const res = await fetch(url, { 
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
-        });
-        const data = await res.json();
-        if (res.ok && data && data.success) {
-          setCategoryData(data.data.chartData);
-          setCategorySummary(data.data.summary);
-        } else {
-          setCategoryError(data.error || 'Failed to load category data');
-        }
-      } catch (err) {
-        setCategoryError('Failed to load category data');
-      } finally {
-        setCategoryLoading(false);
-      }
-    };
+    fetchAllData();
+  }, [fetchAllData]);
 
-    fetchCategoryData();
-  }, []);
-
-  const formatCurrency = (amount: number): string => {
+  // Memoized currency formatter
+  const formatCurrency = useCallback((amount: number): string => {
     return new Intl.NumberFormat('en-KE', {
       style: 'currency',
       currency: 'KES',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
-  };
+  }, []);
 
-  const navigationItems = [
-    //{ to: '/financial/purchase-order', label: 'New Purchase', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    //{ to: '/financial/create-customer-order', label: 'Create Order', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+  // Memoized navigation items to prevent unnecessary re-renders
+  const navigationItems = useMemo(() => [
     { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-  { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    //{ to: '/riders', label: 'Riders', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
     { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    //{ to: '/expenses', label: 'Expenses', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
     { to: '/expense-summary', label: 'Expenses Summary', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/products', label: 'Products', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
     { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    //{ to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
     { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
     { to: '/dashboard/reports/product-performance', label: 'Products Performance', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    //{ to: '/receipts', label: 'Receipts', icon: <ReceiptIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    //{ to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/payables', label: 'Payables', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
     { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
@@ -315,20 +344,178 @@ const FinancialDashboardPage = () => {
     { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/employee-working-hours', label: 'Employees Attendance', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/employee-working-days', label: 'Employees Working Days', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-       
-    
-  ];
+  ], []);
+
+  // Memoized skeleton components for better loading experience
+  const SkeletonCard = memo(() => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+    </div>
+  ));
+
+  const SkeletonChart = memo(() => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+      <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="h-64 bg-gray-200 rounded"></div>
+    </div>
+  ));
+
+  SkeletonCard.displayName = 'SkeletonCard';
+  SkeletonChart.displayName = 'SkeletonChart';
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading financial dashboard...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          {/* Navigation Menu Skeleton */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+              {Array.from({ length: 28 }).map((_, index) => (
+                <div key={index} className="bg-gray-100 rounded-lg p-4 animate-pulse">
+                  <div className="h-4 w-4 bg-gray-300 rounded mx-auto mb-2"></div>
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <SkeletonChart />
+            <SkeletonChart />
+          </div>
         </div>
       </div>
     );
   }
+
+  // Memoized chart components for better performance
+  const SalesChart = memo(({ data, loading, error }: { data: SalesData[], loading: boolean, error: string | null }) => {
+    if (loading) return <SkeletonChart />;
+    if (error) return <div className="text-red-500 text-center h-64 flex items-center justify-center">{error}</div>;
+    if (data.length === 0) return <div className="text-gray-500 text-center h-64 flex items-center justify-center">No sales data available</div>;
+
+    return (
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis 
+              dataKey="date" 
+              stroke="#6b7280"
+              tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            />
+            <YAxis 
+              stroke="#6b7280"
+              tickFormatter={(value) => `KES ${(value / 1000).toFixed(0)}K`}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'white', 
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+              labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+              })}
+              formatter={(value: number, name: string) => [
+                name === 'total_amount' ? formatCurrency(value) : value,
+                name === 'total_amount' ? 'Sales' : 'Orders'
+              ]}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="total_amount" 
+              stroke="#3b82f6" 
+              strokeWidth={3}
+              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  });
+
+  const CategoryChart = memo(({ data, loading, error }: { data: CategoryPerformance[], loading: boolean, error: string | null }) => {
+    if (loading) return <SkeletonChart />;
+    if (error) return <div className="text-red-500 text-center h-64 flex items-center justify-center">{error}</div>;
+    if (data.length === 0) return <div className="text-gray-500 text-center h-64 flex items-center justify-center">No category data available</div>;
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percentage }) => `${name} (${percentage}%)`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value: number) => [
+                  formatCurrency(value),
+                  'Sales'
+                ]}
+                contentStyle={{ 
+                  backgroundColor: 'white', 
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Category Breakdown</h4>
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {data.map((category, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: category.color }}
+                  ></div>
+                  <div>
+                    <div className="font-medium text-gray-900">{category.name}</div>
+                    <div className="text-sm text-gray-600">
+                      {category.orderCount} orders • {category.totalQuantity} units
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-gray-900">
+                    {formatCurrency(category.value)}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {category.percentage}%
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  });
+
+  SalesChart.displayName = 'SalesChart';
+  CategoryChart.displayName = 'CategoryChart';
 
   if (error) {
     return (
@@ -336,6 +523,12 @@ const FinancialDashboardPage = () => {
         <div className="text-center">
           <AlertTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 font-semibold">{error}</p>
+          <button 
+            onClick={fetchAllData}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -346,7 +539,7 @@ const FinancialDashboardPage = () => {
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 opacity-70">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 opacity-70">
           <StatCard
             title="Total Sales"
             value={stats ? formatCurrency(stats.totalSales) : '$0.00'}
@@ -382,10 +575,10 @@ const FinancialDashboardPage = () => {
             onClick={() => navigate('/payables')}
             change={{ value: 3.1, positive: false }}
           />
-        </div>
+        </div> */}
 
         {/* Quick Actions Row */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8 hidden">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8 hidden">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
             <ZapIcon className="w-5 h-5 text-amber-500" />
@@ -439,10 +632,20 @@ const FinancialDashboardPage = () => {
               <span className="text-xs font-medium text-center text-purple-700">Journal Entry</span>
             </button>
           </div>
-        </div>
+        </div> */}
 
         {/* Navigation Menu */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Quick Access</h3>
+            <button
+              onClick={fetchAllData}
+              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ActivityIcon className="h-4 w-4 mr-2" />
+              Refresh Data
+            </button>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {navigationItems.map((item, index) => (
               <Link
@@ -452,7 +655,7 @@ const FinancialDashboardPage = () => {
               >
                 {item.icon}
                 <span className="mt-2 text-center">{item.label}</span>
-                {item.to === '/financial/customer-orders' && (
+                {item.to === '/financial/customer-orders' && newOrdersCount > 0 && (
                   <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-red-600 text-white shadow">
                     {newOrdersCount}
                   </span>
@@ -468,7 +671,7 @@ const FinancialDashboardPage = () => {
               </Link>
             ))}
           </div>
-            </div>
+        </div>
 
         {/* Sales Graph Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -497,67 +700,7 @@ const FinancialDashboardPage = () => {
             )}
           </div>
 
-          {salesLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : salesError ? (
-            <div className="text-red-500 text-center h-64 flex items-center justify-center">
-              <div className="text-center">
-                <AlertTriangleIcon className="h-8 w-8 mx-auto mb-2" />
-                <p>{salesError}</p>
-              </div>
-            </div>
-          ) : salesData.length === 0 ? (
-            <div className="text-gray-500 text-center h-64 flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3Icon className="h-8 w-8 mx-auto mb-2" />
-                <p>No sales data available for this month</p>
-              </div>
-            </div>
-          ) : (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={salesData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#6b7280"
-                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  />
-                  <YAxis 
-                    stroke="#6b7280"
-                    tickFormatter={(value) => `KES ${(value / 1000).toFixed(0)}K`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                    labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
-                      weekday: 'short', 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })}
-                    formatter={(value: number, name: string) => [
-                      name === 'total_amount' ? formatCurrency(value) : value,
-                      name === 'total_amount' ? 'Sales' : 'Orders'
-                    ]}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total_amount" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          <SalesChart data={salesData} loading={salesLoading} error={salesError} />
 
           {/* Sales Summary Cards */}
           {salesSummary && (
@@ -605,92 +748,7 @@ const FinancialDashboardPage = () => {
             )}
           </div>
 
-          {categoryLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : categoryError ? (
-            <div className="text-red-500 text-center h-64 flex items-center justify-center">
-              <div className="text-center">
-                <AlertTriangleIcon className="h-8 w-8 mx-auto mb-2" />
-                <p>{categoryError}</p>
-              </div>
-            </div>
-          ) : categoryData.length === 0 ? (
-            <div className="text-gray-500 text-center h-64 flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3Icon className="h-8 w-8 mx-auto mb-2" />
-                <p>No category data available for this month</p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Pie Chart */}
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percentage }) => `${name} (${percentage}%)`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Sales'
-                      ]}
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Category Details */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Category Breakdown</h4>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {categoryData.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        ></div>
-                        <div>
-                          <div className="font-medium text-gray-900">{category.name}</div>
-                          <div className="text-sm text-gray-600">
-                            {category.orderCount} orders • {category.totalQuantity} units
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-gray-900">
-                          {formatCurrency(category.value)}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {category.percentage}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <CategoryChart data={categoryData} loading={categoryLoading} error={categoryError} />
 
           {/* Category Summary Stats */}
           {categorySummary && categoryData.length > 0 && (

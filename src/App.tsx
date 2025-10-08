@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import ClientDetailsPage from './pages/ClientDetailsPage';
@@ -180,6 +180,14 @@ const RoleBasedDashboardRedirect = () => {
 // Redirect authenticated users away from login
 const LoginRoute = () => {
   const { user } = useAuth();
+  
+  // Test if Router context is available
+  try {
+    useLocation();
+  } catch (error) {
+    console.error('Router context not available in LoginRoute:', error);
+    return <div>Loading...</div>;
+  }
 
   if (user) {
     // Redirect users to their appropriate dashboard based on role

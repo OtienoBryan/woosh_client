@@ -1,7 +1,7 @@
 import React, { Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
-import { XIcon, HomeIcon, UsersIcon, CogIcon, ShieldIcon, BoxIcon, ImageIcon, InfoIcon, GroupIcon, Tally4Icon, BellIcon, FileTextIcon, BarChart3, MessageCircleIcon, DollarSign, Clock, MapIcon } from 'lucide-react';
+import { XIcon, HomeIcon, UsersIcon, CogIcon, ShieldIcon, BoxIcon, ImageIcon, InfoIcon, GroupIcon, Tally4Icon, BellIcon, FileTextIcon, BarChart3, MessageCircleIcon, DollarSign, Clock, MapIcon, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
@@ -232,7 +232,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarOpen,
   setSidebarOpen
 }) => {
-  const location = useLocation();
+  // Safely get location with fallback
+  let location;
+  try {
+    location = useLocation();
+  } catch (error) {
+    console.error('Router context not available in Sidebar:', error);
+    location = { pathname: '/' };
+  }
   const { user } = useAuth();
 
   const logoSection = (

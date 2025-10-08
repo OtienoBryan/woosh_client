@@ -103,8 +103,18 @@ export const ProtectedRoute: React.FC<{
     isAuthenticated,
     isLoading
   } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  
+  // Safely get navigate and location with fallbacks
+  let navigate, location;
+  try {
+    navigate = useNavigate();
+    location = useLocation();
+  } catch (error) {
+    console.error('Router context not available in ProtectedRoute:', error);
+    navigate = () => {};
+    location = { pathname: '/' };
+  }
+  
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/login', {
