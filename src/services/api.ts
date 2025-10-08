@@ -37,7 +37,7 @@ export const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds for serverless functions
   withCredentials: false // Disable credentials for cross-origin requests
 });
 

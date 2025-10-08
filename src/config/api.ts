@@ -4,11 +4,16 @@ export const API_CONFIG = {
   getBaseUrl: (): string => {
     const url = import.meta.env.VITE_API_URL;
     if (!url) {
+      // Check if we're in production (Vercel deployment)
+      if (import.meta.env.PROD) {
+        console.warn('VITE_API_URL not set in production, using relative path: /api');
+        return '/api';
+      }
       // Default to localhost:5000 for development
       console.warn('VITE_API_URL not set, using default: http://localhost:5000/api');
       return 'http://localhost:5000/api';
     }
-    // For Vercel deployment, VITE_API_URL is already '/api', so return as-is
+    // For production, use the environment variable as-is
     return url;
   },
   
