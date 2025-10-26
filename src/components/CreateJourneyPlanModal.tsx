@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle, Plus, Trash2, Search } from 'lucide-react';
+import { getWithAuth, postWithAuth } from '../utils/fetchWithAuth';
 
 interface SalesRep {
   id: number;
@@ -74,7 +75,7 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
 
   const fetchClients = async () => {
     try {
-      const response = await fetch('/api/clients?limit=10000');
+      const response = await getWithAuth('/api/clients?limit=10000');
       const data = await response.json();
       if (data.data) {
         setClients(data.data);
@@ -160,33 +161,27 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
       setIsLoading(true);
       setError(null);
 
-             // Create journey plans for each item
-       const promises = journeyPlanItems.map(item => {
-         const requestBody = {
-           date: item.date,
-           time: item.time,
-           userId: salesRep.id,
-           clientId: item.clientId,
-           status: 0,
-           notes: item.notes,
-           showUpdateLocation: true,
-           latitude: item.latitude,
-           longitude: item.longitude,
-           routeId: item.routeId || null,
-         };
-         
-         console.log('Creating journey plan with data:', requestBody);
-         console.log('Item routeId:', item.routeId);
-         console.log('SalesRep route_id_update:', salesRep.route_id_update);
-         
-         return fetch('/api/journey-plans', {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'application/json',
-           },
-           body: JSON.stringify(requestBody),
-         });
-       });
+      // Create journey plans for each item
+      const promises = journeyPlanItems.map(item => {
+        const requestBody = {
+          date: item.date,
+          time: item.time,
+          userId: salesRep.id,
+          clientId: item.clientId,
+          status: 0,
+          notes: item.notes,
+          showUpdateLocation: true,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          routeId: item.routeId || null,
+        };
+        
+        console.log('Creating journey plan with data:', requestBody);
+        console.log('Item routeId:', item.routeId);
+        console.log('SalesRep route_id_update:', salesRep.route_id_update);
+        
+        return postWithAuth('/api/journey-plans', requestBody);
+      });
 
       await Promise.all(promises);
       onSuccess();

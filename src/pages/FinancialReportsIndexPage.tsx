@@ -131,6 +131,23 @@ const FinancialReportsIndexPage: React.FC = () => {
       ],
       lastUpdated: '2024-01-15'
     },
+    {
+      id: 'trial-balance',
+      title: 'Trial Balance',
+      description: 'Comprehensive trial balance report showing all account balances with debits and credits.',
+      icon: <Calculator className="w-8 h-8" />,
+      color: 'bg-teal-500',
+      route: '/reports/trial-balance',
+      features: [
+        'All account balances',
+        'Debit and credit totals',
+        'Date range selection',
+        'Account hierarchy view',
+        'Balance verification',
+        'Export to Excel/PDF'
+      ],
+      lastUpdated: '2024-01-15'
+    },
     // {
     //   id: 'sales-report',
     //   title: 'Sales Report',

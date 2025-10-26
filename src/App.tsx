@@ -43,6 +43,7 @@ import BalanceSheetReportPage from './pages/BalanceSheetReportPage';
 import CashFlowReportPage from './pages/CashFlowReportPage';
 import FinancialReportsIndexPage from './pages/FinancialReportsIndexPage';
 import SalesTaxReportPage from './pages/SalesTaxReportPage';
+import TrialBalanceReportPage from './pages/TrialBalanceReportPage';
 import AssetDepreciationPage from './pages/AssetDepreciationPage';
 import DepreciationManagementPage from './pages/DepreciationManagementPage';
 import AddEquityPage from './pages/AddEquityPage';
@@ -266,6 +267,7 @@ const App = () => {
             <Route path="/dashboard/reports/profit-loss" element={<ProfitLossReportPage />} />
             <Route path="/dashboard/reports/balance-sheet" element={<BalanceSheetReportPage />} />
             <Route path="/dashboard/reports/cash-flow" element={<CashFlowReportPage />} />
+            <Route path="/dashboard/reports/trial-balance" element={<TrialBalanceReportPage />} />
             <Route path="/dashboard/reports/general-ledger" element={<GeneralLedgerReportPage />} />
             <Route path="/dashboard/reports/sales-report" element={<SalesReportPage />} />
             <Route path="/dashboard/reports/product-performance" element={<ProductPerformancePage />} />
@@ -385,6 +387,11 @@ const App = () => {
             <Route path="/reports/cash-flow" element={
               <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
                 <CashFlowReportPage />
+              </RoleBasedRoute>
+            } />
+            <Route path="/reports/trial-balance" element={
+              <RoleBasedRoute allowedRoles={['admin', 'manager', 'accountant', 'executive', 'sales']} fallbackPath="/sales-dashboard">
+                <TrialBalanceReportPage />
               </RoleBasedRoute>
             } />
             <Route path="/reports/sales-tax" element={

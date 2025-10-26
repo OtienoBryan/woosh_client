@@ -4,6 +4,7 @@ import { Plus, MapPin, Users, Calendar, Clock, Eye, BarChart3, FileText } from '
 import CreateJourneyPlanModal from '../components/CreateJourneyPlanModal';
 import PendingJourneyPlansModal from '../components/PendingJourneyPlansModal';
 import SalesRepJourneyPlansModal from '../components/SalesRepJourneyPlansModal';
+import { getWithAuth } from '../utils/fetchWithAuth';
 
 interface SalesRep {
   id: number;
@@ -58,8 +59,8 @@ const JourneyPlanPage: React.FC = () => {
   const fetchSalesReps = async () => {
     try {
       // Fetch active sales reps (status = 1)
-      const response = await fetch('/api/sales-reps?status=1');
-      const data = await response.json();
+      const response = await getWithAuth('/api/sales-reps?status=1');
+      const data: any = await response.json();
       if (data.success) {
         setSalesReps(data.data);
       }
@@ -70,8 +71,8 @@ const JourneyPlanPage: React.FC = () => {
 
   const fetchJourneyPlans = async () => {
     try {
-      const response = await fetch('/api/journey-plans');
-      const data = await response.json();
+      const response = await getWithAuth('/api/journey-plans');
+      const data: any = await response.json();
       if (data.success) {
         setJourneyPlans(data.data);
       }
