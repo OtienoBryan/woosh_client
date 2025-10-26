@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { generalLedgerService, chartOfAccountsService } from '../services/financialService';
 import { GeneralLedgerEntry, ChartOfAccount } from '../types/financial';
 
@@ -22,12 +23,21 @@ function calculatePerAccountRunningBalance(entries: GeneralLedgerEntry[]): Gener
 }
 
 const GeneralLedgerReportPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [entries, setEntries] = useState<GeneralLedgerEntry[]>([]);
   const [accounts, setAccounts] = useState<ChartOfAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Set selected account from URL parameter on mount
+  useEffect(() => {
+    const accountFromUrl = searchParams.get('account');
+    if (accountFromUrl) {
+      setSelectedAccount(accountFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchEntries();
@@ -62,11 +72,12 @@ const GeneralLedgerReportPage: React.FC = () => {
     }
   };
 
-  // Filter entries by selected account and search term, then sort descending by date and id
-  const filteredEntries = (selectedAccount
+  // Filter entries by selected account and search term
+  const accountFilteredEntries = selectedAccount
     ? entries.filter(e => e.account_code === selectedAccount)
-    : entries
-  ).filter(e => {
+    : entries;
+
+  const searchFilteredEntries = accountFilteredEntries.filter(e => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -75,17 +86,57 @@ const GeneralLedgerReportPage: React.FC = () => {
       (e.account_code && e.account_code.toLowerCase().includes(term)) ||
       (e.account_name && e.account_name.toLowerCase().includes(term))
     );
-  }).sort((a, b) => {
+  });
+
+  // Recalculate running balance for filtered entries to ensure accuracy
+  const recalculateBalance = (entriesToCalc: GeneralLedgerEntry[]) => {
+    const sorted = [...entriesToCalc].sort((a, b) => {
+      if (a.account_code !== b.account_code) {
+        return a.account_code.localeCompare(b.account_code);
+      }
+      if (a.date !== b.date) {
+        return a.date.localeCompare(b.date);
+      }
+      return a.id - b.id;
+    });
+    const balances: Record<string, number> = {};
+    return sorted.map(entry => {
+      const acc = entry.account_code;
+      if (!(acc in balances)) balances[acc] = 0;
+      balances[acc] += (entry.debit || 0) - (entry.credit || 0);
+      return { ...entry, balance: balances[acc] };
+    });
+  };
+
+  // Sort descending by date and id for display
+  const filteredEntries = recalculateBalance(searchFilteredEntries).sort((a, b) => {
     if (a.date !== b.date) {
       return b.date.localeCompare(a.date); // descending by date
     }
     return b.id - a.id; // descending by id
   });
 
+  const selectedAccountDetails = accounts.find(acc => acc.account_code === selectedAccount);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-8xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">General Ledger Report</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">General Ledger Report</h1>
+        {selectedAccount && selectedAccountDetails && (
+          <div className="mb-4 flex items-center gap-2">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
+              <span className="font-semibold">Viewing Account: </span>
+              <span className="ml-2">{selectedAccount} - {selectedAccountDetails.account_name}</span>
+              <button
+                onClick={() => setSelectedAccount('')}
+                className="ml-3 text-blue-600 hover:text-blue-800 font-bold"
+                title="Clear filter"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
         {/* Account Filter and Search */}
         <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-center gap-2">

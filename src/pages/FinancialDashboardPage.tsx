@@ -196,7 +196,7 @@ const FinancialDashboardPage = () => {
     { to: '/add-expense', label: 'Add Expense', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
     { to: '/equity/entries', label: 'Equity Entries', icon: <CalculatorIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/add-journal-entry', label: 'Journal Entry', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+    //{ to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
     { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
     { to: '/riders', label: 'Riders', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },

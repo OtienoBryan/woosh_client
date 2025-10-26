@@ -15,6 +15,7 @@ import {
   LineChart,
   AlertCircle,
   Receipt,
+  BookOpen,
   FileText as TaxIcon
 } from 'lucide-react';
 
@@ -37,7 +38,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       description: 'Comprehensive income statement showing revenue, expenses, and profitability over a specified period.',
       icon: <TrendingUp className="w-8 h-8" />,
       color: 'bg-blue-500',
-      route: '/reports/profit-loss',
+      route: '/dashboard/reports/profit-loss',
       features: [
         'Revenue breakdown by source',
         'Expense categorization',
@@ -53,7 +54,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       description: 'Complete financial position statement showing assets, liabilities, and equity as of a specific date.',
       icon: <BarChart3 className="w-8 h-8" />,
       color: 'bg-green-500',
-      route: '/reports/balance-sheet',
+      route: '/dashboard/reports/balance-sheet',
       features: [
         'Current and non-current asset categorization',
         'Liability classification',
@@ -71,7 +72,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       description: 'Detailed cash flow analysis showing operating, investing, and financing activities.',
       icon: <Activity className="w-8 h-8" />,
       color: 'bg-purple-500',
-      route: '/reports/cash-flow',
+      route: '/dashboard/reports/cash-flow',
       features: [
         'Operating cash flow analysis',
         'Investing activity tracking',
@@ -104,7 +105,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       description: 'Detailed listing of all account transactions with running balances for full auditability.',
       icon: <BarChart3 className="w-8 h-8" />,
       color: 'bg-indigo-500',
-      route: '/reports/general-ledger',
+      route: '/dashboard/reports/general-ledger',
       features: [
         'All account transactions',
         'Running balance calculation',
@@ -115,12 +116,29 @@ const FinancialReportsIndexPage: React.FC = () => {
       lastUpdated: '2024-07-01'
     },
     {
+      id: 'chart-of-accounts',
+      title: 'Chart of Accounts',
+      description: 'Complete listing of all accounts with codes, names, types, and descriptions organized by category.',
+      icon: <BookOpen className="w-8 h-8" />,
+      color: 'bg-cyan-500',
+      route: '/dashboard/reports/chart-of-accounts',
+      features: [
+        'All accounts with codes',
+        'Account types and categories',
+        'Active/inactive status',
+        'Quick ledger access',
+        'Search and filter',
+        'Export to CSV'
+      ],
+      lastUpdated: '2024-10-26'
+    },
+    {
       id: 'sales-tax',
       title: 'Sales Tax Report',
       description: 'Detailed report of all sales tax transactions from journal entries for Sales Tax Payable account.',
       icon: <TaxIcon className="w-8 h-8" />,
       color: 'bg-red-500',
-      route: '/reports/sales-tax',
+      route: '/dashboard/reports/sales-tax',
       features: [
         'Sales tax payable transactions',
         'Date range filtering',
@@ -137,7 +155,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       description: 'Comprehensive trial balance report showing all account balances with debits and credits.',
       icon: <Calculator className="w-8 h-8" />,
       color: 'bg-teal-500',
-      route: '/reports/trial-balance',
+      route: '/dashboard/reports/trial-balance',
       features: [
         'All account balances',
         'Debit and credit totals',
@@ -170,7 +188,7 @@ const FinancialReportsIndexPage: React.FC = () => {
           description: 'Comprehensive report of all confirmed payments received, with filtering and analysis capabilities.',
           icon: <DollarSign className="w-8 h-8" />,
           color: 'bg-green-500',
-          route: '/reports/collection-report',
+          route: '/dashboard/reports/collection-report',
           features: [
             'All confirmed payments',
             'Date range filtering',

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Calculator, 
   Download, 
   Filter, 
   Calendar,
-  TrendingUp,
-  TrendingDown,
   CheckCircle,
   XCircle,
   Eye,
@@ -47,6 +46,7 @@ interface TrialBalanceData {
 }
 
 const TrialBalanceReportPage: React.FC = () => {
+  const navigate = useNavigate();
   const [reportData, setReportData] = useState<TrialBalanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +83,12 @@ const TrialBalanceReportPage: React.FC = () => {
       return '0.00';
     }
     return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const handleAccountClick = (accountCode: string) => {
+    console.log('Account clicked:', accountCode);
+    console.log('Navigating to:', `/dashboard/reports/general-ledger?account=${encodeURIComponent(accountCode)}`);
+    navigate(`/dashboard/reports/general-ledger?account=${encodeURIComponent(accountCode)}`);
   };
 
   const exportToCSV = () => {
@@ -327,8 +333,22 @@ const TrialBalanceReportPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {account.account_code}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {account.account_name}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span
+                          onClick={() => handleAccountClick(account.account_code)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                          title="Click to view ledger for this account"
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleAccountClick(account.account_code);
+                            }
+                          }}
+                        >
+                          {account.account_name}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">

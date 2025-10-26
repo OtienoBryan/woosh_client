@@ -55,6 +55,7 @@ import CashAccountDetailsPage from './pages/CashAccountDetailsPage';
 import JournalEntriesPage from './pages/JournalEntriesPage';
 import PayrollManagementPage from './pages/PayrollManagementPage';
 import GeneralLedgerReportPage from './pages/GeneralLedgerReportPage';
+import ChartOfAccountsPage from './pages/ChartOfAccountsPage';
 import CollectionReportPage from './pages/CollectionReportPage';
 import UnconfirmedPaymentsPage from './pages/UnconfirmedPaymentsPage';
 import InventoryTransactionsPage from './pages/InventoryTransactionsPage';
@@ -269,6 +270,7 @@ const App = () => {
             <Route path="/dashboard/reports/cash-flow" element={<CashFlowReportPage />} />
             <Route path="/dashboard/reports/trial-balance" element={<TrialBalanceReportPage />} />
             <Route path="/dashboard/reports/general-ledger" element={<GeneralLedgerReportPage />} />
+            <Route path="/dashboard/reports/chart-of-accounts" element={<ChartOfAccountsPage />} />
             <Route path="/dashboard/reports/sales-report" element={<SalesReportPage />} />
             <Route path="/dashboard/reports/product-performance" element={<ProductPerformancePage />} />
             <Route path="/dashboard/reports/product-performance-graph" element={<ProductPerformanceGraphPage />} />
