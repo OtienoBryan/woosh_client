@@ -10,6 +10,7 @@ import {
   Building2,
   User
 } from 'lucide-react';
+import { fetchWithAuth, getWithAuth, postWithAuth, putWithAuth, deleteWithAuth } from '../utils/fetchWithAuth';
 
 interface Route {
   id: number;
@@ -216,12 +217,12 @@ const RoutesPage: React.FC = () => {
   // Fetch countries when modal opens
   useEffect(() => {
     if (modalOpen || editModalOpen) {
-      fetch('/api/sales/countries')
+      getWithAuth('/api/sales/countries')
         .then(res => res.json())
         .then(data => setCountries(data))
         .catch(err => console.error('Failed to fetch countries:', err));
       
-      fetch('/api/sales-reps?status=1')
+      getWithAuth('/api/sales-reps?status=1')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -237,7 +238,7 @@ const RoutesPage: React.FC = () => {
     if (selectedCountry) {
       const countryObj = countries.find(c => c.id === parseInt(selectedCountry));
       if (countryObj) {
-        fetch(`/api/sales/regions?country_id=${countryObj.id}`)
+        getWithAuth(`/api/sales/regions?country_id=${countryObj.id}`)
           .then(res => res.json())
           .then(data => setRegions(data))
           .catch(err => console.error('Failed to fetch regions:', err));
@@ -258,7 +259,7 @@ const RoutesPage: React.FC = () => {
         limit: String(pageLimit),
       });
       if (searchTerm) params.append('search', searchTerm);
-      const res = await fetch(`/api/routes?${params.toString()}`);
+      const res = await getWithAuth(`/api/routes?${params.toString()}`);
       const data = await res.json();
       
       setRoutes(data.data || []);
@@ -296,13 +297,7 @@ const RoutesPage: React.FC = () => {
   const handleAdd = async (data: Omit<Route, 'id'>) => {
     setSubmitting(true);
     try {
-      await fetch('/api/routes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      await postWithAuth('/api/routes', data);
       setModalOpen(false);
       await fetchRoutes();
     } catch (err: any) {
@@ -322,13 +317,7 @@ const RoutesPage: React.FC = () => {
     setEditLoading(true);
     setEditError(null);
     try {
-      await fetch(`/api/routes/${updated.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updated),
-      });
+      await putWithAuth(`/api/routes/${updated.id}`, updated);
       setEditModalOpen(false);
       setEditRoute(null);
       await fetchRoutes();
@@ -341,9 +330,7 @@ const RoutesPage: React.FC = () => {
   const handleDeleteRoute = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this route?')) return;
     try {
-      await fetch(`/api/routes/${id}`, {
-        method: 'DELETE',
-      });
+      await deleteWithAuth(`/api/routes/${id}`);
       await fetchRoutes();
     } catch (err: any) {
       setError(err.message || 'Failed to delete route');
@@ -426,7 +413,6 @@ const RoutesPage: React.FC = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales Rep</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -443,12 +429,6 @@ const RoutesPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{route.region_name}</div>
                         <div className="text-sm text-gray-500">{route.country_name}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-900">{route.sales_rep_name}</span>
-                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -481,7 +461,7 @@ const RoutesPage: React.FC = () => {
                   ))}
                   {routes.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
+                      <td colSpan={4} className="px-6 py-12 text-center">
                         <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No routes found</h3>
                         <p className="text-gray-600">Get started by adding your first route.</p>

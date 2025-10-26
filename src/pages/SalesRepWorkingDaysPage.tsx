@@ -225,7 +225,6 @@ const SalesRepWorkingDaysPage: React.FC = () => {
     const dateRangeTitle = `Date Range: ${startDate} to ${endDate}`;
     const headers = [
       'Sales Rep',
-      'Country',
       'Days Present',
       'Days Absent',
       'Leave Days',
@@ -233,7 +232,6 @@ const SalesRepWorkingDaysPage: React.FC = () => {
     ];
     const rows = filteredRepStats.map(stat => [
       stat.rep.name,
-      stat.rep.country || 'N/A',
       stat.present,
       stat.absent,
       stat.leave,
@@ -511,12 +509,6 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                              Sales Representative
                            </th>
                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                             Country
-                           </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                             Status
-                           </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                              Days Present
                            </th>
                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -556,31 +548,12 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                             <tr key={stat.rep.id} className="hover:bg-gray-50 transition-colors duration-150">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
-                                  <div className="flex-shrink-0">
-                                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-full">
-                                      <Users className="h-4 w-4 text-white" />
-                                    </div>
-                                  </div>
+                                   
                                   <div className="ml-3">
                                     <div className="text-sm font-medium text-gray-900">{stat.rep.name}</div>
-                                    <div className="text-sm text-gray-500">{stat.rep.email}</div>
                                   </div>
                                 </div>
                               </td>
-                                                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                   {stat.rep.country || 'N/A'}
-                                 </span>
-                               </td>
-                               <td className="px-6 py-4 whitespace-nowrap text-center">
-                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                   stat.rep.status === 1 
-                                     ? 'bg-green-100 text-green-800' 
-                                     : 'bg-red-100 text-red-800'
-                                 }`}>
-                                   {stat.rep.status === 1 ? 'Active' : 'Inactive'}
-                                 </span>
-                               </td>
                                <td className="px-6 py-4 whitespace-nowrap text-center">
                                  <div className="text-sm font-semibold text-green-600">
                                    {stat.present}

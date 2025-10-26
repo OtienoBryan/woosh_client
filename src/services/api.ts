@@ -74,6 +74,22 @@ api.interceptors.response.use(
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
       
+      // Handle authentication errors (401 Unauthorized)
+      if (error.response.status === 401) {
+        console.warn('Authentication failed - token expired or invalid');
+        // Clear authentication data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Redirect to login page
+        window.location.href = '/login';
+        return Promise.reject(new Error('Authentication required. Please log in.'));
+      }
+      
+      // Handle forbidden errors (403 Forbidden)
+      if (error.response.status === 403) {
+        console.warn('Access forbidden - insufficient permissions');
+      }
+      
       // Don't transform the error, just pass it through to preserve Axios structure
       return Promise.reject(error);
     } else if (error.request) {

@@ -92,9 +92,22 @@ const TasksPage: React.FC = () => {
   }, []);
 
   const filteredTasks = tasks.filter(
-    t =>
-      (!filterStatus || t.status === filterStatus) &&
-      (!filterUser || t.salesRepId.toString() === filterUser)
+    t => {
+      const statusMatch = !filterStatus || t.status === filterStatus;
+      
+      let userMatch = true;
+      if (filterUser) {
+        // Check if the task is assigned to the selected sales rep
+        if (t.assigned_sales_reps && t.assigned_sales_reps.length > 0) {
+          userMatch = t.assigned_sales_reps.some(rep => rep.name === filterUser);
+        } else {
+          const assignedRep = salesReps.find(rep => rep.id === t.salesRepId);
+          userMatch = assignedRep && assignedRep.name === filterUser;
+        }
+      }
+      
+      return statusMatch && userMatch;
+    }
   );
 
   const handleAdd = () => {
@@ -266,46 +279,112 @@ const TasksPage: React.FC = () => {
           <div className="text-sm">Click "Add Task" to create your first task.</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTasks.map((task) => (
-            <div key={task.id} className="bg-white rounded-lg shadow p-5 flex flex-col relative group transition hover:shadow-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex gap-2">
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full "
-                    style={{ background: task.status === 'completed' ? '#dcfce7' : task.status === 'in_progress' ? '#fef9c3' : '#fee2e2', color: task.status === 'completed' ? '#16a34a' : task.status === 'in_progress' ? '#b45309' : '#dc2626' }}>
-                    {task.status}
-                  </span>
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                    {task.priority}
-                  </span>
-                </div>
-                <div className="flex gap-2 opacity-80 group-hover:opacity-100">
-                  <button
-                    onClick={() => handleEdit(task)}
-                    title="Edit"
-                    className="p-2 rounded hover:bg-blue-50 text-blue-600"
-                  >
-                    <FiEdit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    title="Delete"
-                    className="p-2 rounded hover:bg-red-50 text-red-600"
-                  >
-                    <FiTrash2 size={18} />
-                  </button>
-                </div>
-              </div>
-              <div className="mb-1 text-lg font-bold text-gray-900 truncate" title={task.title}>{task.title}</div>
-              <div className="mb-2 text-gray-700 whitespace-pre-line text-sm" style={{ minHeight: 48 }}>{task.description}</div>
-              <div className="flex items-center gap-2 mt-auto pt-2 text-xs text-gray-500">
-                <span>Created:</span>
-                <span className="font-medium text-gray-700">{new Date(task.createdAt).toLocaleDateString()}</span>
-                <span className="ml-4">Sales Rep ID:</span>
-                <span className="font-medium text-gray-700">{task.salesRepId}</span>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-700 max-w-xs truncate" title={task.description}>
+                        {task.description}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {task.date ? new Date(task.date).toLocaleDateString() : '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        task.status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : task.status === 'in_progress'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        task.priority === 'high' 
+                          ? 'bg-red-100 text-red-800' 
+                          : task.priority === 'medium'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {task.assigned_sales_reps && task.assigned_sales_reps.length > 0 
+                          ? task.assigned_sales_reps.map(rep => rep.name).join(', ')
+                          : (() => {
+                              const assignedRep = salesReps.find(rep => rep.id === task.salesRepId);
+                              return assignedRep ? assignedRep.name : `Sales Rep ID: ${task.salesRepId}`;
+                            })()
+                        }
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {new Date(task.createdAt).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEdit(task)}
+                          title="Edit"
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        >
+                          <FiEdit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(task.id)}
+                          title="Delete"
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredTasks.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-400">
+                        <svg width="48" height="48" fill="none" viewBox="0 0 24 24" className="mx-auto mb-4">
+                          <rect width="24" height="24" rx="12" fill="#f3f4f6"/>
+                          <path d="M7 9h10M7 13h5" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+                        <p className="text-sm text-gray-600">Click "Add Task" to create your first task.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       {modalOpen && (

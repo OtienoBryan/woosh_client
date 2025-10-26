@@ -5,9 +5,16 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 5173,
+    // Proxy API requests to backend during development
+    // This is necessary for the app to work - JWT protects API in production
     proxy: {
-      '/api': process.env.VITE_API_URL || 'http://localhost:5000',
-    },
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   build: {
     rollupOptions: {

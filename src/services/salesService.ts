@@ -149,8 +149,21 @@ const API_BASE_URL = '/api/sales';
 export const salesService = {
   // Get all sales reps
   getAllSalesReps: async (): Promise<SalesRep[]> => {
-    const response = await axios.get(`${API_BASE_URL}/sales-reps?status=1`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/sales-reps?status=1`);
+      // Handle different response formats
+      if (response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      console.error('Unexpected sales reps response format:', response.data);
+      return [];
+    } catch (error) {
+      console.error('Error fetching sales reps:', error);
+      return [];
+    }
   },
 
   // Create a new sales rep
@@ -189,20 +202,59 @@ export const salesService = {
 
   // Fetch countries
   getCountries: async (): Promise<Country[]> => {
-    const response = await axios.get(`${API_BASE_URL}/countries`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/countries`);
+      // Handle different response formats
+      if (response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      console.error('Unexpected countries response format:', response.data);
+      return [];
+    } catch (error) {
+      console.error('Error fetching countries:', error);
+      return [];
+    }
   },
 
   // Fetch regions (optionally by country_id)
   getRegions: async (country_id?: number): Promise<Region[]> => {
-    const response = await axios.get(`${API_BASE_URL}/regions`, country_id ? { params: { country_id } } : undefined);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/regions`, country_id ? { params: { country_id } } : undefined);
+      // Handle different response formats
+      if (response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      console.error('Unexpected regions response format:', response.data);
+      return [];
+    } catch (error) {
+      console.error('Error fetching regions:', error);
+      return [];
+    }
   },
 
   // Fetch routes (optionally by country_id)
   getRoutes: async (country_id?: number): Promise<Route[]> => {
-    const response = await axios.get(`${API_BASE_URL}/routes`, country_id ? { params: { country_id } } : undefined);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/routes`, country_id ? { params: { country_id } } : undefined);
+      // Handle different response formats
+      if (response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      console.error('Unexpected routes response format:', response.data);
+      return [];
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+      return [];
+    }
   },
 
   // Get master sales data for all clients by year

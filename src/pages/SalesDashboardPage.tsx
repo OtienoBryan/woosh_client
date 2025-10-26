@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { salesOrdersService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
@@ -33,6 +32,29 @@ const COLORS = [
   '#0ea5e9', '#f43f5e', '#16a34a', '#facc15', '#6366f1', '#f87171'
 ];
 
+// Data cache to prevent unnecessary refetches
+const dataCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+// Cache TTL in milliseconds (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
+// Helper function to check if cached data is still valid
+const isCacheValid = (timestamp: number, ttl: number): boolean => {
+  return Date.now() - timestamp < ttl;
+};
+
+// Optimized API call with caching
+const fetchWithCache = async (key: string, fetcher: () => Promise<any>, ttl: number = CACHE_TTL) => {
+  const cached = dataCache.get(key);
+  if (cached && isCacheValid(cached.timestamp, cached.ttl)) {
+    return cached.data;
+  }
+  
+  const data = await fetcher();
+  dataCache.set(key, { data, timestamp: Date.now(), ttl });
+  return data;
+};
+
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -48,7 +70,8 @@ interface StatCardProps {
   onClick?: () => void;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
+// Memoized StatCard component for better performance
+const StatCard: React.FC<StatCardProps> = memo(({
   title,
   value,
   icon,
@@ -95,7 +118,9 @@ const StatCard: React.FC<StatCardProps> = ({
       </div>
     </div>
   );
-};
+});
+
+StatCard.displayName = 'StatCard';
 
 const SalesDashboardPage: React.FC = () => {
   const [monthlyData, setMonthlyData] = useState<{ month: string; amount: number }[]>([]);
@@ -142,16 +167,63 @@ const SalesDashboardPage: React.FC = () => {
     return response.json();
   };
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Fetch sales performance data
-        const salesRes = await fetchData('/sales/performance');
-        const reps = salesRes.data || [];
-        console.log('Active sales reps count:', reps.length);
+  // Optimized parallel data fetching with caching
+  const fetchAllData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setMpLoading(true);
+    setProductPerfLoading(true);
+
+    try {
+      // Parallel API calls for better performance
+      const [
+        salesResult,
+        ordersResult,
+        vapesResult,
+        pouchesResult,
+        vapesPerfResult,
+        pouchesPerfResult,
+        managersResult,
+        leavesResult
+      ] = await Promise.allSettled([
+        // Sales performance data with cache
+        fetchWithCache('sales-performance', () => fetchData('/sales/performance')),
+        
+        // Sales orders with cache
+        fetchWithCache('sales-orders', () => salesOrdersService.getAllIncludingDrafts()),
+        
+        // Current month vapes data with cache
+        fetchWithCache('current-month-vapes', async () => {
+          const now = new Date();
+          const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+          return fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'vape' });
+        }),
+        
+        // Current month pouches data with cache
+        fetchWithCache('current-month-pouches', async () => {
+          const now = new Date();
+          const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+          return fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'pouch' });
+        }),
+        
+        // Product performance vapes with cache
+        fetchWithCache('product-performance-vapes', () => fetchData('/financial/reports/product-performance', { productType: 'vape' })),
+        
+        // Product performance pouches with cache
+        fetchWithCache('product-performance-pouches', () => fetchData('/financial/reports/product-performance', { productType: 'pouch' })),
+        
+        // Managers data with cache
+        fetchWithCache('managers', () => fetchData('/managers')),
+        
+        // Leaves data with cache
+        fetchWithCache('leaves', () => fetchData('/sales-rep-leaves/sales-rep-leaves'))
+      ]);
+
+      // Process sales performance data
+      if (salesResult.status === 'fulfilled') {
+        const reps = salesResult.value.data || [];
         
         // Calculate top reps
         const repPerf = reps.map((rep: any) => {
@@ -177,10 +249,12 @@ const SalesDashboardPage: React.FC = () => {
         const avgPerformance = repPerf.length > 0 ? 
           repPerf.reduce((sum: number, rep: any) => sum + rep.overall, 0) / repPerf.length : 0;
         setStats(prev => ({ ...prev, activeReps: reps.length, avgPerformance: Number(avgPerformance.toFixed(1)) }));
+        setRepData(reps);
+      }
 
-        // Fetch sales orders for monthly data
-        const ordersRes = await salesOrdersService.getAllIncludingDrafts();
-        const orders = ordersRes.data || [];
+      // Process orders data
+      if (ordersResult.status === 'fulfilled') {
+        const orders = ordersResult.value.data || [];
         
         // Group by month
         const monthMap: { [key: string]: number } = {};
@@ -212,32 +286,31 @@ const SalesDashboardPage: React.FC = () => {
         setMonthlyData(data);
         setStats(prev => ({ ...prev, totalSales, totalOrders: orders.length }));
 
-    // Fetch pie chart data for current month
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-        
-        const [vapesRes, pouchesRes] = await Promise.all([
-          fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'vape' }),
-          fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'pouch' })
-        ]);
-        
-        const vapesTotal = vapesRes.success ? vapesRes.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-        const pouchesTotal = pouchesRes.success ? pouchesRes.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-      setRechartsPieData([
-        { type: 'Vapes', value: vapesTotal },
-        { type: 'Pouches', value: pouchesTotal },
-      ]);
+        // Calculate new orders count
+        const newOrders = orders.filter((order: any) => {
+          return order.my_status === 0 || order.my_status === '0';
+        });
+        setNewOrdersCount(newOrders.length);
+      }
 
-        // Fetch product performance
-        const [vapesPerfRes, pouchesPerfRes] = await Promise.all([
-          fetchData('/financial/reports/product-performance', { productType: 'vape' }),
-          fetchData('/financial/reports/product-performance', { productType: 'pouch' })
+      // Process pie chart data
+      if (vapesResult.status === 'fulfilled' && pouchesResult.status === 'fulfilled') {
+        const vapesTotal = vapesResult.value.success ? vapesResult.value.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
+        const pouchesTotal = pouchesResult.value.success ? pouchesResult.value.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
+        setRechartsPieData([
+          { type: 'Vapes', value: vapesTotal },
+          { type: 'Pouches', value: pouchesTotal },
         ]);
+      }
+
+      // Process product performance data
+      if (vapesPerfResult.status === 'fulfilled' && pouchesPerfResult.status === 'fulfilled') {
+        const vapesPerf = vapesPerfResult.value;
+        const pouchesPerf = pouchesPerfResult.value;
         
-        if (vapesPerfRes.success && pouchesPerfRes.success) {
-          const vapes = vapesPerfRes.data.filter((p: any) => p.category_id === 1 || p.category_id === 3);
-          const pouches = pouchesPerfRes.data.filter((p: any) => p.category_id === 4 || p.category_id === 5);
+        if (vapesPerf.success && pouchesPerf.success) {
+          const vapes = vapesPerf.data.filter((p: any) => p.category_id === 1 || p.category_id === 3);
+          const pouches = pouchesPerf.data.filter((p: any) => p.category_id === 4 || p.category_id === 5);
           const allNames = Array.from(new Set([...vapes.map((p: any) => p.product_name), ...pouches.map((p: any) => p.product_name)]));
           const merged = allNames.map((name: string) => {
             const v = vapes.find((p: any) => p.product_name === name) || {};
@@ -252,52 +325,33 @@ const SalesDashboardPage: React.FC = () => {
           });
           setProductPerf(merged);
         }
+      }
 
-        // Fetch managers data and leaves
-        const [mgrRes, leavesRes] = await Promise.all([
-          fetchData('/managers'),
-          fetchData('/sales-rep-leaves/sales-rep-leaves')
-        ]);
-        setManagers(mgrRes || []);
-        setRepData(reps); // Use the reps data from the first call
-        
-        // Calculate pending leaves count
-        const leaves = leavesRes || [];
+      // Process managers data
+      if (managersResult.status === 'fulfilled') {
+        setManagers(managersResult.value || []);
+      }
+
+      // Process leaves data
+      if (leavesResult.status === 'fulfilled') {
+        const leaves = leavesResult.value || [];
         const pendingCount = leaves.filter((leave: any) => leave.status === '0' || leave.status === 0).length;
         setPendingLeavesCount(pendingCount);
-        
-        // Calculate new orders count (orders with my_status = 0)
-        console.log('Orders data structure:', orders.slice(0, 3).map(o => ({ 
-          id: o.id, 
-          status: o.my_status, 
-          allKeys: Object.keys(o),
-          sampleValues: Object.entries(o).slice(0, 5)
-        })));
-        
-        const newOrders = orders.filter((order: any) => {
-          return order.my_status === 0 || order.my_status === '0';
-        });
-        
-        console.log('New orders calculation:', {
-          totalOrders: orders.length,
-          newOrdersCount: newOrders.length,
-          sampleOrders: newOrders.slice(0, 3).map(o => ({ id: o.id, status: o.my_status }))
-        });
-        
-        setNewOrdersCount(newOrders.length);
-        
-      } catch (err: any) {
-        setError('Failed to fetch dashboard data');
-        console.error('Dashboard data fetch error:', err);
-      } finally {
-        setLoading(false);
-        setMpLoading(false);
-        setProductPerfLoading(false);
       }
-    };
 
-    loadDashboardData();
+    } catch (err: any) {
+      setError('Failed to fetch dashboard data');
+      console.error('Dashboard data fetch error:', err);
+    } finally {
+      setLoading(false);
+      setMpLoading(false);
+      setProductPerfLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   // Helper functions
   const getRepsForManager = (manager: any) => {
@@ -332,11 +386,11 @@ const SalesDashboardPage: React.FC = () => {
     return overallPct;
   };
 
-  const navigationItems = [
+  // Memoized navigation items to prevent unnecessary re-renders
+  const navigationItems = useMemo(() => [
     { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200', badge: pendingLeavesCount },
     { to: '/products', label: 'Products', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    //{ to: '/managers', label: 'Managers', icon: <UserCheckIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/clients-list', label: 'Clients', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
     { to: '/routes', label: 'Routes', icon: <MapPinIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
     { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
@@ -349,21 +403,82 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/my-visibility', label: 'Visit Reports', icon: <EyeIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/dashboard/journey-plans', label: 'Route Plans', icon: <MapPinIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    //{ to: '/settings', label: 'My Account', icon: <SettingsIcon className="h-4 w-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
     { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
     { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/financial/create-customer-order', label: 'Add Order', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200', badge: newOrdersCount },
     { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }
-    
-    
-  ];
+  ], [pendingLeavesCount, newOrdersCount]);
+
+  // Memoized skeleton components for better loading experience
+  const SkeletonCard = memo(() => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+    </div>
+  ));
+
+  const SkeletonChart = memo(() => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+      <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="h-64 bg-gray-200 rounded"></div>
+    </div>
+  ));
+
+  SkeletonCard.displayName = 'SkeletonCard';
+  SkeletonChart.displayName = 'SkeletonChart';
+
+  // Loading state with skeleton screens
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          {/* Header Skeleton */}
+          <div className="mb-1">
+            <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse mb-2"></div>
+          </div>
+
+          {/* Navigation Menu Skeleton */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+              {Array.from({ length: 19 }).map((_, index) => (
+                <div key={index} className="bg-gray-100 rounded-lg p-4 animate-pulse">
+                  <div className="h-4 w-4 bg-gray-300 rounded mx-auto mb-2"></div>
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <SkeletonChart />
+            <SkeletonChart />
+          </div>
+
+          {/* Performance Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <SkeletonChart />
+            <SkeletonChart />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-1">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Sales Dashboard</h1>
         </div>
 
 
@@ -377,6 +492,15 @@ const SalesDashboardPage: React.FC = () => {
 
         {/* Navigation Menu */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={fetchAllData}
+              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <TrendingUpIcon className="h-4 w-4 mr-2" />
+              Refresh Data
+            </button>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {navigationItems.map((item, index) => (
               <Link
@@ -444,11 +568,20 @@ const SalesDashboardPage: React.FC = () => {
               </button>
             </div>
             {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
+              <SkeletonChart />
             ) : error ? (
-              <div className="text-red-500 text-center h-64 flex items-center justify-center">{error}</div>
+              <div className="text-red-500 text-center h-64 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-red-500 mb-2">⚠️</div>
+                  <p>{error}</p>
+                  <button 
+                    onClick={fetchAllData}
+                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={monthlyData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
@@ -488,11 +621,20 @@ const SalesDashboardPage: React.FC = () => {
               </button>
             </div>
             {productPerfLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              </div>
+              <SkeletonChart />
             ) : productPerfError ? (
-              <div className="text-red-500 text-center h-64 flex items-center justify-center">{productPerfError}</div>
+              <div className="text-red-500 text-center h-64 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-red-500 mb-2">⚠️</div>
+                  <p>{productPerfError}</p>
+                  <button 
+                    onClick={fetchAllData}
+                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={productPerf} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
@@ -530,11 +672,20 @@ const SalesDashboardPage: React.FC = () => {
               </button>
             </div>
             {mpLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-              </div>
+              <SkeletonChart />
             ) : mpError ? (
-              <div className="text-red-500 text-center h-64 flex items-center justify-center">{mpError}</div>
+              <div className="text-red-500 text-center h-64 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-red-500 mb-2">⚠️</div>
+                  <p>{mpError}</p>
+                  <button 
+                    onClick={fetchAllData}
+                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
             ) : managers && managers.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>

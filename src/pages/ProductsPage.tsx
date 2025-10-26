@@ -260,8 +260,7 @@ const ProductsPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
-              <p className="text-gray-600 mt-2">Manage your product catalog, inventory, and pricing</p>
+              <h1 className="text-2xl font-bold text-gray-900">Products Management</h1>
             </div>
             <div className="flex items-center gap-3">
               <Link 

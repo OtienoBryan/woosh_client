@@ -102,10 +102,10 @@ const StatCard: React.FC<StatCardProps> = memo(({
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p className={`text-sm font-medium ${textColor} opacity-90`}>
+              <p className={`text-xs font-medium ${textColor} opacity-90`}>
                 {title}
               </p>
-              <p className={`text-2xl font-bold ${textColor} mt-1`}>
+              <p className={`text-lg font-bold ${textColor} mt-1`}>
                 {prefix}{value}{suffix}
               </p>
               {change && (
@@ -115,7 +115,7 @@ const StatCard: React.FC<StatCardProps> = memo(({
                   ) : (
                     <ArrowDownRightIcon className="h-4 w-4 text-red-300" />
                   )}
-                  <span className={`text-sm font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
+                  <span className={`text-xs font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
                     {change.positive ? '+' : ''}{change.value}%
                   </span>
                 </div>
@@ -482,7 +482,7 @@ const FinancialDashboardPage = () => {
           </ResponsiveContainer>
         </div>
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Category Breakdown</h4>
+          <h4 className="text-base font-semibold text-gray-900 mb-4">Category Breakdown</h4>
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {data.map((category, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -491,21 +491,21 @@ const FinancialDashboardPage = () => {
                     className="w-4 h-4 rounded-full" 
                     style={{ backgroundColor: category.color }}
                   ></div>
-                  <div>
-                    <div className="font-medium text-gray-900">{category.name}</div>
-                    <div className="text-sm text-gray-600">
-                      {category.orderCount} orders • {category.totalQuantity} units
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">
-                    {formatCurrency(category.value)}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {category.percentage}%
-                  </div>
-                </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{category.name}</div>
+                          <div className="text-xs text-gray-600">
+                            {category.orderCount} orders • {category.totalQuantity} units
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-gray-900 text-sm">
+                          {formatCurrency(category.value)}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {category.percentage}%
+                        </div>
+                      </div>
               </div>
             ))}
           </div>
@@ -636,11 +636,10 @@ const FinancialDashboardPage = () => {
 
         {/* Navigation Menu */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Access</h3>
+          <div className="flex items-center justify-between">
             <button
               onClick={fetchAllData}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ActivityIcon className="h-4 w-4 mr-2" />
               Refresh Data
@@ -651,7 +650,7 @@ const FinancialDashboardPage = () => {
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} relative flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md`}
+                className={`${item.color} relative flex flex-col items-center justify-center p-4 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 hover:shadow-md`}
               >
                 {item.icon}
                 <span className="mt-2 text-center">{item.label}</span>
@@ -677,15 +676,15 @@ const FinancialDashboardPage = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Current Month Sales</h3>
-              <p className="text-sm text-gray-600">Daily sales performance for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              <h3 className="text-base font-semibold text-gray-900">Current Month Sales</h3>
+              <p className="text-xs text-gray-600">Daily sales performance for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
             </div>
             {salesSummary && (
               <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-lg font-bold text-green-600">
                   {formatCurrency(salesSummary.total_sales)}
                 </div>
-                <div className="flex items-center text-sm">
+                <div className="flex items-center text-xs">
                   {salesSummary.growth_percentage >= 0 ? (
                     <ArrowUpRightIcon className="h-4 w-4 text-green-500 mr-1" />
                   ) : (
@@ -694,7 +693,7 @@ const FinancialDashboardPage = () => {
                   <span className={salesSummary.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
                   </span>
-                  <span className="text-gray-500 ml-1">vs last month</span>
+                  <span className="text-gray-500 ml-1 text-xs">vs last month</span>
                 </div>
               </div>
             )}
@@ -706,24 +705,24 @@ const FinancialDashboardPage = () => {
           {salesSummary && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{salesSummary.total_orders}</div>
-                <div className="text-sm text-gray-600">Total Orders</div>
+                <div className="text-lg font-bold text-blue-600">{salesSummary.total_orders}</div>
+                <div className="text-xs text-gray-600">Total Orders</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(salesSummary.avg_order_value)}</div>
-                <div className="text-sm text-gray-600">Avg Order Value</div>
+                <div className="text-lg font-bold text-green-600">{formatCurrency(salesSummary.avg_order_value)}</div>
+                <div className="text-xs text-gray-600">Avg Order Value</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-lg font-bold text-purple-600">
                   {salesData.length > 0 ? (salesSummary.total_orders / salesData.length).toFixed(1) : '0'}
                 </div>
-                <div className="text-sm text-gray-600">Orders/Day</div>
+                <div className="text-xs text-gray-600">Orders/Day</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="text-lg font-bold text-orange-600">
                   {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
                 </div>
-                <div className="text-sm text-gray-600">Growth Rate</div>
+                <div className="text-xs text-gray-600">Growth Rate</div>
               </div>
             </div>
           )}
@@ -733,15 +732,15 @@ const FinancialDashboardPage = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Category Performance</h3>
-              <p className="text-sm text-gray-600">Sales distribution by product category for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              <h3 className="text-base font-semibold text-gray-900">Category Performance</h3>
+              <p className="text-xs text-gray-600">Sales distribution by product category for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
             </div>
             {categorySummary && (
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-lg font-bold text-blue-600">
                   {categorySummary.totalCategories} Categories
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs text-gray-600">
                   Top: {categorySummary.topCategory} ({categorySummary.topCategoryPercentage}%)
                 </div>
               </div>
@@ -754,16 +753,16 @@ const FinancialDashboardPage = () => {
           {categorySummary && categoryData.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{categorySummary.totalCategories}</div>
-                <div className="text-sm text-gray-600">Total Categories</div>
+                <div className="text-lg font-bold text-blue-600">{categorySummary.totalCategories}</div>
+                <div className="text-xs text-gray-600">Total Categories</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{categorySummary.topCategory}</div>
-                <div className="text-sm text-gray-600">Top Category</div>
+                <div className="text-lg font-bold text-green-600">{categorySummary.topCategory}</div>
+                <div className="text-xs text-gray-600">Top Category</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{categorySummary.topCategoryPercentage}%</div>
-                <div className="text-sm text-gray-600">Top Category Share</div>
+                <div className="text-lg font-bold text-purple-600">{categorySummary.topCategoryPercentage}%</div>
+                <div className="text-xs text-gray-600">Top Category Share</div>
               </div>
             </div>
           )}

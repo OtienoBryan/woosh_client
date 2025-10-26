@@ -542,9 +542,11 @@ const SalesRepsPage: React.FC = () => {
     setError(null);
     try {
       const data = await salesService.getAllSalesReps();
-      setSalesReps(data);
+      // Ensure data is always an array
+      setSalesReps(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sales reps');
+      setSalesReps([]); // Set empty array on error
     }
     setLoading(false);
   };
