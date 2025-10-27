@@ -41,82 +41,116 @@ export const api = axios.create({
   withCredentials: false // Disable credentials for cross-origin requests
 });
 
-// Add request interceptor for debugging
-api.interceptors.request.use(
-  (config) => {
-    console.log('Making request to:', {
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
-      method: config.method,
-      headers: config.headers,
-      data: config.data
-    });
-    return config;
-  },
-  (error) => {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor for debugging and error handling
-api.interceptors.response.use(
-  (response) => {
-    console.log('Response received:', response);
-    return response;
-  },
-  (error) => {
-    console.error('Response error:', error);
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
-      
-      // Handle authentication errors (401 Unauthorized)
-      if (error.response.status === 401) {
-        console.warn('Authentication failed - token expired or invalid');
-        // Clear authentication data
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        // Redirect to login page
-        window.location.href = '/login';
-        return Promise.reject(new Error('Authentication required. Please log in.'));
-      }
-      
-      // Handle forbidden errors (403 Forbidden)
-      if (error.response.status === 403) {
-        console.warn('Access forbidden - insufficient permissions');
-      }
-      
-      // Don't transform the error, just pass it through to preserve Axios structure
-      return Promise.reject(error);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received:', error.request);
-      return Promise.reject(new Error('No response from server. Please check if the server is running.'));
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error setting up request:', error.message);
-      return Promise.reject(new Error('Failed to set up request'));
-    }
-  }
-);
-
-// Request interceptor for authentication
+// Request interceptor for authentication and debugging
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Add JWT token to requests if available
     const token = localStorage.getItem('token');
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Debug logging in development
+    if (import.meta.env.DEV) {
+      console.log('Making request to:', {
+        url: config.url,
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+        method: config.method,
+        hasToken: !!token
+      });
+    }
+    
     return config;
   },
   (error: AxiosError) => {
     console.error('Request error:', error);
     return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling and automatic redirect
+api.interceptors.response.use(
+  (response) => {
+    // Debug logging in development
+    if (import.meta.env.DEV) {
+      console.log('Response received:', {
+        url: response.config.url,
+        status: response.status
+      });
+    }
+    return response;
+  },
+  (error) => {
+    console.error('Response error:', error);
+    
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      const status = error.response.status;
+      const currentPath = window.location.pathname;
+      
+      console.error('Error response:', {
+        status,
+        data: error.response.data,
+        url: error.config?.url
+      });
+      
+      // Handle authentication errors (401 Unauthorized)
+      if (status === 401) {
+        console.warn('🔐 Authentication failed - token expired or invalid');
+        
+        // Only redirect if not already on login page (prevent redirect loop)
+        if (currentPath !== '/login' && currentPath !== '/') {
+          // Clear authentication data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          
+          // Show user-friendly message
+          const message = error.response.data?.message || 'Your session has expired. Please log in again.';
+          console.warn(message);
+          
+          // Redirect to login page
+          console.log('Redirecting to login page...');
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(new Error('Authentication required. Please log in.'));
+      }
+      
+      // Handle forbidden errors (403 Forbidden)
+      if (status === 403) {
+        console.warn('🚫 Access forbidden - insufficient permissions');
+        
+        // Only redirect if not already on login page
+        if (currentPath !== '/login' && currentPath !== '/') {
+          const message = error.response.data?.message || error.response.data?.error || 'Access forbidden';
+          console.warn(message);
+          
+          // If it's a token-related 403, clear auth and redirect
+          if (message.toLowerCase().includes('token') || message.toLowerCase().includes('auth')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            console.log('Redirecting to login page due to token error...');
+            window.location.href = '/login';
+          }
+        }
+        
+        return Promise.reject(new Error('Access forbidden. You do not have permission to access this resource.'));
+      }
+      
+      // Don't transform other errors, just pass them through
+      return Promise.reject(error);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received:', error.request);
+      return Promise.reject(new Error('No response from server. Please check your internet connection.'));
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error setting up request:', error.message);
+      return Promise.reject(new Error('Failed to set up request'));
+    }
   }
 );
 
