@@ -84,33 +84,33 @@ const StatCard: React.FC<StatCardProps> = memo(({
 }) => {
   return (
     <div
-      className={`${bgColor} overflow-hidden shadow-lg rounded-xl cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl`}
+      className={`${bgColor} overflow-hidden shadow-md rounded-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <div className="p-6">
+      <div className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className={`text-sm font-medium ${textColor} opacity-90`}>
+            <p className={`text-xs font-medium ${textColor} opacity-90`}>
               {title}
             </p>
-            <p className={`text-2xl font-bold ${textColor} mt-1`}>
+            <p className={`text-lg font-bold ${textColor} mt-0.5`}>
               {prefix}{value}{suffix}
             </p>
             {change && (
-              <div className="flex items-center mt-2">
+              <div className="flex items-center mt-0.5">
                 <TrendingUpIcon 
-                  className={`h-4 w-4 ${change.positive ? 'text-green-300' : 'text-red-300'}`} 
+                  className={`h-3 w-3 ${change.positive ? 'text-green-300' : 'text-red-300'}`} 
                 />
-                <span className={`text-sm font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
+                <span className={`text-xs font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
                   {change.positive ? '+' : ''}{change.value}%
                 </span>
               </div>
             )}
           </div>
           <div className="flex-shrink-0">
-            <div className={`p-3 rounded-lg ${textColor} bg-white bg-opacity-20`}>
+            <div className={`p-1.5 rounded-lg ${textColor} bg-white bg-opacity-20`}>
               {icon}
             </div>
           </div>
@@ -388,25 +388,25 @@ const SalesDashboardPage: React.FC = () => {
 
   // Memoized navigation items to prevent unnecessary re-renders
   const navigationItems = useMemo(() => [
-    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200', badge: pendingLeavesCount },
-    { to: '/products', label: 'Products', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/clients-list', label: 'Clients', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
-    { to: '/routes', label: 'Routes', icon: <MapPinIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/financial/customer-orders', label: 'Sales Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200', badge: newOrdersCount },
-    { to: '/invoice-list', label: 'Invoices', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/dashboard/reports/product-performance', label: 'Product Performance', icon: <PieChartIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/my-visibility', label: 'Visit Reports', icon: <EyeIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/dashboard/journey-plans', label: 'Route Plans', icon: <MapPinIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/financial/create-customer-order', label: 'Add Order', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200', badge: newOrdersCount },
-    { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }
+    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200', badge: pendingLeavesCount },
+    { to: '/products', label: 'Products', icon: <ShoppingCartIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { to: '/clients-list', label: 'Clients', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
+    { to: '/routes', label: 'Routes', icon: <MapPinIcon className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-3.5 w-3.5" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/financial/customer-orders', label: 'Sales Report', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 hover:bg-red-200', badge: newOrdersCount },
+    { to: '/invoice-list', label: 'Invoices', icon: <AwardIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/dashboard/reports/product-performance', label: 'Product Performance', icon: <PieChartIcon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+    { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-3.5 w-3.5" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/my-visibility', label: 'Visit Reports', icon: <EyeIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/dashboard/journey-plans', label: 'Route Plans', icon: <MapPinIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/financial/create-customer-order', label: 'Add Order', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200', badge: newOrdersCount },
+    { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }
   ], [pendingLeavesCount, newOrdersCount]);
 
   // Memoized skeleton components for better loading experience
@@ -491,7 +491,7 @@ const SalesDashboardPage: React.FC = () => {
         </div> */}
 
         {/* Navigation Menu */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex items-center justify-between">
             <button
               onClick={fetchAllData}
@@ -501,15 +501,15 @@ const SalesDashboardPage: React.FC = () => {
               Refresh Data
             </button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
             {navigationItems.map((item, index) => (
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md relative`}
+                className={`${item.color} flex flex-col items-center justify-center p-3 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 hover:shadow-md relative`}
               >
                 {item.icon}
-                <span className="mt-2 text-center">{item.label}</span>
+                <span className="mt-1 text-center leading-tight">{item.label}</span>
                 {item.badge && item.badge > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
                     {item.badge}
@@ -521,26 +521,26 @@ const SalesDashboardPage: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <StatCard
             title="Total Sales"
             value={stats.totalSales.toLocaleString()}
             prefix=""
-            icon={<DollarSignIcon className="h-6 w-6" />}
+            icon={<DollarSignIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-green-600 to-green-700"
             onClick={() => navigate('/dashboard/reports/sales-report')}
           />
           <StatCard
             title="Total Orders"
             value={stats.totalOrders}
-            icon={<ShoppingCartIcon className="h-6 w-6" />}
+            icon={<ShoppingCartIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-blue-600 to-blue-700"
             onClick={() => navigate('/dashboard/reports/sales-report')}
           />
           <StatCard
             title="Active Sales Reps"
             value={stats.activeReps}
-            icon={<UsersIcon className="h-6 w-6" />}
+            icon={<UsersIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-purple-600 to-purple-700"
             onClick={() => navigate('/sales-reps')}
           />
@@ -548,7 +548,7 @@ const SalesDashboardPage: React.FC = () => {
             title="Avg Performance"
             value={stats.avgPerformance}
             suffix="%"
-            icon={<TrendingUpIcon className="h-6 w-6" />}
+            icon={<TrendingUpIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-orange-600 to-orange-700"
             onClick={() => navigate('/shared-performance')}
           />

@@ -65,35 +65,35 @@ const StatCard: React.FC<StatCardProps> = ({
   return (
     <div className="relative">
       <div
-        className={`${bgColor} overflow-hidden shadow-lg rounded-xl cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl`}
+        className={`${bgColor} overflow-hidden shadow-md rounded-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg`}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
       >
-        <div className="p-6">
+        <div className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p className={`text-sm font-medium ${textColor} opacity-90`}>
+              <p className={`text-xs font-medium ${textColor} opacity-90`}>
                 {title}
               </p>
-              <p className={`text-2xl font-bold ${textColor} mt-1`}>
+              <p className={`text-lg font-bold ${textColor} mt-0.5`}>
                 {prefix}{value}{suffix}
               </p>
               {change && (
-                <div className="flex items-center mt-2">
+                <div className="flex items-center mt-0.5">
                   {change.positive ? (
-                    <ArrowUpRightIcon className="h-4 w-4 text-green-300" />
+                    <ArrowUpRightIcon className="h-3 w-3 text-green-300" />
                   ) : (
-                    <ArrowDownRightIcon className="h-4 w-4 text-red-300" />
+                    <ArrowDownRightIcon className="h-3 w-3 text-red-300" />
                   )}
-                  <span className={`text-sm font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
+                  <span className={`text-xs font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
                     {change.positive ? '+' : ''}{change.value}%
                   </span>
                 </div>
               )}
             </div>
             <div className="flex-shrink-0">
-              <div className={`p-3 rounded-lg ${textColor} bg-white bg-opacity-20`}>
+              <div className={`p-1.5 rounded-lg ${textColor} bg-white bg-opacity-20`}>
                 {icon}
               </div>
             </div>
@@ -188,39 +188,39 @@ const FinancialDashboardPage = () => {
   };
 
   const navigationItems = [
-    { to: '/financial/purchase-order', label: 'New Purchase', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/financial/create-customer-order', label: 'Create Order', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/create-invoice', label: 'Create Invoice', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/create-credit-note', label: 'Credit Note', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/add-expense', label: 'Add Expense', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
-    { to: '/equity/entries', label: 'Equity Entries', icon: <CalculatorIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/add-journal-entry', label: 'Journal Entry', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    //{ to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/riders', label: 'Riders', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
-    { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    //{ to: '/expenses', label: 'Expenses', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
-    { to: '/expense-summary', label: 'Expense Summary', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/products', label: 'Products', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
-    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    //{ to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    //{ to: '/credit-note-summary', label: 'Credit Note Summary', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/financial/view-receipts', label: 'Receipts', icon: <ReceiptIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/payables', label: 'Payables', icon: <DollarSignIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/cash-equivalents', label: 'Cash & Equivalents', icon: <PiggyBankIcon className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-4 w-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
+    { to: '/financial/purchase-order', label: 'New Purchase', icon: <ShoppingCartIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/financial/create-customer-order', label: 'Create Order', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { to: '/create-invoice', label: 'Create Invoice', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/create-credit-note', label: 'Credit Note', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/add-expense', label: 'Add Expense', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { to: '/equity/entries', label: 'Equity Entries', icon: <CalculatorIcon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/add-journal-entry', label: 'Journal Entry', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    //{ to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+    { to: '/riders', label: 'Riders', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
+    { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-3.5 w-3.5" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    //{ to: '/expenses', label: 'Expenses', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
+    { to: '/expense-summary', label: 'Expense Summary', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/products', label: 'Products', icon: <BoxIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-3.5 w-3.5" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    //{ to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    //{ to: '/credit-note-summary', label: 'Credit Note Summary', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/financial/view-receipts', label: 'Receipts', icon: <ReceiptIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/payables', label: 'Payables', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/cash-equivalents', label: 'Cash & Equivalents', icon: <PiggyBankIcon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+    { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-3.5 w-3.5" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
   ];
 
   if (loading) {
@@ -249,40 +249,21 @@ const FinancialDashboardPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         {/* Header */}
-        <div className="mb-1">
+        <div className="mb-2">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Financial Dashboard</h1>
-              <p className="text-gray-600">Monitor financial performance, manage transactions, and track business metrics</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <SearchIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input 
-                  type="text" 
-                  placeholder="Search..." 
-                  className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                />
+              <h4 className="text-xl font-bold text-gray-900">Financial Dashboard</h4>
               </div>
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors bg-white border border-gray-200">
-                <BellIcon className="w-5 h-5" />
-              </button>
-              <button 
-              onClick={() => navigate('/settings')}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors bg-white border border-gray-200"
-              >
-                <SettingsIcon className="w-5 h-5" />
-              </button>
-            </div>
+             
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 opacity-70">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 opacity-70">
           <StatCard
             title="Total Sales"
             value={stats ? formatCurrency(stats.totalSales) : '$0.00'}
-            icon={<DollarSignIcon className="h-6 w-6" />}
+            icon={<DollarSignIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-green-600 to-green-700"
             onClick={() => navigate('/reports')}
             change={{ value: 12.5, positive: true }}
@@ -291,7 +272,7 @@ const FinancialDashboardPage = () => {
           <StatCard
             title="Total Purchases"
             value={stats ? formatCurrency(stats.totalPurchases) : '$0.00'}
-            icon={<ShoppingCartIcon className="h-6 w-6" />}
+            icon={<ShoppingCartIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-blue-600 to-blue-700"
             onClick={() => navigate('/purchase-orders')}
             change={{ value: 8.3, positive: true }}
@@ -300,7 +281,7 @@ const FinancialDashboardPage = () => {
           <StatCard
             title="Receivables"
             value={stats ? formatCurrency(stats.totalReceivables) : '$0.00'}
-            icon={<PiggyBankIcon className="h-6 w-6" />}
+            icon={<PiggyBankIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-amber-600 to-amber-700"
             onClick={() => navigate('/receivables')}
             change={{ value: 5.2, positive: false }}
@@ -309,7 +290,7 @@ const FinancialDashboardPage = () => {
           <StatCard
             title="Payables"
             value={stats ? formatCurrency(stats.totalPayables) : '$0.00'}
-            icon={<DollarSignIcon className="h-6 w-6" />}
+            icon={<DollarSignIcon className="h-4 w-4" />}
             bgColor="bg-gradient-to-r from-red-600 to-red-700"
             onClick={() => navigate('/payables')}
             change={{ value: 3.1, positive: false }}
@@ -374,16 +355,16 @@ const FinancialDashboardPage = () => {
         </div>
 
         {/* Navigation Menu */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
             {navigationItems.map((item, index) => (
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} relative flex flex-col items-center justify-center p-4 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 hover:shadow-md`}
+                className={`${item.color} relative flex flex-col items-center justify-center p-3 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 hover:shadow-md`}
               >
                 {item.icon}
-                <span className="mt-2 text-center">{item.label}</span>
+                <span className="mt-1 text-center leading-tight">{item.label}</span>
                 {item.to === '/financial/customer-orders' && (
                   <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-red-600 text-white shadow">
                     {newOrdersCount}
