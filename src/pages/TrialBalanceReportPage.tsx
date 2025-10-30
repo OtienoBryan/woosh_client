@@ -143,8 +143,8 @@ const TrialBalanceReportPage: React.FC = () => {
         number_format(reportData.totals.total_closing_balance || 0)
       ];
     } else {
-      // Simple format with opening, debit, credit, and closing balance
-      headers = ['Account Code', 'Account Name', 'Account Type', 'Opening Balance', 'Debit', 'Credit', 'Closing Balance'];
+      // Simple format with opening, debit, credit, period balance, and closing balance
+      headers = ['Account Code', 'Account Name', 'Account Type', 'Opening Balance', 'Debit', 'Credit', 'Period Balance', 'Closing Balance'];
       rows = filteredAccounts.map(acc => [
         acc.account_code,
         acc.account_name,
@@ -152,11 +152,12 @@ const TrialBalanceReportPage: React.FC = () => {
         '0.00',
         number_format(acc.debit),
         number_format(acc.credit),
+        number_format(acc.balance),
         number_format(acc.balance)
       ]);
-      totalRow = ['', '', 'TOTALS', '0.00', number_format(reportData.totals.total_debits), number_format(reportData.totals.total_credits), number_format(reportData.totals.difference)];
+      totalRow = ['', '', 'TOTALS', '0.00', number_format(reportData.totals.total_debits), number_format(reportData.totals.total_credits), number_format(reportData.totals.difference), number_format(reportData.totals.difference)];
     }
-    
+
     const dateInfo = reportData.date_range || `As of: ${reportData.as_of_date}`;
     const fileName = reportData.from_date && reportData.to_date 
       ? `trial_balance_${reportData.from_date}_to_${reportData.to_date}.csv`
@@ -176,8 +177,8 @@ const TrialBalanceReportPage: React.FC = () => {
       csvRows.push(['', '', 'Period Difference', '', '', '', number_format(reportData.totals.difference), '']);
       csvRows.push(['', '', 'Status', '', '', '', reportData.totals.is_balanced ? 'BALANCED' : 'OUT OF BALANCE', '']);
     } else {
-      csvRows.push(['', '', 'Difference', '', '', '', number_format(reportData.totals.difference)]);
-      csvRows.push(['', '', 'Status', '', '', '', reportData.totals.is_balanced ? 'BALANCED' : 'OUT OF BALANCE']);
+      csvRows.push(['', '', 'Difference', '', '', '', number_format(reportData.totals.difference), '']);
+      csvRows.push(['', '', 'Status', '', '', '', reportData.totals.is_balanced ? 'BALANCED' : 'OUT OF BALANCE', '']);
     }
     
     const csvContent = csvRows
@@ -350,7 +351,7 @@ const TrialBalanceReportPage: React.FC = () => {
 
         {/* Summary by Account Type */}
         {reportData && reportData.summary_by_type && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Summary by Account Type</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {Object.entries(reportData.summary_by_type).map(([typeName, summary]) => (
@@ -381,6 +382,126 @@ const TrialBalanceReportPage: React.FC = () => {
           <div className="overflow-x-auto">
             {reportData?.from_date && reportData?.to_date ? (
               // Date Range Format with Opening, Period, and Closing Balances
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Account Code
+                  </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Account Name
+                  </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
+                      Opening Balance
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
+                      Period Debit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
+                      Period Credit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">
+                      Period Balance
+                  </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Closing Balance
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredAccounts.length === 0 ? (
+                  <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                      No accounts found matching your criteria
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAccounts.map((account) => (
+                    <tr key={account.account_code} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {account.account_code}
+                      </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                        <span
+                          onClick={() => handleAccountClick(account.account_code)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                          title="Click to view ledger for this account"
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleAccountClick(account.account_code);
+                            }
+                          }}
+                        >
+                          {account.account_name}
+                        </span>
+                      </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {account.account_type_name}
+                        </span>
+                      </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
+                          {number_format(account.opening_balance || 0)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
+                          {(account.period_debit || 0) !== 0 ? number_format(account.period_debit || 0) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
+                          {(account.period_credit || 0) !== 0 ? number_format(account.period_credit || 0) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-purple-700">
+                          {number_format(account.period_balance || 0)}
+                      </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                          {number_format(account.closing_balance || 0)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              {reportData && (
+                <tfoot className="bg-gray-100 border-t-2 border-gray-300">
+                  <tr>
+                      <td colSpan={3} className="px-4 py-4 text-sm font-bold text-gray-900 uppercase">
+                        Total
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-700">
+                        {number_format(reportData.totals.total_opening_balance || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
+                        {number_format(reportData.totals.total_period_debit || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
+                        {number_format(reportData.totals.total_period_credit || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-purple-700">
+                        {number_format(reportData.totals.total_period_balance || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                        {number_format(reportData.totals.total_closing_balance || 0)}
+                      </td>
+                    </tr>
+                    {!reportData.totals.is_balanced && (
+                      <tr className="bg-red-50">
+                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-red-900">
+                          Period Difference (Out of Balance)
+                        </td>
+                        <td colSpan={2} className="px-4 py-3 text-sm text-right font-bold text-red-900">
+                          {number_format(Math.abs(reportData.totals.difference))}
+                        </td>
+                      </tr>
+                    )}
+                  </tfoot>
+                )}
+              </table>
+            ) : (
+              // Simple Format - Now with Opening, Period Balance, and Closing Balance columns
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -397,10 +518,10 @@ const TrialBalanceReportPage: React.FC = () => {
                       Opening Balance
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
-                      Period Debit
+                      Debit
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
-                      Period Credit
+                      Credit
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">
                       Period Balance
@@ -446,123 +567,6 @@ const TrialBalanceReportPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
-                          {number_format(account.opening_balance || 0)}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
-                          {(account.period_debit || 0) !== 0 ? number_format(account.period_debit || 0) : '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
-                          {(account.period_credit || 0) !== 0 ? number_format(account.period_credit || 0) : '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-purple-700">
-                          {number_format(account.period_balance || 0)}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
-                          {number_format(account.closing_balance || 0)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-                {reportData && (
-                  <tfoot className="bg-gray-100 border-t-2 border-gray-300">
-                    <tr>
-                      <td colSpan={3} className="px-4 py-4 text-sm font-bold text-gray-900 uppercase">
-                        Total
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-700">
-                        {number_format(reportData.totals.total_opening_balance || 0)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
-                        {number_format(reportData.totals.total_period_debit || 0)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
-                        {number_format(reportData.totals.total_period_credit || 0)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-purple-700">
-                        {number_format(reportData.totals.total_period_balance || 0)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
-                        {number_format(reportData.totals.total_closing_balance || 0)}
-                      </td>
-                    </tr>
-                    {!reportData.totals.is_balanced && (
-                      <tr className="bg-red-50">
-                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-red-900">
-                          Period Difference (Out of Balance)
-                        </td>
-                        <td colSpan={2} className="px-4 py-3 text-sm text-right font-bold text-red-900">
-                          {number_format(Math.abs(reportData.totals.difference))}
-                        </td>
-                      </tr>
-                    )}
-                  </tfoot>
-                )}
-              </table>
-            ) : (
-              // Simple Format - Now with Opening and Closing Balance columns
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Account Code
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Account Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
-                      Opening Balance
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
-                      Debit
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
-                      Credit
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Closing Balance
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAccounts.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                        No accounts found matching your criteria
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredAccounts.map((account) => (
-                      <tr key={account.account_code} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {account.account_code}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm">
-                          <span
-                            onClick={() => handleAccountClick(account.account_code)}
-                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                            title="Click to view ledger for this account"
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                handleAccountClick(account.account_code);
-                              }
-                            }}
-                          >
-                            {account.account_name}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {account.account_type_name}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
                           0.00
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
@@ -570,6 +574,9 @@ const TrialBalanceReportPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
                           {account.credit !== 0 ? number_format(account.credit) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-purple-700">
+                          {number_format(account.balance)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
                           {number_format(account.balance)}
@@ -593,13 +600,16 @@ const TrialBalanceReportPage: React.FC = () => {
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
                         {number_format(reportData.totals.total_credits)}
                       </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-purple-700">
+                        {number_format(reportData.totals.difference)}
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
                         {number_format(reportData.totals.difference)}
                       </td>
                     </tr>
                     {!reportData.totals.is_balanced && (
                       <tr className="bg-red-50">
-                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-red-900">
+                        <td colSpan={7} className="px-4 py-3 text-sm font-semibold text-red-900">
                           Difference (Out of Balance)
                         </td>
                         <td className="px-4 py-3 text-sm text-right font-bold text-red-900">
