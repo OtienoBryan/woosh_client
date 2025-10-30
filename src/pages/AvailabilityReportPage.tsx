@@ -411,7 +411,7 @@ const AvailabilityReportPage: React.FC = () => {
                           >
                             <div className="flex flex-col">
                               <span className="text-xs text-gray-400 font-normal">{productInfo?.categoryName || ''}</span>
-                              <span className="uppercase">{product}</span>
+                              <span className="text-[10px] uppercase leading-tight">{product}</span>
                             </div>
                           </th>
                         );
