@@ -260,8 +260,8 @@ export const purchaseOrdersService = {
 
 // Sales Orders Service
 export const salesOrdersService = {
-  getAll: async (): Promise<ApiResponse<any[]>> => {
-    const response = await axios.get(`${API_BASE_URL}/financial/sales-orders`);
+  getAll: async (params?: { status?: string; client_id?: number }): Promise<ApiResponse<any[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/sales-orders`, { params });
     return response.data;
   },
 
@@ -465,6 +465,14 @@ export const receiptsService = {
 
   getByInvoice: async (invoiceId: number): Promise<ApiResponse<any>> => {
     const response = await axios.get(`${API_BASE_URL}/financial/receipts/invoice/${invoiceId}`);
+    return response.data;
+  },
+
+  // OPTIMIZED: Get amounts paid for multiple invoices in a single request
+  getBulkAmountsPaid: async (invoiceIds: number[]): Promise<ApiResponse<{[key: number]: number}>> => {
+    const response = await axios.post(`${API_BASE_URL}/financial/receipts/bulk-amounts-paid`, {
+      invoice_ids: invoiceIds
+    });
     return response.data;
   },
 

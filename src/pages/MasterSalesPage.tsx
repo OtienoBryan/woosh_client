@@ -20,7 +20,9 @@ const MasterSalesPage: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [showSalesDetailModal, setShowSalesDetailModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<{ id: number; name: string } | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
@@ -40,18 +42,19 @@ const MasterSalesPage: React.FC = () => {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
+  // Fetch data when filters, pagination, or sorting changes
   useEffect(() => {
     fetchSalesData();
-  }, [selectedYear, selectedCategories, selectedSalesReps, selectedCategoryGroup, startDate, endDate, clientStatus, viewType]);
+  }, [selectedYear, selectedCategories, selectedSalesReps, selectedCategoryGroup, startDate, endDate, clientStatus, viewType, currentPage, itemsPerPage, sortColumn, sortDirection]);
 
   useEffect(() => {
     fetchCategories();
     fetchSalesReps();
   }, []);
 
+  // Client-side filtering (search only)
   useEffect(() => {
     filterData();
-    setCurrentPage(1); // Reset to first page when data changes
   }, [salesData, searchQuery]);
 
   const fetchSalesData = async () => {
@@ -64,10 +67,37 @@ const MasterSalesPage: React.FC = () => {
       const startDateParam = startDate || undefined;
       const endDateParam = endDate || undefined;
       const clientStatusParam = clientStatus || undefined;
-      const data = await salesService.getMasterSalesData(selectedYear, categoryIds, salesRepIds, categoryGroup, startDateParam, endDateParam, clientStatusParam, viewType);
-      setSalesData(data);
+      
+      console.log(`[Master Sales] Fetching page ${currentPage} with ${itemsPerPage} items per page`);
+      
+      // OPTIMIZED: Pass pagination params to backend
+      // If "View All" is selected, pass a very large limit (999999)
+      const limitToSend = itemsPerPage === 'all' ? 999999 : itemsPerPage;
+      const pageToSend = itemsPerPage === 'all' ? 1 : currentPage;
+      
+      const result = await salesService.getMasterSalesData(
+        selectedYear, 
+        categoryIds, 
+        salesRepIds, 
+        categoryGroup, 
+        startDateParam, 
+        endDateParam, 
+        clientStatusParam, 
+        viewType,
+        pageToSend,
+        limitToSend,
+        sortColumn || undefined,
+        sortDirection
+      );
+      
+      setSalesData(result.data);
+      setTotalPages(result.pagination.totalPages);
+      setTotalItems(result.pagination.totalItems);
+      
+      console.log(`[Master Sales] Loaded ${result.data.length} clients (Page ${currentPage}/${result.pagination.totalPages})`);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sales data');
+      setSalesData([]);
     } finally {
       setLoading(false);
     }
@@ -94,20 +124,76 @@ const MasterSalesPage: React.FC = () => {
   const fetchSalesDetails = async (clientId: number, month: string) => {
     try {
       setLoadingDetails(true);
-      const monthNumber = months.indexOf(month) + 1;
-      const response = await fetch(`/api/sales/client-month-details?clientId=${clientId}&month=${monthNumber}&year=${selectedYear}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSalesDetails(data);
+      let data: any[];
+      
+      if (month === 'total') {
+        // Fetch all sales for the entire year
+        console.log('[fetchSalesDetails] Fetching year details:', { clientId, year: selectedYear });
+        data = await salesService.getClientYearDetails(clientId, selectedYear);
       } else {
-        setSalesDetails([]);
+        // Fetch sales for a specific month
+        const monthNumber = months.indexOf(month) + 1;
+        console.log('[fetchSalesDetails] Fetching month details:', { clientId, month: monthNumber, year: selectedYear });
+        data = await salesService.getClientMonthDetails(clientId, monthNumber, selectedYear);
       }
+      
+      console.log('[fetchSalesDetails] Received data:', data);
+      console.log('[fetchSalesDetails] Data length:', data.length);
+      setSalesDetails(data);
     } catch (err: any) {
-      console.error('Failed to fetch sales details:', err);
+      console.error('[fetchSalesDetails] Failed to fetch sales details:', err);
       setSalesDetails([]);
     } finally {
       setLoadingDetails(false);
     }
+  };
+
+  const exportModalToCSV = () => {
+    if (salesDetails.length === 0) return;
+
+    // Create CSV header
+    const headers = ['Order #', 'Date', 'Product', 'Category', 'Quantity', 'Unit Price', 'Line Total', 'Sales Rep'];
+    
+    // Create CSV rows
+    const rows = salesDetails.map(detail => [
+      detail.order_number || detail.order_id,
+      new Date(detail.order_date).toLocaleDateString(),
+      detail.product_name,
+      detail.category_name || 'N/A',
+      detail.quantity,
+      parseFloat(String(detail.unit_price)) || 0,
+      parseFloat(String(detail.line_total)) || 0,
+      detail.sales_rep_name || 'N/A'
+    ]);
+
+    // Add total row
+    const total = salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0);
+    rows.push(['', '', '', '', '', 'Grand Total:', total, '']);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => {
+        // Handle cells that might contain commas
+        if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+          return `"${cell.replace(/"/g, '""')}"`;
+        }
+        return cell;
+      }).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const fileName = `Sales_Details_${selectedClient?.name}_${selectedMonth === 'total' ? selectedYear : `${monthLabels[months.indexOf(selectedMonth)]}_${selectedYear}`}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const filterData = () => {
@@ -176,55 +262,42 @@ const MasterSalesPage: React.FC = () => {
     }).format(amount);
   };
 
-  const getSortedData = () => {
-    if (!sortColumn) return filteredData;
-    
-    return [...filteredData].sort((a, b) => {
-      let aValue, bValue;
-      
-      if (sortColumn === 'client_name') {
-        aValue = a.client_name.toLowerCase();
-        bValue = b.client_name.toLowerCase();
-      } else if (sortColumn === 'total') {
-        aValue = parseFloat(String(a.total)) || 0;
-        bValue = parseFloat(String(b.total)) || 0;
-      } else {
-        // It's a month column
-        aValue = parseFloat(String((a as any)[sortColumn])) || 0;
-        bValue = parseFloat(String((b as any)[sortColumn])) || 0;
-      }
-      
-      if (sortDirection === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-  };
-
-  const sortedData = getSortedData();
-  const totalItems = sortedData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = sortedData.slice(startIndex, endIndex);
+  // OPTIMIZED: Server-side sorting and pagination - backend handles both
+  // No need for client-side sorting anymore
+  const currentData = filteredData; // Data comes sorted and paginated from backend
+  const sortedData = currentData; // Alias for backward compatibility
+  
+  // Calculate display range for "Showing X to Y of Z" text
+  const startIndex = itemsPerPage === 'all' ? 1 : (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = itemsPerPage === 'all' ? totalItems : startIndex + currentData.length - 1;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top when changing pages
   };
 
-  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+  const handleItemsPerPageChange = (newItemsPerPage: number | 'all') => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
   };
 
   const handleCellClick = async (client: MasterSalesData, month: string) => {
     const monthValue = parseFloat((client as any)[month]) || 0;
+    console.log('[handleCellClick] Clicked cell:', { 
+      clientId: client.client_id, 
+      clientName: client.client_name, 
+      month, 
+      monthValue 
+    });
+    
     if (monthValue > 0) {
+      console.log('[handleCellClick] Opening modal for client:', client.client_name);
       setSelectedClient({ id: client.client_id, name: client.client_name });
       setSelectedMonth(month);
       setShowSalesDetailModal(true);
       await fetchSalesDetails(client.client_id, month);
+    } else {
+      console.log('[handleCellClick] No sales data for this month, not opening modal');
     }
   };
 
@@ -322,20 +395,20 @@ const MasterSalesPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Header Section */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Master {viewType === 'sales' ? 'Sales' : 'Quantities'} Report
               </h1>
                
             </div>
-            <div className="mt-6 lg:mt-0 flex flex-col sm:flex-row gap-3">
+            <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row gap-2">
               {/* View Type Toggle */}
-              <div className="flex items-center gap-2 bg-white rounded-lg border-2 border-gray-200 p-1">
+              <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
                 <button
                   onClick={() => setViewType('sales')}
-                  className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                     viewType === 'sales'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -345,7 +418,7 @@ const MasterSalesPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setViewType('quantity')}
-                  className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                     viewType === 'quantity'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -357,16 +430,16 @@ const MasterSalesPage: React.FC = () => {
               
               <button
                 onClick={() => setShowFilterModal(true)}
-                className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 ${
                   activeFilters > 0
-                    ? 'bg-orange-100 text-orange-700 border-2 border-orange-200 hover:bg-orange-200'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <Filter className="h-5 w-5" />
+                <Filter className="h-4 w-4" />
                 Filters
                 {activeFilters > 0 && (
-                  <span className="ml-2 bg-orange-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                  <span className="ml-1 bg-orange-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {activeFilters}
                   </span>
                 )}
@@ -374,16 +447,16 @@ const MasterSalesPage: React.FC = () => {
               <button
                 onClick={exportToCSV}
                 disabled={exporting || sortedData.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
               >
                 {exporting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></div>
                     Exporting...
                   </>
                 ) : (
                   <>
-                    <Download className="h-5 w-5" />
+                    <Download className="h-4 w-4" />
                     Export CSV
                   </>
                 )}
@@ -566,7 +639,30 @@ const MasterSalesPage: React.FC = () => {
                           </td>
                           );
                         })}
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-right text-blue-900 bg-blue-50">
+                        <td 
+                          className={`whitespace-nowrap px-6 py-4 text-sm font-semibold text-right text-blue-900 bg-blue-50 ${
+                            parseFloat(String(client.total)) > 0 ? 'cursor-pointer hover:bg-blue-100 transition-colors duration-150' : ''
+                          }`}
+                          onClick={() => {
+                            const totalValue = parseFloat(String(client.total)) || 0;
+                            console.log('[Total Column Click] Clicked total for client:', {
+                              clientId: client.client_id,
+                              clientName: client.client_name,
+                              totalValue
+                            });
+                            
+                            if (totalValue > 0) {
+                              console.log('[Total Column Click] Opening modal for yearly sales');
+                              setSelectedClient({ id: client.client_id, name: client.client_name });
+                              setSelectedMonth('total');
+                              setShowSalesDetailModal(true);
+                              // Fetch all sales for the year (pass 'total' as month indicator)
+                              fetchSalesDetails(client.client_id, 'total');
+                            } else {
+                              console.log('[Total Column Click] No sales data, not opening modal');
+                            }
+                          }}
+                        >
                           {viewType === 'sales' ? formatCurrency(parseFloat(String(client.total)) || 0) : (parseFloat(String(client.total)) || 0).toLocaleString()}
                         </td>
                       </tr>
@@ -616,22 +712,27 @@ const MasterSalesPage: React.FC = () => {
                   <span className="text-sm text-gray-700">Show</span>
                   <select
                     value={itemsPerPage}
-                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                    onChange={(e) => handleItemsPerPageChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
+                    <option value="all">View All</option>
                   </select>
                   <span className="text-sm text-gray-700">entries per page</span>
                 </div>
                 <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
-                  Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                  {itemsPerPage === 'all' 
+                    ? `Showing all ${totalItems} results`
+                    : `Showing ${startIndex} to ${endIndex} of ${totalItems} results`
+                  }
                 </div>
               </div>
 
-              {/* Enhanced Pagination buttons */}
+              {/* Enhanced Pagination buttons - hide when viewing all */}
+              {itemsPerPage !== 'all' && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
@@ -671,6 +772,7 @@ const MasterSalesPage: React.FC = () => {
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
+              )}
             </div>
           </div>
         )}
@@ -871,9 +973,17 @@ const MasterSalesPage: React.FC = () => {
         )}
 
         {/* Sales Details Modal */}
-        {showSalesDetailModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+        {showSalesDetailModal && (() => {
+          console.log('[Modal Render] Rendering sales details modal:', {
+            selectedClient,
+            selectedMonth,
+            selectedYear,
+            salesDetailsCount: salesDetails.length,
+            loadingDetails
+          });
+          return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden">
               {/* Modal Header */}
               <div className="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex items-center justify-between">
@@ -882,7 +992,9 @@ const MasterSalesPage: React.FC = () => {
                       Sales Details - {selectedClient?.name}
                     </h2>
                     <p className="text-gray-600 mt-1">
-                      {monthLabels[months.indexOf(selectedMonth)]} {selectedYear}
+                      {selectedMonth === 'total' 
+                        ? `All Sales for ${selectedYear}` 
+                        : `${monthLabels[months.indexOf(selectedMonth)]} ${selectedYear}`}
                     </p>
                     <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
@@ -895,17 +1007,27 @@ const MasterSalesPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                    onClick={() => setShowSalesDetailModal(false)}
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={exportModalToCSV}
+                      disabled={salesDetails.length === 0}
+                      className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors duration-200 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export CSV
+                    </button>
+                    <button
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                      onClick={() => setShowSalesDetailModal(false)}
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
                 </div>
               </div>
               
               {/* Modal Body */}
-              <div className="px-8 py-6 max-h-[60vh] overflow-y-auto">
+              <div className="px-8 py-6 max-h-[75vh] overflow-y-auto">
                 {loadingDetails ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
@@ -1007,7 +1129,8 @@ const MasterSalesPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

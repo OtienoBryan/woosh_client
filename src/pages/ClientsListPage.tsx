@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Search,
   Plus,
@@ -289,8 +290,8 @@ const AssignSalesRepModal: React.FC<{
 
       // Fetch sales reps and current assignment
       Promise.all([
-        fetch('/api/sales-reps?status=1').then(res => res.json()),
-        fetch(`/api/client-assignments/outlet/${client.id}`).then(res => res.json())
+        axios.get('/api/sales-reps?status=1').then(res => res.data),
+        axios.get(`/api/client-assignments/outlet/${client.id}`).then(res => res.data)
       ]).then(([salesRepsRes, assignmentRes]) => {
         if (salesRepsRes.success) {
           setSalesReps(salesRepsRes.data);
@@ -317,16 +318,12 @@ const AssignSalesRepModal: React.FC<{
     setError(null);
 
     try {
-      const response = await fetch('/api/client-assignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          outletId: client.id,
-          salesRepId: selectedSalesRepId
-        })
+      const response = await axios.post('/api/client-assignments', {
+        outletId: client.id,
+        salesRepId: selectedSalesRepId
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success) {
         onAssignmentSuccess(client.id);
@@ -432,7 +429,7 @@ const ClientsListPage: React.FC = () => {
   const [outletAccounts, setOutletAccounts] = useState<{ id: number; name: string }[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
@@ -452,9 +449,8 @@ const ClientsListPage: React.FC = () => {
   useEffect(() => {
     if (modalOpen || editModalOpen) {
       // Note: This endpoint might need to be added to clientService
-      fetch('/api/sales/countries')
-        .then(res => res.json())
-        .then(data => setCountries(data))
+      axios.get('/api/sales/countries')
+        .then(res => setCountries(res.data))
         .catch(err => console.error('Failed to fetch countries:', err));
     }
   }, [modalOpen, editModalOpen]);
@@ -464,13 +460,12 @@ const ClientsListPage: React.FC = () => {
     if (selectedCountry) {
       const countryId = parseInt(selectedCountry);
       if (countryId) {
-        fetch(`/api/sales/regions?country_id=${countryId}`)
-          .then(res => res.json())
-          .then(data => setRegions(data))
+        axios.get(`/api/sales/regions?country_id=${countryId}`)
+          .then(res => setRegions(res.data))
           .catch(err => console.error('Failed to fetch regions:', err));
-        fetch(`/api/routes?country_id=${countryId}&limit=1000`)
-          .then(res => res.json())
-          .then(data => {
+        axios.get(`/api/routes?country_id=${countryId}&limit=1000`)
+          .then(res => {
+            const data = res.data;
             if (data.success && data.data) {
               setRoutes(data.data);
             } else {
@@ -488,62 +483,55 @@ const ClientsListPage: React.FC = () => {
     }
   }, [selectedCountry, countries]);
 
-  // Fetch client types on mount
+  // Fetch client types and outlet accounts in parallel on mount
   useEffect(() => {
-    // Note: This endpoint might need to be added to clientService
-    fetch('/api/clients/types')
-      .then(res => res.json())
-      .then(data => setClientTypes(data))
-      .catch(err => console.error('Failed to fetch client types:', err));
-  }, []);
-
-  // Fetch outlet accounts on mount
-  useEffect(() => {
-    fetch('/api/outlet-accounts')
-      .then(res => res.json())
-      .then(data => setOutletAccounts(data))
-      .catch(err => console.error('Failed to fetch outlet accounts:', err));
+    Promise.all([
+      axios.get('/api/clients/types'),
+      axios.get('/api/outlet-accounts')
+    ])
+      .then(([typesRes, accountsRes]) => {
+        setClientTypes(typesRes.data);
+        setOutletAccounts(accountsRes.data);
+      })
+      .catch(err => console.error('Failed to fetch initial data:', err));
   }, []);
 
   const fetchClients = async (pageNum = page, pageLimit = limit, searchTerm = search, sortFieldParam = sortField, sortOrderParam = sortOrder) => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({
-        page: String(pageNum),
-        limit: String(pageLimit),
-      });
-      if (searchTerm) params.append('search', searchTerm);
+      const params: any = {
+        page: pageNum,
+        limit: pageLimit,
+      };
+      if (searchTerm) params.search = searchTerm;
       if (sortFieldParam) {
-        params.append('sortField', sortFieldParam);
-        params.append('sortOrder', sortOrderParam);
+        params.sortField = sortFieldParam;
+        params.sortOrder = sortOrderParam;
       }
-      const res = await fetch(`/api/clients?${params.toString()}`);
-      const data = await res.json();
+      const res = await axios.get('/api/clients', { params });
+      const data = res.data;
 
-      // Fetch sales rep assignments for all clients
-      const clientsWithAssignments = await Promise.all(
-        data.data.map(async (client: Client) => {
-          try {
-            const assignmentRes = await fetch(`/api/client-assignments/outlet/${client.id}`);
-            if (!assignmentRes.ok) {
-              throw new Error(`HTTP ${assignmentRes.status}`);
-            }
-            const assignmentData = await assignmentRes.json();
+      // Transform clients data - assignment info is now included in the main query
+      const clientsWithAssignments = data.data.map((client: any) => {
+        // If there's an assignment, structure it properly
+        const salesRepAssignment = client.assignment_id ? {
+          id: client.assignment_id,
+          salesRepId: client.assignment_salesRepId,
+          assignedAt: client.assignment_assignedAt,
+          sales_rep_name: client.sales_rep_name,
+          sales_rep_email: client.sales_rep_email,
+          sales_rep_phone: client.sales_rep_phone
+        } : null;
 
-            return {
-              ...client,
-              salesRepAssignment: assignmentData.success && assignmentData.data.length > 0 ? assignmentData.data[0] : null
-            };
-          } catch (err) {
-            console.error(`Failed to fetch assignment for client ${client.id}:`, err);
-            return {
-              ...client,
-              salesRepAssignment: null
-            };
-          }
-        })
-      );
+        // Remove the flattened assignment fields from the client object
+        const { assignment_id, assignment_salesRepId, assignment_assignedAt, sales_rep_name, sales_rep_email, sales_rep_phone, ...clientData } = client;
+
+        return {
+          ...clientData,
+          salesRepAssignment
+        };
+      });
 
       setClients(clientsWithAssignments);
       setPage(data.page);
@@ -590,13 +578,7 @@ const ClientsListPage: React.FC = () => {
   const handleAdd = async (data: Omit<Client, 'id' | 'created_at'>) => {
     setSubmitting(true);
     try {
-      await fetch('/api/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      await axios.post('/api/clients', data);
       setModalOpen(false);
       await fetchClients();
     } catch (err: any) {
@@ -617,13 +599,7 @@ const ClientsListPage: React.FC = () => {
     setEditLoading(true);
     setEditError(null);
     try {
-      await fetch(`/api/clients/${updated.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updated),
-      });
+      await axios.put(`/api/clients/${updated.id}`, updated);
       setEditModalOpen(false);
       setEditClient(null);
       await fetchClients();
@@ -636,9 +612,7 @@ const ClientsListPage: React.FC = () => {
   const handleDeleteClient = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this client?')) return;
     try {
-      await fetch(`/api/clients/${id}`, {
-        method: 'DELETE',
-      });
+      await axios.delete(`/api/clients/${id}`);
       await fetchClients();
     } catch (err: any) {
       setError(err.message || 'Failed to delete client');
@@ -653,8 +627,8 @@ const ClientsListPage: React.FC = () => {
 
   const refreshClientAssignment = async (clientId: number) => {
     try {
-      const assignmentRes = await fetch(`/api/client-assignments/outlet/${clientId}`);
-      const assignmentData = await assignmentRes.json();
+      const assignmentRes = await axios.get(`/api/client-assignments/outlet/${clientId}`);
+      const assignmentData = assignmentRes.data;
 
       setClients(prevClients =>
         prevClients.map(client =>
@@ -674,39 +648,39 @@ const ClientsListPage: React.FC = () => {
 
 
   return (
-    <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
+    <div className="w-full py-4 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-            <p className="text-gray-600 mt-1">Manage your client relationships and information</p>
+            <h1 className="text-xl font-bold text-gray-900">Clients</h1>
+            <p className="text-xs text-gray-600 mt-0.5">Manage your client relationships and information</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
 
 
             <Link
               to="/client-activity"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
-              <Activity className="h-4 w-4" />
+              <Activity className="h-3.5 w-3.5" />
               Activity
             </Link>
 
             <button
               onClick={() => window.open('/clients-map', '_blank')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              <Map className="h-4 w-4" />
+              <Map className="h-3.5 w-3.5" />
               Map View
             </button>
 
             <button
               onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               Add Client
             </button>
           </div>
@@ -714,37 +688,37 @@ const ClientsListPage: React.FC = () => {
       </div>
 
       {/* Search and Stats */}
-      <div className="mb-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+      <div className="mb-4">
+        <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
           <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 value={searchInput}
                 onChange={handleSearchInputChange}
                 placeholder="Search clients by name, email, or contact..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               />
               {searchInput && (
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           </form>
 
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-green-600" />
+          <div className="flex items-center gap-3 text-xs text-gray-600">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-green-600" />
               <span>{total} total clients</span>
             </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5 text-green-600" />
               <span>Page {page} of {totalPages}</span>
             </div>
           </div>
@@ -753,11 +727,11 @@ const ClientsListPage: React.FC = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">{error}</div>
       ) : (
         <>
           <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
@@ -765,89 +739,89 @@ const ClientsListPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Number</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Account Number</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Location</th>
                     <th 
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      className="px-4 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
                       onClick={() => handleSort('balance')}
                     >
                       <div className="flex items-center justify-end gap-1">
                         Balance
                         {sortField === 'balance' ? (
                           sortOrder === 'asc' ? (
-                            <ChevronUp className="h-4 w-4" />
+                            <ChevronUp className="h-3 w-3" />
                           ) : (
-                            <ChevronDown className="h-4 w-4" />
+                            <ChevronDown className="h-3 w-3" />
                           )
                         ) : (
-                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                          <ArrowUpDown className="h-3 w-3 opacity-50" />
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit Limit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet Account</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales Rep</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Credit Limit</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Outlet Account</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Sales Rep</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {clients.map(client => (
                     <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 font-mono">
+                      <td className="px-4 py-2">
+                        <div className="text-xs font-medium text-gray-900 font-mono">
                           CUS{client.id.toString().padStart(6, '0')}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{client.name}</div>
-                          <div className="text-sm text-gray-500">{client.email || 'No email'}</div>
+                          <div className="text-xs font-medium text-gray-900">{client.name}</div>
+                          <div className="text-[10px] text-gray-500">{client.email || 'No email'}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{client.contact}</div>
+                      <td className="px-4 py-2">
+                        <div className="text-xs text-gray-900">{client.contact}</div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{client.address || 'No address'}</div>
-                        <div className="text-sm text-gray-500">{client.route_name_update || 'No route'}</div>
+                      <td className="px-4 py-2">
+                        <div className="text-xs text-gray-900">{client.address || 'No address'}</div>
+                        <div className="text-[10px] text-gray-500">{client.route_name_update || 'No route'}</div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${Number(client.balance || 0) > 0
+                      <td className="px-4 py-2 text-right">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${Number(client.balance || 0) > 0
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
                           }`}>
                           {Number(client.balance || 0).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm text-gray-900">
+                      <td className="px-4 py-2 text-right">
+                        <span className="text-xs text-gray-900">
                           {client.credit_limit ?
                             Number(client.credit_limit).toLocaleString(undefined, { style: 'currency', currency: 'KES' }) :
                             'Not set'
                           }
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-900">{client.payment_terms || 'Not set'}</span>
+                      <td className="px-4 py-2">
+                        <span className="text-xs text-gray-900">{client.payment_terms || 'Not set'}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-900">{client.client_type_name || 'Not assigned'}</span>
+                      <td className="px-4 py-2">
+                        <span className="text-xs text-gray-900">{client.client_type_name || 'Not assigned'}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-900">{client.outlet_account_name || 'Not assigned'}</span>
+                      <td className="px-4 py-2">
+                        <span className="text-xs text-gray-900">{client.outlet_account_name || 'Not assigned'}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-900">
+                      <td className="px-4 py-2">
+                        <span className="text-xs text-gray-900">
                           {client.salesRepAssignment ? (
                             <div>
-                              <div className="font-medium text-blue-600">
+                              <div className="font-medium text-blue-600 text-xs">
                                 {client.salesRepAssignment.sales_rep_name}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-[10px] text-gray-500">
                                 Assigned: {new Date(client.salesRepAssignment.assignedAt).toLocaleDateString()}
                               </div>
                             </div>
@@ -856,35 +830,35 @@ const ClientsListPage: React.FC = () => {
                           )}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => navigate(`/dashboard/clients/${client.id}`)}
                             className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             title="View details"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleAssignSalesRep(client)}
                             className="p-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
                             title="Assign sales rep"
                           >
-                            <UserPlus className="h-4 w-4" />
+                            <UserPlus className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleEditClick(client)}
                             className="p-1 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
                             title="Edit client"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteClient(client.id)}
                             className="p-1 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                             title="Delete client"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>
@@ -892,10 +866,10 @@ const ClientsListPage: React.FC = () => {
                   ))}
                   {clients.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="px-6 py-12 text-center">
-                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No clients found</h3>
-                        <p className="text-gray-600">Get started by adding your first client.</p>
+                      <td colSpan={10} className="px-4 py-8 text-center">
+                        <Users className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                        <h3 className="text-base font-medium text-gray-900 mb-1">No clients found</h3>
+                        <p className="text-xs text-gray-600">Get started by adding your first client.</p>
                       </td>
                     </tr>
                   )}
@@ -906,16 +880,16 @@ const ClientsListPage: React.FC = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-700">
+            <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div className="flex items-center gap-2 text-xs text-gray-700">
                 <span>Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} results</span>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <select
                   value={limit}
                   onChange={handlePageSizeChange}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   {[10, 20, 50, 100].map(size => (
                     <option key={size} value={size}>{size} per page</option>
@@ -926,12 +900,12 @@ const ClientsListPage: React.FC = () => {
                   <button
                     onClick={handlePrevPage}
                     disabled={page === 1}
-                    className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                    className="p-1.5 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                   >
-                    <ChevronDown className="h-4 w-4 rotate-90" />
+                    <ChevronDown className="h-3.5 w-3.5 rotate-90" />
                   </button>
 
-                  <span className="px-3 py-2 text-sm text-gray-700">
+                  <span className="px-2.5 py-1.5 text-xs text-gray-700">
                     Page {page} of {totalPages}
                   </span>
 
@@ -939,9 +913,9 @@ const ClientsListPage: React.FC = () => {
                   <button
                     onClick={handleNextPage}
                     disabled={page === totalPages}
-                    className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                    className="p-1.5 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                   >
-                    <ChevronDown className="h-4 w-4 -rotate-90" />
+                    <ChevronDown className="h-3.5 w-3.5 -rotate-90" />
                   </button>
                 </div>
               </div>

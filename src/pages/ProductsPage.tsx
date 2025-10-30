@@ -123,9 +123,16 @@ const ProductsPage: React.FC = () => {
 
   // Fetch categories on mount
   useEffect(() => {
-    axios.get('/api/financial/categories').then(res => {
-      if (res.data.success) setCategories(res.data.data);
-    });
+    axios.get('/api/financial/categories')
+      .then(res => {
+        if (res.data.success) {
+          setCategories(res.data.data || []);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching categories:', err);
+        setCategories([]); // Ensure categories is always an array
+      });
   }, []);
 
   useEffect(() => {
@@ -140,7 +147,9 @@ const ProductsPage: React.FC = () => {
           setError(res.data.error || 'Failed to fetch products');
         }
       } catch (err: any) {
+        console.error('Error fetching products:', err);
         setError(err.message || 'Failed to fetch products');
+        setProducts([]); // Ensure products is always an array
       } finally {
         setLoading(false);
       }
@@ -255,26 +264,26 @@ const ProductsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Products Management</h1>
+              <h1 className="text-xl font-bold text-gray-900">Products Management</h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link 
                 to="/categories" 
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <Package className="w-4 h-4 mr-2" />
+                <Package className="w-3.5 h-3.5 mr-1.5" />
                 Manage Categories
               </Link>
               <button
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={() => { setAddModalOpen(true); setAddError(null); }}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
                 Add Product
               </button>
             </div>
@@ -283,26 +292,26 @@ const ProductsPage: React.FC = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
               {/* Search */}
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
               {/* Category Filter */}
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-gray-400" />
                 <select
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={categoryFilter}
                   onChange={e => setCategoryFilter(e.target.value)}
                 >
@@ -315,26 +324,26 @@ const ProductsPage: React.FC = () => {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md ${
+                className={`p-1.5 rounded-md ${
                   viewMode === 'grid' 
                     ? 'bg-blue-100 text-blue-600' 
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
-                <Grid className="h-4 w-4" />
+                <Grid className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md ${
+                className={`p-1.5 rounded-md ${
                   viewMode === 'list' 
                     ? 'bg-blue-100 text-blue-600' 
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
-                <List className="h-4 w-4" />
+                <List className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
@@ -342,27 +351,27 @@ const ProductsPage: React.FC = () => {
 
         {/* Products Display */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading products...</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-10 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-3 text-sm text-gray-600">Loading products...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-10 text-center">
+            <Package className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-base font-medium text-gray-900 mb-1">No products found</h3>
+            <p className="text-sm text-gray-600 mb-3">
               {searchQuery || categoryFilter ? 'Try adjusting your search or filters.' : 'Get started by adding your first product.'}
             </p>
             {!searchQuery && !categoryFilter && (
               <button
                 onClick={() => setAddModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
                 Add Product
               </button>
             )}
@@ -370,8 +379,8 @@ const ProductsPage: React.FC = () => {
         ) : (
           <>
             {/* Products Count */}
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
+            <div className="mb-3">
+              <p className="text-xs text-gray-600">
                 Showing {startItem} to {endItem} of {filteredProducts.length} products
                 {filteredProducts.length !== products.length && ` (filtered from ${products.length} total)`}
               </p>
@@ -381,10 +390,10 @@ const ProductsPage: React.FC = () => {
             {viewMode === 'grid' && (
               <>
                 {paginatedProducts.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Package className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
-                    <p className="mt-1 text-sm text-gray-500">
+                  <div className="text-center py-10">
+                    <Package className="mx-auto h-10 w-10 text-gray-400" />
+                    <h3 className="mt-2 text-xs font-medium text-gray-900">No products found</h3>
+                    <p className="mt-1 text-xs text-gray-500">
                       {filteredProducts.length === 0 && products.length > 0 
                         ? 'Try adjusting your search or filter criteria.'
                         : 'Get started by adding your first product.'
@@ -392,7 +401,7 @@ const ProductsPage: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {paginatedProducts.map((product) => (
                       <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
                         {/* Product Image */}
@@ -413,35 +422,35 @@ const ProductsPage: React.FC = () => {
                         </div>
 
                         {/* Product Info */}
-                        <div className="p-4">
-                          <h3 className="font-medium text-gray-900 text-sm mb-1 truncate" title={product.product_name}>
+                        <div className="p-3">
+                          <h3 className="font-medium text-gray-900 text-xs mb-0.5 truncate" title={product.product_name}>
                             {product.product_name}
                           </h3>
-                          <p className="text-xs text-gray-500 mb-2">{product.product_code}</p>
-                          <p className="text-xs text-gray-600 mb-3">{product.category}</p>
+                          <p className="text-[10px] text-gray-500 mb-1">{product.product_code}</p>
+                          <p className="text-[10px] text-gray-600 mb-2">{product.category}</p>
                           
                           {isAdmin && (
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm font-semibold text-blue-600">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-blue-600">
                                 {Number(product.cost_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                               </span>
                             </div>
                           )}
 
                           {/* Actions */}
-                          <div className="flex gap-2">
+                          <div className="flex gap-1.5">
                             <button
                               onClick={() => openEditModal(product)}
-                              className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className="flex-1 inline-flex items-center justify-center px-2 py-1 border border-gray-300 rounded-md text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
-                              <Pencil className="w-3 h-3 mr-1" />
+                              <Pencil className="w-3 h-3 mr-0.5" />
                               Edit
                             </button>
                             <button
                               onClick={() => openImageModal(product)}
-                              className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className="flex-1 inline-flex items-center justify-center px-2 py-1 border border-gray-300 rounded-md text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
-                              <ImageIcon className="w-3 h-3 mr-1" />
+                              <ImageIcon className="w-3 h-3 mr-0.5" />
                               Image
                             </button>
                           </div>
@@ -457,10 +466,10 @@ const ProductsPage: React.FC = () => {
             {viewMode === 'list' && (
               <>
                 {paginatedProducts.length === 0 ? (
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-                    <p className="text-gray-600 mb-4">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-10 text-center">
+                    <Package className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                    <h3 className="text-base font-medium text-gray-900 mb-1">No products found</h3>
+                    <p className="text-sm text-gray-600 mb-3">
                       {filteredProducts.length === 0 && products.length > 0 
                         ? 'Try adjusting your search or filter criteria.'
                         : 'Get started by adding your first product.'
@@ -469,9 +478,9 @@ const ProductsPage: React.FC = () => {
                     {!searchQuery && !categoryFilter && (
                       <button
                         onClick={() => setAddModalOpen(true)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
                       >
-                        <Plus className="w-4 h-4 mr-2" />
+                        <Plus className="w-3.5 h-3.5 mr-1.5" />
                         Add Product
                       </button>
                     )}
@@ -482,43 +491,43 @@ const ProductsPage: React.FC = () => {
                       <table className="w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                            <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Image</th>
                             {isAdmin && (
-                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Price</th>
+                              <th className="px-4 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Cost Price</th>
                             )}
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th className="px-4 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {paginatedProducts.map((product) => (
                         <tr key={product.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{product.product_name}</div>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="text-xs font-medium text-gray-900">{product.product_name}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.product_code}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{product.product_code}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{product.category}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
                             {product.image_url ? (
                               <img
                                 src={product.image_url}
                                 alt={product.product_name}
-                                className="w-10 h-10 object-cover rounded cursor-pointer hover:shadow-lg transition-shadow"
+                                className="w-8 h-8 object-cover rounded cursor-pointer hover:shadow-lg transition-shadow"
                                 onClick={() => { setImagePreviewUrl(product.image_url!); setImagePreviewName(product.product_name); }}
                               />
                             ) : (
-                              <span className="text-gray-400 text-xs">No image</span>
+                              <span className="text-gray-400 text-[10px]">No image</span>
                             )}
                           </td>
                           {isAdmin && (
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-blue-600">
+                            <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-semibold text-blue-600">
                               {Number(product.cost_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                             </td>
                           )}
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex items-center justify-end gap-2">
+                          <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => openEditModal(product)}
                                 className="text-blue-600 hover:text-blue-900 font-medium"
@@ -547,43 +556,43 @@ const ProductsPage: React.FC = () => {
 
         {/* Pagination Controls */}
         {filteredProducts.length > 0 && (
-          <div className="mt-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Show:</label>
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-700">Show:</label>
                 <select
                   value={itemsPerPage}
                   onChange={(e) => {
                     setItemsPerPage(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  className="border border-gray-300 rounded px-2 py-1 text-xs"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
                   <option value={20}>20</option>
                   <option value={50}>50</option>
                 </select>
-                <span className="text-sm text-gray-700">per page</span>
+                <span className="text-xs text-gray-700">per page</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="First page"
               >
-                <ChevronsLeft className="w-4 h-4" />
+                <ChevronsLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Previous page"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               
               <div className="flex items-center gap-1">
@@ -603,7 +612,7 @@ const ProductsPage: React.FC = () => {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1 text-sm rounded ${
+                      className={`px-2.5 py-1 text-xs rounded ${
                         currentPage === pageNum
                           ? 'bg-blue-600 text-white'
                           : 'text-gray-700 hover:bg-gray-100'
@@ -618,18 +627,18 @@ const ProductsPage: React.FC = () => {
               <button
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Next page"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Last page"
               >
-                <ChevronsRight className="w-4 h-4" />
+                <ChevronsRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -638,7 +647,7 @@ const ProductsPage: React.FC = () => {
         {/* Modals */}
         {editModalOpen && editProduct && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-md relative">
               <button
                 className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
                 onClick={closeEditModal}
@@ -646,11 +655,11 @@ const ProductsPage: React.FC = () => {
               >
                 &times;
               </button>
-              <h2 className="text-lg font-bold mb-4">Edit Product</h2>
-              {editError && <div className="text-red-600 mb-2">{editError}</div>}
+              <h2 className="text-base font-bold mb-3">Edit Product</h2>
+              {editError && <div className="text-xs text-red-600 mb-2">{editError}</div>}
               <form onSubmit={handleEditSubmit}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Product Name</label>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium mb-1">Product Name</label>
                   <input
                     type="text"
                     name="product_name"

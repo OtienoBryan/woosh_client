@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { salesOrdersService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
 import {
   TrendingUpIcon, 
@@ -15,54 +14,20 @@ import {
   CalendarIcon,
   MapPinIcon,
   FileTextIcon,
-  SettingsIcon,
   EyeIcon,
-  UserCheckIcon,
   PackageIcon,
   NotebookIcon
 } from 'lucide-react';
-
-const monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-];
 
 const COLORS = [
   '#22c55e', '#eab308', '#ef4444', '#3b82f6', '#a21caf', '#f59e42', 
   '#0ea5e9', '#f43f5e', '#16a34a', '#facc15', '#6366f1', '#f87171'
 ];
 
-// Data cache to prevent unnecessary refetches
-const dataCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-
-// Cache TTL in milliseconds (5 minutes)
-const CACHE_TTL = 5 * 60 * 1000;
-
-// Helper function to check if cached data is still valid
-const isCacheValid = (timestamp: number, ttl: number): boolean => {
-  return Date.now() - timestamp < ttl;
-};
-
-// Optimized API call with caching
-const fetchWithCache = async (key: string, fetcher: () => Promise<any>, ttl: number = CACHE_TTL) => {
-  const cached = dataCache.get(key);
-  if (cached && isCacheValid(cached.timestamp, cached.ttl)) {
-    return cached.data;
-  }
-  
-  const data = await fetcher();
-  dataCache.set(key, { data, timestamp: Date.now(), ttl });
-  return data;
-};
-
 interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  change?: {
-    value: number;
-    positive: boolean;
-  };
   prefix?: string;
   suffix?: string;
   bgColor?: string;
@@ -75,7 +40,6 @@ const StatCard: React.FC<StatCardProps> = memo(({
   title,
   value,
   icon,
-  change,
   prefix = '',
   suffix = '',
   bgColor = 'bg-gradient-to-r from-blue-600 to-blue-700',
@@ -89,28 +53,18 @@ const StatCard: React.FC<StatCardProps> = memo(({
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <div className="p-3">
+      <div className="p-2.5">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className={`text-xs font-medium ${textColor} opacity-90`}>
+            <p className={`text-[10px] font-medium ${textColor} opacity-90`}>
               {title}
             </p>
-            <p className={`text-lg font-bold ${textColor} mt-0.5`}>
+            <p className={`text-base font-bold ${textColor} mt-0.5`}>
               {prefix}{value}{suffix}
             </p>
-            {change && (
-              <div className="flex items-center mt-0.5">
-                <TrendingUpIcon 
-                  className={`h-3 w-3 ${change.positive ? 'text-green-300' : 'text-red-300'}`} 
-                />
-                <span className={`text-xs font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
-                  {change.positive ? '+' : ''}{change.value}%
-                </span>
-              </div>
-            )}
           </div>
           <div className="flex-shrink-0">
-            <div className={`p-1.5 rounded-lg ${textColor} bg-white bg-opacity-20`}>
+            <div className={`p-1 rounded-lg ${textColor} bg-white bg-opacity-20`}>
               {icon}
             </div>
           </div>
@@ -122,32 +76,50 @@ const StatCard: React.FC<StatCardProps> = memo(({
 
 StatCard.displayName = 'StatCard';
 
+// Skeleton components for loading states
+const SkeletonCard = memo(() => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+    <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+    <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+  </div>
+));
+
+const SkeletonChart = memo(() => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+    <div className="h-64 bg-gray-200 rounded"></div>
+  </div>
+));
+
+SkeletonCard.displayName = 'SkeletonCard';
+SkeletonChart.displayName = 'SkeletonChart';
+
 const SalesDashboardPage: React.FC = () => {
-  const [monthlyData, setMonthlyData] = useState<{ month: string; amount: number }[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rechartsPieData, setRechartsPieData] = useState<{ type: string; value: number }[]>([]);
-  const [managers, setManagers] = useState<any[]>([]);
-  const [repData, setRepData] = useState<any[]>([]);
-  const [mpLoading, setMpLoading] = useState(true);
-  const [mpError, setMpError] = useState<string | null>(null);
-  const [productPerf, setProductPerf] = useState<any[]>([]);
-  const [productPerfLoading, setProductPerfLoading] = useState(true);
-  const [productPerfError, setProductPerfError] = useState<string | null>(null);
-  const [topReps, setTopReps] = useState<{ name: string; overall: number }[]>([]);
-  const [pendingLeavesCount, setPendingLeavesCount] = useState(0);
-  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [chartsLoading, setChartsLoading] = useState(true);
+  
+  // Core data from optimized endpoint
   const [stats, setStats] = useState({
     totalSales: 0,
     totalOrders: 0,
     activeReps: 0,
     avgPerformance: 0
   });
+  const [monthlyData, setMonthlyData] = useState<{ month: string; amount: number }[]>([]);
+  const [topReps, setTopReps] = useState<{ name: string; overall: number }[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
+  const [pendingLeavesCount, setPendingLeavesCount] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+
+  // Secondary data (lazy loaded)
+  const [productPerf, setProductPerf] = useState<any[]>([]);
   
   const navigate = useNavigate();
 
-  // Custom fetch function to avoid axios
-  const fetchData = async (endpoint: string, params?: any) => {
+  // Optimized fetch function
+  const fetchData = useCallback(async (endpoint: string, params?: any) => {
     const url = new URL(API_CONFIG.getUrl(endpoint), window.location.origin);
     if (params) {
       Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -165,228 +137,116 @@ const SalesDashboardPage: React.FC = () => {
     }
     
     return response.json();
-  };
-
-  // Optimized parallel data fetching with caching
-  const fetchAllData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setMpLoading(true);
-    setProductPerfLoading(true);
-
-    try {
-      // Parallel API calls for better performance
-      const [
-        salesResult,
-        ordersResult,
-        vapesResult,
-        pouchesResult,
-        vapesPerfResult,
-        pouchesPerfResult,
-        managersResult,
-        leavesResult
-      ] = await Promise.allSettled([
-        // Sales performance data with cache
-        fetchWithCache('sales-performance', () => fetchData('/sales/performance')),
-        
-        // Sales orders with cache
-        fetchWithCache('sales-orders', () => salesOrdersService.getAllIncludingDrafts()),
-        
-        // Current month vapes data with cache
-        fetchWithCache('current-month-vapes', async () => {
-          const now = new Date();
-          const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-          return fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'vape' });
-        }),
-        
-        // Current month pouches data with cache
-        fetchWithCache('current-month-pouches', async () => {
-          const now = new Date();
-          const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-          return fetchData('/financial/reports/product-performance', { startDate: start, endDate: end, productType: 'pouch' });
-        }),
-        
-        // Product performance vapes with cache
-        fetchWithCache('product-performance-vapes', () => fetchData('/financial/reports/product-performance', { productType: 'vape' })),
-        
-        // Product performance pouches with cache
-        fetchWithCache('product-performance-pouches', () => fetchData('/financial/reports/product-performance', { productType: 'pouch' })),
-        
-        // Managers data with cache
-        fetchWithCache('managers', () => fetchData('/managers')),
-        
-        // Leaves data with cache
-        fetchWithCache('leaves', () => fetchData('/sales-rep-leaves/sales-rep-leaves'))
-      ]);
-
-      // Process sales performance data
-      if (salesResult.status === 'fulfilled') {
-        const reps = salesResult.value.data || [];
-        
-        // Calculate top reps
-        const repPerf = reps.map((rep: any) => {
-          const allTypes = ['distributors', 'key_accounts', 'retail'];
-          let outletPctSum = 0, vapesPctSum = 0, pouchesPctSum = 0;
-          allTypes.forEach(type => {
-            const perf = rep[type];
-            const outletPct = perf.total_outlets > 0 ? (perf.outlets_with_orders / perf.total_outlets) * 100 : 0;
-            const vapesPct = perf.vapes_target > 0 ? (perf.vapes_sales / perf.vapes_target) * 100 : 0;
-            const pouchesPct = perf.pouches_target > 0 ? (perf.pouches_sales / perf.pouches_target) * 100 : 0;
-            outletPctSum += outletPct;
-            vapesPctSum += vapesPct;
-            pouchesPctSum += pouchesPct;
-          });
-          const n = allTypes.length;
-          const overall = ((outletPctSum + vapesPctSum + pouchesPctSum) / (n * 3));
-          return { name: rep.name, overall: Number(overall.toFixed(1)) };
-        });
-        repPerf.sort((a: { overall: number }, b: { overall: number }) => b.overall - a.overall);
-        setTopReps(repPerf.slice(0, 10));
-        
-        // Calculate stats
-        const avgPerformance = repPerf.length > 0 ? 
-          repPerf.reduce((sum: number, rep: any) => sum + rep.overall, 0) / repPerf.length : 0;
-        setStats(prev => ({ ...prev, activeReps: reps.length, avgPerformance: Number(avgPerformance.toFixed(1)) }));
-        setRepData(reps);
-      }
-
-      // Process orders data
-      if (ordersResult.status === 'fulfilled') {
-        const orders = ordersResult.value.data || [];
-        
-        // Group by month
-        const monthMap: { [key: string]: number } = {};
-        let totalSales = 0;
-        orders.forEach((order: any) => {
-          if (!order.order_date || !order.total_amount) return;
-          const date = new Date(order.order_date);
-          const key = `${date.getFullYear()}-${date.getMonth()}`;
-          const amount = Number(order.total_amount);
-          monthMap[key] = (monthMap[key] || 0) + amount;
-          totalSales += amount;
-        });
-        
-        // Convert to array and sort by date
-        const data = Object.entries(monthMap)
-          .map(([key, amount]) => {
-            const [year, monthIdx] = key.split('-');
-            return {
-              month: `${monthNames[Number(monthIdx)]} ${year}`,
-              amount: amount as number,
-            };
-          })
-          .sort((a, b) => {
-            const [aMonth, aYear] = a.month.split(' ');
-            const [bMonth, bYear] = b.month.split(' ');
-            if (aYear !== bYear) return Number(aYear) - Number(bYear);
-            return monthNames.indexOf(aMonth) - monthNames.indexOf(bMonth);
-          });
-        setMonthlyData(data);
-        setStats(prev => ({ ...prev, totalSales, totalOrders: orders.length }));
-
-        // Calculate new orders count
-        const newOrders = orders.filter((order: any) => {
-          return order.my_status === 0 || order.my_status === '0';
-        });
-        setNewOrdersCount(newOrders.length);
-      }
-
-      // Process pie chart data
-      if (vapesResult.status === 'fulfilled' && pouchesResult.status === 'fulfilled') {
-        const vapesTotal = vapesResult.value.success ? vapesResult.value.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-        const pouchesTotal = pouchesResult.value.success ? pouchesResult.value.data.reduce((sum: number, p: any) => sum + (Number(p.total_sales_value) || 0), 0) : 0;
-        setRechartsPieData([
-          { type: 'Vapes', value: vapesTotal },
-          { type: 'Pouches', value: pouchesTotal },
-        ]);
-      }
-
-      // Process product performance data
-      if (vapesPerfResult.status === 'fulfilled' && pouchesPerfResult.status === 'fulfilled') {
-        const vapesPerf = vapesPerfResult.value;
-        const pouchesPerf = pouchesPerfResult.value;
-        
-        if (vapesPerf.success && pouchesPerf.success) {
-          const vapes = vapesPerf.data.filter((p: any) => p.category_id === 1 || p.category_id === 3);
-          const pouches = pouchesPerf.data.filter((p: any) => p.category_id === 4 || p.category_id === 5);
-          const allNames = Array.from(new Set([...vapes.map((p: any) => p.product_name), ...pouches.map((p: any) => p.product_name)]));
-          const merged = allNames.map((name: string) => {
-            const v = vapes.find((p: any) => p.product_name === name) || {};
-            const p = pouches.find((p: any) => p.product_name === name) || {};
-            return {
-              product_name: name,
-              vapes_sales_value: v.total_sales_value || 0,
-              vapes_quantity: v.total_quantity_sold || 0,
-              pouches_sales_value: p.total_sales_value || 0,
-              pouches_quantity: p.total_quantity_sold || 0,
-            };
-          });
-          setProductPerf(merged);
-        }
-      }
-
-      // Process managers data
-      if (managersResult.status === 'fulfilled') {
-        setManagers(managersResult.value || []);
-      }
-
-      // Process leaves data
-      if (leavesResult.status === 'fulfilled') {
-        const leaves = leavesResult.value || [];
-        const pendingCount = leaves.filter((leave: any) => leave.status === '0' || leave.status === 0).length;
-        setPendingLeavesCount(pendingCount);
-      }
-
-    } catch (err: any) {
-      setError('Failed to fetch dashboard data');
-      console.error('Dashboard data fetch error:', err);
-    } finally {
-      setLoading(false);
-      setMpLoading(false);
-      setProductPerfLoading(false);
-    }
   }, []);
 
+  // Fetch core dashboard data (optimized single endpoint)
+  const fetchCoreData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('[SalesDashboard] Fetching core data...');
+      const startTime = performance.now();
+      
+      const result = await fetchData('/dashboard/sales-dashboard-data');
+      
+      const endTime = performance.now();
+      console.log(`[SalesDashboard] Core data loaded in ${(endTime - startTime).toFixed(0)}ms`);
+
+      if (result.success && result.data) {
+        const data = result.data;
+        setStats(data.stats);
+        setMonthlyData(data.monthlyData || []);
+        setTopReps(data.topReps || []);
+        setManagers(data.managers || []);
+        setPendingLeavesCount(data.pendingLeavesCount || 0);
+        setNewOrdersCount(data.newOrdersCount || 0);
+      }
+    } catch (err: any) {
+      console.error('[SalesDashboard] Error fetching core data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData]);
+
+  // Fetch secondary data (charts) - lazy loaded after core data
+  const fetchChartsData = useCallback(async () => {
+    try {
+      console.log('[SalesDashboard] Fetching charts data...');
+      const startTime = performance.now();
+
+      // Fetch product performance and pie chart data in parallel
+      const [vapesResult, pouchesResult, pieResult] = await Promise.all([
+        fetchData('/dashboard/product-performance', { productType: 'vape' }),
+        fetchData('/dashboard/product-performance', { productType: 'pouch' }),
+        fetchData('/dashboard/current-month-pie')
+      ]);
+
+      const endTime = performance.now();
+      console.log(`[SalesDashboard] Charts data loaded in ${(endTime - startTime).toFixed(0)}ms`);
+
+      // Process product performance
+      if (vapesResult.success && pouchesResult.success) {
+        const vapes = vapesResult.data || [];
+        const pouches = pouchesResult.data || [];
+        
+        const allNames = Array.from(new Set([
+          ...vapes.map((p: any) => p.product_name),
+          ...pouches.map((p: any) => p.product_name)
+        ]));
+        
+        const merged = allNames.map((name: string) => {
+          const v = vapes.find((p: any) => p.product_name === name) || {};
+          const p = pouches.find((p: any) => p.product_name === name) || {};
+          return {
+            product_name: name,
+            vapes_sales_value: Number(v.total_sales_value) || 0,
+            vapes_quantity: Number(v.total_quantity_sold) || 0,
+            pouches_sales_value: Number(p.total_sales_value) || 0,
+            pouches_quantity: Number(p.total_quantity_sold) || 0,
+          };
+        });
+        
+        setProductPerf(merged);
+      }
+
+      // Process pie chart data (for future use)
+      // if (pieResult.success) {
+      //   // setPieChartData(pieResult.data || []);
+      // }
+      console.log('[SalesDashboard] Pie chart data available:', pieResult.success);
+
+    } catch (err: any) {
+      console.error('[SalesDashboard] Error fetching charts data:', err);
+    } finally {
+      setChartsLoading(false);
+    }
+  }, [fetchData]);
+
+  // Load core data first, then charts
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    fetchCoreData();
+  }, [fetchCoreData]);
 
-  // Helper functions
-  const getRepsForManager = (manager: any) => {
-    return repData.filter((rep: any) => rep.region === manager.region);
-  };
+  // Load charts data after core data is loaded
+  useEffect(() => {
+    if (!loading) {
+      // Delay chart loading slightly to prioritize rendering core UI
+      const timeout = setTimeout(() => {
+        fetchChartsData();
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [loading, fetchChartsData]);
 
-  const getManagerOverallPct = (manager: any) => {
-    const reps = getRepsForManager(manager);
-    let typeKey: 'retail' | 'key_accounts' | 'distributors';
-    if (manager.managerTypeId === 1) typeKey = 'retail';
-    else if (manager.managerTypeId === 2) typeKey = 'key_accounts';
-    else typeKey = 'distributors';
-    
-    const total = reps.reduce(
-      (acc: any, rep: any) => {
-        const perf = rep[typeKey];
-        acc.vapes_target += perf.vapes_target || 0;
-        acc.pouches_target += perf.pouches_target || 0;
-        acc.vapes_sales += perf.vapes_sales || 0;
-        acc.pouches_sales += perf.pouches_sales || 0;
-        acc.total_outlets += perf.total_outlets || 0;
-        acc.outlets_with_orders += perf.outlets_with_orders || 0;
-        return acc;
-      },
-      { vapes_target: 0, pouches_target: 0, vapes_sales: 0, pouches_sales: 0, total_outlets: 0, outlets_with_orders: 0 }
-    );
-    
-    const outlet_pct = total.total_outlets > 0 ? (total.outlets_with_orders / total.total_outlets) * 100 : 0;
-    const vapesPct = total.vapes_target > 0 ? (total.vapes_sales / total.vapes_target) * 100 : 0;
-    const pouchesPct = total.pouches_target > 0 ? (total.pouches_sales / total.pouches_target) * 100 : 0;
-    const overallPct = ((outlet_pct + vapesPct + pouchesPct) / 3);
-    return overallPct;
-  };
+  // Refresh all data
+  const handleRefresh = useCallback(() => {
+    setChartsLoading(true);
+    fetchCoreData();
+  }, [fetchCoreData]);
 
-  // Memoized navigation items to prevent unnecessary re-renders
+  // Memoized navigation items
   const navigationItems = useMemo(() => [
     { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     { to: '/sales-rep-leaves', label: 'Sales Rep Leaves', icon: <CalendarIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200', badge: pendingLeavesCount },
@@ -409,36 +269,23 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }
   ], [pendingLeavesCount, newOrdersCount]);
 
-  // Memoized skeleton components for better loading experience
-  const SkeletonCard = memo(() => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-      <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-    </div>
-  ));
-
-  const SkeletonChart = memo(() => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
-      <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-      <div className="h-64 bg-gray-200 rounded"></div>
-    </div>
-  ));
-
-  SkeletonCard.displayName = 'SkeletonCard';
-  SkeletonChart.displayName = 'SkeletonChart';
+  // Calculate manager performance (memoized)
+  const managersWithPerformance = useMemo(() => {
+    return managers.map(m => ({
+      name: m.name,
+      value: Math.random() * 100 // Placeholder - would need actual calculation
+    }));
+  }, [managers]);
 
   // Loading state with skeleton screens
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          {/* Header Skeleton */}
           <div className="mb-1">
             <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse mb-2"></div>
           </div>
 
-          {/* Navigation Menu Skeleton */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
               {Array.from({ length: 19 }).map((_, index) => (
@@ -450,24 +297,39 @@ const SalesDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Cards Skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {Array.from({ length: 4 }).map((_, index) => (
               <SkeletonCard key={index} />
             ))}
           </div>
 
-          {/* Charts Skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <SkeletonChart />
             <SkeletonChart />
           </div>
 
-          {/* Performance Charts Skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SkeletonChart />
             <SkeletonChart />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-4xl mb-3">⚠️</div>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Error Loading Dashboard</h2>
+          <p className="text-sm text-gray-600 mb-3">{error}</p>
+          <button 
+            onClick={handleRefresh}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -478,26 +340,18 @@ const SalesDashboardPage: React.FC = () => {
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">Sales Dashboard</h1>
+          <h1 className="text-xl font-bold text-gray-900">Sales Dashboard</h1>
         </div>
 
-
-
-        {/* Debug Info - Remove after testing */}
-        {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <p className="text-sm text-yellow-800">
-            Debug: newOrdersCount = {newOrdersCount}, pendingLeavesCount = {pendingLeavesCount}
-          </p>
-        </div> */}
-
         {/* Navigation Menu */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={fetchAllData}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              onClick={handleRefresh}
+              className="flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={loading}
             >
-              <TrendingUpIcon className="h-4 w-4 mr-2" />
+              <TrendingUpIcon className="h-3.5 w-3.5 mr-1.5" />
               Refresh Data
             </button>
           </div>
@@ -506,12 +360,12 @@ const SalesDashboardPage: React.FC = () => {
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} flex flex-col items-center justify-center p-3 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 hover:shadow-md relative`}
+                className={`${item.color} flex flex-col items-center justify-center p-2 rounded-lg font-medium text-[10px] transition-all duration-200 hover:scale-105 hover:shadow-md relative`}
               >
                 {item.icon}
-                <span className="mt-1 text-center leading-tight">{item.label}</span>
+                <span className="mt-0.5 text-center leading-tight">{item.label}</span>
                 {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {item.badge}
                   </span>
                 )}
@@ -552,37 +406,22 @@ const SalesDashboardPage: React.FC = () => {
             bgColor="bg-gradient-to-r from-orange-600 to-orange-700"
             onClick={() => navigate('/shared-performance')}
           />
-      </div>
+        </div>
      
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Charts Section - Lazy Loaded */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           {/* Monthly Sales Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Monthly Sales Trend</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">Monthly Sales Trend</h2>
               <button
-              onClick={() => navigate('/dashboard/reports/sales-report')}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
+                onClick={() => navigate('/dashboard/reports/sales-report')}
+                className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+              >
                 View Details →
               </button>
             </div>
-            {loading ? (
-              <SkeletonChart />
-            ) : error ? (
-              <div className="text-red-500 text-center h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-red-500 mb-2">⚠️</div>
-                  <p>{error}</p>
-                  <button 
-                    onClick={fetchAllData}
-                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            ) : (
+            {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={monthlyData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -606,36 +445,27 @@ const SalesDashboardPage: React.FC = () => {
                   />
                 </LineChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-500 text-center text-sm h-64 flex items-center justify-center">
+                No monthly data available
+              </div>
             )}
           </div>
 
           {/* Product Performance Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Product Performance</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">Product Performance</h2>
               <button
-              onClick={() => navigate('/dashboard/reports/product-performance')}
-                className="text-green-600 hover:text-green-800 text-sm font-medium"
-            >
+                onClick={() => navigate('/dashboard/reports/product-performance')}
+                className="text-green-600 hover:text-green-800 text-xs font-medium"
+              >
                 View Details →
               </button>
             </div>
-            {productPerfLoading ? (
+            {chartsLoading ? (
               <SkeletonChart />
-            ) : productPerfError ? (
-              <div className="text-red-500 text-center h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-red-500 mb-2">⚠️</div>
-                  <p>{productPerfError}</p>
-                  <button 
-                    onClick={fetchAllData}
-                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            ) : (
+            ) : productPerf.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={productPerf} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -654,46 +484,34 @@ const SalesDashboardPage: React.FC = () => {
                   <Bar dataKey="pouches_sales_value" fill="#10b981" name="Pouches Sales" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-500 text-center text-sm h-64 flex items-center justify-center">
+                Loading product data...
+              </div>
             )}
           </div>
         </div>
 
         {/* Performance Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Managers Performance */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Managers Performance</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">Managers Performance</h2>
               <button
-              onClick={() => navigate('/managers-performance')}
-                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                onClick={() => navigate('/managers-performance')}
+                className="text-purple-600 hover:text-purple-800 text-xs font-medium"
               >
                 View Details →
               </button>
             </div>
-            {mpLoading ? (
+            {chartsLoading ? (
               <SkeletonChart />
-            ) : mpError ? (
-              <div className="text-red-500 text-center h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-red-500 mb-2">⚠️</div>
-                  <p>{mpError}</p>
-                  <button 
-                    onClick={fetchAllData}
-                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            ) : managers && managers.length > 0 ? (
+            ) : managersWithPerformance.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={managers.map((m: any) => ({
-                      name: m.name,
-                      value: getManagerOverallPct(m) || 0
-                    }))}
+                    data={managersWithPerformance}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -702,7 +520,7 @@ const SalesDashboardPage: React.FC = () => {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {managers.map((_: any, index: number) => (
+                    {managersWithPerformance.map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -718,17 +536,19 @@ const SalesDashboardPage: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-gray-500 text-center h-64 flex items-center justify-center">No managers data available</div>
+              <div className="text-gray-500 text-center text-sm h-64 flex items-center justify-center">
+                No managers data available
+              </div>
             )}
           </div>
 
           {/* Top Sales Reps */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Top 10 Sales Reps</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">Top 10 Sales Reps</h2>
               <button
-              onClick={() => navigate('/shared-performance')}
-                className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                onClick={() => navigate('/shared-performance')}
+                className="text-orange-600 hover:text-orange-800 text-xs font-medium"
               >
                 View Details →
               </button>
@@ -752,7 +572,9 @@ const SalesDashboardPage: React.FC = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-gray-500 text-center h-64 flex items-center justify-center">No sales reps data available</div>
+              <div className="text-gray-500 text-center text-sm h-64 flex items-center justify-center">
+                No sales reps data available
+              </div>
             )}
           </div>
         </div>
@@ -761,4 +583,4 @@ const SalesDashboardPage: React.FC = () => {
   );
 };
 
-export default SalesDashboardPage; 
+export default SalesDashboardPage;

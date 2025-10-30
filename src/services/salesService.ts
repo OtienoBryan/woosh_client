@@ -257,12 +257,37 @@ export const salesService = {
     }
   },
 
-  // Get master sales data for all clients by year
-  getMasterSalesData: async (year: number, category?: number[], salesRep?: number[], categoryGroup?: string, startDate?: string, endDate?: string, clientStatus?: string, viewType?: 'sales' | 'quantity'): Promise<MasterSalesData[]> => {
+  // Get master sales data for all clients by year (with pagination)
+  getMasterSalesData: async (
+    year: number, 
+    category?: number[], 
+    salesRep?: number[], 
+    categoryGroup?: string, 
+    startDate?: string, 
+    endDate?: string, 
+    clientStatus?: string, 
+    viewType?: 'sales' | 'quantity',
+    page?: number,
+    limit?: number,
+    sortColumn?: string,
+    sortDirection?: 'asc' | 'desc'
+  ): Promise<{ data: MasterSalesData[]; pagination: any }> => {
     const response = await axios.get(`${API_BASE_URL}/master-sales`, {
-      params: { year, category, salesRep, categoryGroup, startDate, endDate, clientStatus, viewType }
+      params: { year, category, salesRep, categoryGroup, startDate, endDate, clientStatus, viewType, page, limit, sortColumn, sortDirection }
     });
-    return response.data;
+    
+    // Handle both old format (array) and new format (object with data + pagination)
+    if (response.data.success) {
+      return {
+        data: response.data.data,
+        pagination: response.data.pagination
+      };
+    }
+    // Fallback for old format
+    return {
+      data: Array.isArray(response.data) ? response.data : [],
+      pagination: { currentPage: 1, totalPages: 1, totalItems: Array.isArray(response.data) ? response.data.length : 0 }
+    };
   },
 
   // Get available categories for master sales filter
@@ -278,9 +303,9 @@ export const salesService = {
   },
 
   // Get sales rep monthly performance data
-  getSalesRepMonthlyPerformance: async (year?: number, salesRep?: number[], startDate?: string, endDate?: string, viewType?: 'sales' | 'quantity'): Promise<SalesRepMonthlyPerformance[]> => {
+  getSalesRepMonthlyPerformance: async (year?: number, salesRep?: number[], startDate?: string, endDate?: string, viewType?: 'sales' | 'quantity', country?: string): Promise<SalesRepMonthlyPerformance[]> => {
     const response = await axios.get(`${API_BASE_URL}/sales-rep-monthly-performance`, {
-      params: { year, salesRep, startDate, endDate, viewType }
+      params: { year, salesRep, startDate, endDate, viewType, country }
     });
     return response.data;
   },
@@ -313,6 +338,22 @@ export const salesService = {
   // Delete a target
   deleteSalesRepTarget: async (targetId: number): Promise<{ success: boolean }> => {
     const response = await axios.delete(`${API_BASE_URL}/sales-reps/targets/${targetId}`);
+    return response.data;
+  },
+
+  // Get detailed sales data for a specific client and month
+  getClientMonthDetails: async (clientId: number, month: number, year: number): Promise<any[]> => {
+    const response = await axios.get(`${API_BASE_URL}/client-month-details`, {
+      params: { clientId, month, year }
+    });
+    return response.data;
+  },
+
+  // Get detailed sales data for a specific client for the entire year
+  getClientYearDetails: async (clientId: number, year: number): Promise<any[]> => {
+    const response = await axios.get(`${API_BASE_URL}/client-year-details`, {
+      params: { clientId, year }
+    });
     return response.data;
   }
 }; 

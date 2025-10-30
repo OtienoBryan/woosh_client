@@ -21,16 +21,35 @@ interface TrialBalanceAccount {
   debit: number;
   credit: number;
   balance: number;
+  // Date range specific fields
+  opening_debit?: number;
+  opening_credit?: number;
+  opening_balance?: number;
+  period_debit?: number;
+  period_credit?: number;
+  period_balance?: number;
+  closing_balance?: number;
 }
 
 interface TrialBalanceData {
   as_of_date: string;
+  from_date?: string;
+  to_date?: string;
+  date_range?: string;
   accounts: TrialBalanceAccount[];
   totals: {
     total_debits: number;
     total_credits: number;
     difference: number;
     is_balanced: boolean;
+    // Date range specific totals
+    total_opening_debit?: number;
+    total_opening_credit?: number;
+    total_opening_balance?: number;
+    total_period_debit?: number;
+    total_period_credit?: number;
+    total_period_balance?: number;
+    total_closing_balance?: number;
   };
   summary_by_type: {
     [key: string]: {
@@ -50,21 +69,23 @@ const TrialBalanceReportPage: React.FC = () => {
   const [reportData, setReportData] = useState<TrialBalanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [asOfDate, setAsOfDate] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [showOnlyNonZero, setShowOnlyNonZero] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchTrialBalanceReport();
     // eslint-disable-next-line
-  }, [asOfDate]);
+  }, [fromDate, toDate]);
 
   const fetchTrialBalanceReport = async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (asOfDate) params.append('as_of_date', asOfDate);
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
       const res = await axios.get(`${API_BASE_URL}/financial/reports/trial-balance?${params}`);
       if (res.data.success) {
         setReportData(res.data.data);
@@ -94,28 +115,72 @@ const TrialBalanceReportPage: React.FC = () => {
   const exportToCSV = () => {
     if (!reportData) return;
 
-    const headers = ['Account Code', 'Account Name', 'Account Type', 'Debit', 'Credit'];
-    const rows = filteredAccounts.map(acc => [
-      acc.account_code,
-      acc.account_name,
-      acc.account_type_name,
-      number_format(acc.debit),
-      number_format(acc.credit)
-    ]);
-
-    const totalRow = ['', '', 'TOTALS', number_format(reportData.totals.total_debits), number_format(reportData.totals.total_credits)];
+    const isDateRange = reportData.from_date && reportData.to_date;
     
-    const csvContent = [
+    let headers: string[];
+    let rows: string[][];
+    let totalRow: string[];
+    
+    if (isDateRange) {
+      // Date range format with opening, period, and closing balances
+      headers = ['Account Code', 'Account Name', 'Account Type', 'Opening Balance', 'Period Debit', 'Period Credit', 'Period Balance', 'Closing Balance'];
+      rows = filteredAccounts.map(acc => [
+        acc.account_code,
+        acc.account_name,
+        acc.account_type_name,
+        number_format(acc.opening_balance || 0),
+        number_format(acc.period_debit || 0),
+        number_format(acc.period_credit || 0),
+        number_format(acc.period_balance || 0),
+        number_format(acc.closing_balance || 0)
+      ]);
+      totalRow = [
+        '', '', 'TOTALS',
+        number_format(reportData.totals.total_opening_balance || 0),
+        number_format(reportData.totals.total_period_debit || 0),
+        number_format(reportData.totals.total_period_credit || 0),
+        number_format(reportData.totals.total_period_balance || 0),
+        number_format(reportData.totals.total_closing_balance || 0)
+      ];
+    } else {
+      // Simple format with opening, debit, credit, and closing balance
+      headers = ['Account Code', 'Account Name', 'Account Type', 'Opening Balance', 'Debit', 'Credit', 'Closing Balance'];
+      rows = filteredAccounts.map(acc => [
+        acc.account_code,
+        acc.account_name,
+        acc.account_type_name,
+        '0.00',
+        number_format(acc.debit),
+        number_format(acc.credit),
+        number_format(acc.balance)
+      ]);
+      totalRow = ['', '', 'TOTALS', '0.00', number_format(reportData.totals.total_debits), number_format(reportData.totals.total_credits), number_format(reportData.totals.difference)];
+    }
+    
+    const dateInfo = reportData.date_range || `As of: ${reportData.as_of_date}`;
+    const fileName = reportData.from_date && reportData.to_date 
+      ? `trial_balance_${reportData.from_date}_to_${reportData.to_date}.csv`
+      : `trial_balance_${reportData.as_of_date}.csv`;
+    
+    const csvRows = [
       ['Trial Balance Report'],
-      [`As of: ${reportData.as_of_date}`],
+      [dateInfo],
       [],
       headers,
       ...rows,
       [],
-      totalRow,
-      ['', '', 'Difference', '', number_format(reportData.totals.difference)],
-      ['', '', 'Status', '', reportData.totals.is_balanced ? 'BALANCED' : 'OUT OF BALANCE']
-    ]
+      totalRow
+    ];
+    
+    if (isDateRange) {
+      csvRows.push(['', '', 'Period Difference', '', '', '', number_format(reportData.totals.difference), '']);
+      csvRows.push(['', '', 'Status', '', '', '', reportData.totals.is_balanced ? 'BALANCED' : 'OUT OF BALANCE', '']);
+    } else {
+      csvRows.push(['', '', 'Difference', '', '', '', number_format(reportData.totals.difference)]);
+      csvRows.push(['', '', 'Status', '', '', '', reportData.totals.is_balanced ? 'BALANCED' : 'OUT OF BALANCE']);
+    }
+    
+    const csvContent = csvRows
       .map(row => row.map(field => `"${field}"`).join(','))
       .join('\n');
 
@@ -123,7 +188,7 @@ const TrialBalanceReportPage: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `trial_balance_${reportData.as_of_date}.csv`);
+    link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -183,7 +248,7 @@ const TrialBalanceReportPage: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Trial Balance</h1>
                 <p className="text-gray-600">
-                  As of {reportData?.as_of_date || 'Latest'} • {reportData?.metadata.total_accounts || 0} accounts
+                  {reportData?.date_range || `As of ${reportData?.as_of_date || 'Latest'}`} • {reportData?.metadata.total_accounts || 0} accounts
                 </p>
               </div>
             </div>
@@ -227,17 +292,31 @@ const TrialBalanceReportPage: React.FC = () => {
             <Filter className="w-5 h-5 text-gray-400" />
             <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Calendar className="w-4 h-4 inline mr-1" />
-                As of Date
+                From Date
               </label>
               <input
                 type="date"
-                value={asOfDate}
-                onChange={(e) => setAsOfDate(e.target.value)}
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                placeholder="Start date"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                To Date
+              </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                placeholder="End date"
               />
             </div>
             <div>
@@ -300,97 +379,238 @@ const TrialBalanceReportPage: React.FC = () => {
         {/* Trial Balance Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Account Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Account Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
-                    Debit
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
-                    Credit
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAccounts.length === 0 ? (
+            {reportData?.from_date && reportData?.to_date ? (
+              // Date Range Format with Opening, Period, and Closing Balances
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                      No accounts found matching your criteria
-                    </td>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Account Code
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Account Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
+                      Opening Balance
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
+                      Period Debit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
+                      Period Credit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">
+                      Period Balance
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Closing Balance
+                    </th>
                   </tr>
-                ) : (
-                  filteredAccounts.map((account) => (
-                    <tr key={account.account_code} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {account.account_code}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span
-                          onClick={() => handleAccountClick(account.account_code)}
-                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                          title="Click to view ledger for this account"
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              handleAccountClick(account.account_code);
-                            }
-                          }}
-                        >
-                          {account.account_name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {account.account_type_name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
-                        {account.debit !== 0 ? number_format(account.debit) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
-                        {account.credit !== 0 ? number_format(account.credit) : '-'}
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAccounts.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                        No accounts found matching your criteria
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-              {reportData && (
-                <tfoot className="bg-gray-100 border-t-2 border-gray-300">
-                  <tr>
-                    <td colSpan={3} className="px-6 py-4 text-sm font-bold text-gray-900 uppercase">
-                      Total
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
-                      {number_format(reportData.totals.total_debits)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
-                      {number_format(reportData.totals.total_credits)}
-                    </td>
-                  </tr>
-                  {!reportData.totals.is_balanced && (
-                    <tr className="bg-red-50">
-                      <td colSpan={3} className="px-6 py-3 text-sm font-semibold text-red-900">
-                        Difference (Out of Balance)
-                      </td>
-                      <td colSpan={2} className="px-6 py-3 text-sm text-right font-bold text-red-900">
-                        {number_format(Math.abs(reportData.totals.difference))}
-                      </td>
-                    </tr>
+                  ) : (
+                    filteredAccounts.map((account) => (
+                      <tr key={account.account_code} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {account.account_code}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                          <span
+                            onClick={() => handleAccountClick(account.account_code)}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                            title="Click to view ledger for this account"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleAccountClick(account.account_code);
+                              }
+                            }}
+                          >
+                            {account.account_name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {account.account_type_name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
+                          {number_format(account.opening_balance || 0)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
+                          {(account.period_debit || 0) !== 0 ? number_format(account.period_debit || 0) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
+                          {(account.period_credit || 0) !== 0 ? number_format(account.period_credit || 0) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-purple-700">
+                          {number_format(account.period_balance || 0)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                          {number_format(account.closing_balance || 0)}
+                        </td>
+                      </tr>
+                    ))
                   )}
-                </tfoot>
-              )}
-            </table>
+                </tbody>
+                {reportData && (
+                  <tfoot className="bg-gray-100 border-t-2 border-gray-300">
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-sm font-bold text-gray-900 uppercase">
+                        Total
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-700">
+                        {number_format(reportData.totals.total_opening_balance || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
+                        {number_format(reportData.totals.total_period_debit || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
+                        {number_format(reportData.totals.total_period_credit || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-purple-700">
+                        {number_format(reportData.totals.total_period_balance || 0)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                        {number_format(reportData.totals.total_closing_balance || 0)}
+                      </td>
+                    </tr>
+                    {!reportData.totals.is_balanced && (
+                      <tr className="bg-red-50">
+                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-red-900">
+                          Period Difference (Out of Balance)
+                        </td>
+                        <td colSpan={2} className="px-4 py-3 text-sm text-right font-bold text-red-900">
+                          {number_format(Math.abs(reportData.totals.difference))}
+                        </td>
+                      </tr>
+                    )}
+                  </tfoot>
+                )}
+              </table>
+            ) : (
+              // Simple Format - Now with Opening and Closing Balance columns
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Account Code
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Account Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
+                      Opening Balance
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
+                      Debit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
+                      Credit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Closing Balance
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAccounts.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                        No accounts found matching your criteria
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAccounts.map((account) => (
+                      <tr key={account.account_code} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {account.account_code}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                          <span
+                            onClick={() => handleAccountClick(account.account_code)}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                            title="Click to view ledger for this account"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleAccountClick(account.account_code);
+                              }
+                            }}
+                          >
+                            {account.account_name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {account.account_type_name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
+                          0.00
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
+                          {account.debit !== 0 ? number_format(account.debit) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
+                          {account.credit !== 0 ? number_format(account.credit) : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                          {number_format(account.balance)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                {reportData && (
+                  <tfoot className="bg-gray-100 border-t-2 border-gray-300">
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-sm font-bold text-gray-900 uppercase">
+                        Total
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-700">
+                        0.00
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
+                        {number_format(reportData.totals.total_debits)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
+                        {number_format(reportData.totals.total_credits)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                        {number_format(reportData.totals.difference)}
+                      </td>
+                    </tr>
+                    {!reportData.totals.is_balanced && (
+                      <tr className="bg-red-50">
+                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-red-900">
+                          Difference (Out of Balance)
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-bold text-red-900">
+                          {number_format(Math.abs(reportData.totals.difference))}
+                        </td>
+                      </tr>
+                    )}
+                  </tfoot>
+                )}
+              </table>
+            )}
           </div>
         </div>
 

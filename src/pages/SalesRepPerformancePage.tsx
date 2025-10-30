@@ -12,6 +12,8 @@ const SalesRepPerformancePage: React.FC = () => {
   const [selectedSalesReps, setSelectedSalesReps] = useState<number[]>([]);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya');
+  const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
   const [salesReps, setSalesReps] = useState<{ id: number; name: string }[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -33,9 +35,10 @@ const SalesRepPerformancePage: React.FC = () => {
 
   useEffect(() => {
     fetchPerformanceData();
-  }, [selectedYear, selectedSalesReps, startDate, endDate, viewType]);
+  }, [selectedYear, selectedSalesReps, startDate, endDate, viewType, selectedCountry]);
 
   useEffect(() => {
+    fetchCountries();
     fetchSalesReps();
   }, []);
 
@@ -51,13 +54,23 @@ const SalesRepPerformancePage: React.FC = () => {
       const salesRepIds = selectedSalesReps.length > 0 ? selectedSalesReps : undefined;
       const startDateParam = startDate || undefined;
       const endDateParam = endDate || undefined;
-      const data = await salesService.getSalesRepMonthlyPerformance(selectedYear, salesRepIds, startDateParam, endDateParam, viewType);
+      const countryParam = selectedCountry || undefined;
+      const data = await salesService.getSalesRepMonthlyPerformance(selectedYear, salesRepIds, startDateParam, endDateParam, viewType, countryParam);
       setPerformanceData(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch performance data');
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCountries = async () => {
+    try {
+      const data = await salesService.getCountries();
+      setCountries(data);
+    } catch (err: any) {
+      console.error('Failed to fetch countries:', err);
     }
   };
 
@@ -388,6 +401,27 @@ const SalesRepPerformancePage: React.FC = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Country Filter */}
+        <div className="mb-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="">All Countries</option>
+                  {countries.map((country) => (
+                    <option key={country.id} value={country.name}>{country.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>

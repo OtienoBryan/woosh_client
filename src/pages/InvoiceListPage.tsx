@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { salesOrdersService } from '../services/financialService';
 import { receiptsService } from '../services/financialService';
 import { SalesOrder } from '../types/financial';
-import { Search, Filter, Download, Eye, FileText } from 'lucide-react';
+import { Search, Filter, Download, Eye, FileText, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 const InvoiceListPage: React.FC = () => {
   const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
@@ -10,52 +10,65 @@ const InvoiceListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('1'); // Default to approved (status 1)
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [amountsPaid, setAmountsPaid] = useState<{[key: number]: number}>({});
   const [loadingAmounts, setLoadingAmounts] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7;
 
+  // Fetch orders when component mounts or when status filter changes
   useEffect(() => {
-    fetchApprovedSalesOrders();
-  }, []);
+    fetchSalesOrders();
+  }, [statusFilter]);
 
+  // Apply client-side filters (search and date only)
   useEffect(() => {
     filterOrders();
-  }, [salesOrders, searchTerm, statusFilter, dateFilter]);
+    // Reset to first page when filters change
+    setCurrentPage(1);
+  }, [salesOrders, searchTerm, dateFilter, customStartDate, customEndDate]);
 
-  useEffect(() => {
-    if (salesOrders.length > 0) {
-      fetchAmountsPaid();
-    }
-  }, [salesOrders]);
+  // No longer needed - amounts_paid is now included in the sales orders response
+  // useEffect(() => {
+  //   if (salesOrders.length > 0) {
+  //     fetchAmountsPaid();
+  //   }
+  // }, [salesOrders]);
 
-  const fetchApprovedSalesOrders = async () => {
+  // OPTIMIZED: Fetch only the selected status from backend
+  const fetchSalesOrders = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await salesOrdersService.getAll();
+      
+      // Pass status filter to API - only fetch what's needed
+      const params: any = {};
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      
+      console.log('Fetching orders with params:', params);
+      const response = await salesOrdersService.getAll(params);
+      
       if (response.success) {
         const orders = response.data || [];
-        console.log('Fetched orders:', orders.length);
-        console.log('Orders by my_status:', orders.reduce((acc, order) => {
-          acc[order.my_status] = (acc[order.my_status] || 0) + 1;
-          return acc;
-        }, {}));
-        
-        // Debug: Check for invalid numeric values
-        orders.forEach((order, index) => {
-          if (order.subtotal === undefined || order.subtotal === null || isNaN(order.subtotal)) {
-            console.warn(`Order ${index} (ID: ${order.id}) has invalid subtotal:`, order.subtotal);
-          }
-          if (order.tax_amount === undefined || order.tax_amount === null || isNaN(order.tax_amount)) {
-            console.warn(`Order ${index} (ID: ${order.id}) has invalid tax_amount:`, order.tax_amount);
-          }
-          if (order.total_amount === undefined || order.total_amount === null || isNaN(order.total_amount)) {
-            console.warn(`Order ${index} (ID: ${order.id}) has invalid total_amount:`, order.total_amount);
-          }
-        });
+        console.log(`Fetched ${orders.length} orders with status: ${statusFilter}`);
         
         setSalesOrders(orders);
+        
+        // OPTIMIZED: Extract amounts_paid directly from the orders response
+        // The backend now includes amount_paid in the sales orders query
+        const amounts: {[key: number]: number} = {};
+        orders.forEach(order => {
+          amounts[order.id] = parseFloat(order.amount_paid || 0);
+        });
+        setAmountsPaid(amounts);
+        
       } else {
         setError('Failed to fetch sales orders');
       }
@@ -70,24 +83,26 @@ const InvoiceListPage: React.FC = () => {
   const fetchAmountsPaid = async () => {
     try {
       setLoadingAmounts(true);
-      const amounts: {[key: number]: number} = {};
       
-      // Fetch amount paid for each sales order
-      for (const order of salesOrders) {
-        try {
-          const receiptResponse = await receiptsService.getByInvoice(order.id);
-          if (receiptResponse.success && receiptResponse.data) {
-            amounts[order.id] = receiptResponse.data.total_amount_paid || 0;
-          } else {
-            amounts[order.id] = 0;
-          }
-        } catch (err) {
-          console.error(`Error fetching receipts for order ${order.id}:`, err);
-          amounts[order.id] = 0;
-        }
+      if (salesOrders.length === 0) {
+        setAmountsPaid({});
+        return;
       }
+
+      // OPTIMIZED: Fetch amounts paid for all invoices in a single API call
+      const invoiceIds = salesOrders.map(order => order.id);
+      const response = await receiptsService.getBulkAmountsPaid(invoiceIds);
       
-      setAmountsPaid(amounts);
+      if (response.success && response.data) {
+        setAmountsPaid(response.data);
+      } else {
+        // Set all amounts to 0 if request failed
+        const amounts: {[key: number]: number} = {};
+        salesOrders.forEach(order => {
+          amounts[order.id] = 0;
+        });
+        setAmountsPaid(amounts);
+      }
     } catch (err) {
       console.error('Error fetching amounts paid:', err);
       // Set all amounts to 0 if there's a general error
@@ -107,10 +122,12 @@ const InvoiceListPage: React.FC = () => {
     }
   };
 
+  // OPTIMIZED: Only client-side filters (search and date)
+  // Status filtering is now done at the backend level
   const filterOrders = () => {
     let filtered = [...salesOrders];
 
-    // Search filter
+    // Search filter (client-side for instant feedback)
     if (searchTerm) {
       filtered = filtered.filter(order => 
         order.so_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,12 +136,7 @@ const InvoiceListPage: React.FC = () => {
       );
     }
 
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => order.my_status === parseInt(statusFilter));
-    }
-
-    // Date filter
+    // Date filter (client-side)
     if (dateFilter !== 'all') {
       const today = new Date();
       const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -132,6 +144,7 @@ const InvoiceListPage: React.FC = () => {
 
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.order_date);
+        
         switch (dateFilter) {
           case 'today':
             return orderDate.toDateString() === today.toDateString();
@@ -139,6 +152,23 @@ const InvoiceListPage: React.FC = () => {
             return orderDate >= sevenDaysAgo;
           case 'month':
             return orderDate >= thirtyDaysAgo;
+          case 'custom':
+            // Custom date range filtering
+            if (customStartDate && customEndDate) {
+              const startDate = new Date(customStartDate);
+              const endDate = new Date(customEndDate);
+              // Set end date to end of day
+              endDate.setHours(23, 59, 59, 999);
+              return orderDate >= startDate && orderDate <= endDate;
+            } else if (customStartDate) {
+              const startDate = new Date(customStartDate);
+              return orderDate >= startDate;
+            } else if (customEndDate) {
+              const endDate = new Date(customEndDate);
+              endDate.setHours(23, 59, 59, 999);
+              return orderDate <= endDate;
+            }
+            return true;
           default:
             return true;
         }
@@ -146,6 +176,16 @@ const InvoiceListPage: React.FC = () => {
     }
 
     setFilteredOrders(filtered);
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentOrders = filteredOrders.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
   const formatCurrency = (amount: number | undefined | null) => {
@@ -259,7 +299,7 @@ const InvoiceListPage: React.FC = () => {
           <div className="text-red-600 text-xl mb-4">Error</div>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={fetchApprovedSalesOrders}
+            onClick={fetchSalesOrders}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Retry
@@ -305,15 +345,18 @@ const InvoiceListPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Summary - Moved to top */}
+        {/* Summary - Shows data for selected status only */}
         {salesOrders.length > 0 ? (
           <div className="bg-white rounded-lg shadow mb-6 p-6">
-            {/* Overall Totals */}
+            {/* Status-specific Summary */}
             <div className="mb-6">
-              {/* <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Financial Summary</h3>
-              <p className="text-sm text-gray-600 text-center mb-4">
-                Overview of all sales orders regardless of current filters
-              </p> */}
+              <h3 className="text-sm text-gray-600 text-center mb-4">
+                {statusFilter === 'all' ? 'All Statuses' : 
+                 statusFilter === '1' ? 'Approved Orders Summary' :
+                 statusFilter === '2' ? 'Assigned Orders Summary' :
+                 statusFilter === '3' ? 'In Transit Orders Summary' : 
+                 `Status ${statusFilter} Summary`}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">
@@ -348,10 +391,10 @@ const InvoiceListPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Filtered Results Summary */}
+            {/* Client-side Filtered Results (Search/Date) */}
             {filteredOrders.length !== salesOrders.length && (
               <div className="mb-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Filtered Results</h3>
+                <h3 className="text-sm text-gray-600 text-center mb-4">After Search/Date Filters</h3>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-700">
@@ -386,24 +429,6 @@ const InvoiceListPage: React.FC = () => {
                 </div>
               </div>
             )}
-            
-            {/* Status Breakdown */}
-            <div className="pt-6 border-t border-gray-200 hidden">
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-3">Status Breakdown</div>
-                <div className="flex items-center justify-center space-x-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    {salesOrders.filter(order => order.my_status === 1).length} Approved
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {salesOrders.filter(order => order.my_status === 2).length} Assigned
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                    {salesOrders.filter(order => order.my_status === 3).length} In Transit
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow mb-6 p-6">
@@ -458,8 +483,39 @@ const InvoiceListPage: React.FC = () => {
                 <option value="today">Today</option>
                 <option value="week">Last 7 Days</option>
                 <option value="month">Last 30 Days</option>
+                <option value="custom">Custom Range</option>
               </select>
             </div>
+
+            {/* Custom Date Range Inputs */}
+            {dateFilter === 'custom' && (
+              <div className="col-span-2 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-4 h-4 mr-1" />
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-4 h-4 mr-1" />
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Results Count */}
             <div>
@@ -530,7 +586,7 @@ const InvoiceListPage: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => (
+                  currentOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {order.so_number}
@@ -592,6 +648,98 @@ const InvoiceListPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredOrders.length > 0 && (
+            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                    <span className="font-medium">{Math.min(endIndex, filteredOrders.length)}</span> of{' '}
+                    <span className="font-medium">{filteredOrders.length}</span> results
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    
+                    {/* Page Numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      // Show first page, last page, current page, and pages around current
+                      const showPage = 
+                        page === 1 || 
+                        page === totalPages || 
+                        (page >= currentPage - 1 && page <= currentPage + 1);
+                      
+                      const showEllipsis = 
+                        (page === currentPage - 2 && currentPage > 3) ||
+                        (page === currentPage + 2 && currentPage < totalPages - 2);
+
+                      if (showEllipsis) {
+                        return (
+                          <span
+                            key={page}
+                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      if (!showPage) return null;
+
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => goToPage(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            currentPage === page
+                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
 
