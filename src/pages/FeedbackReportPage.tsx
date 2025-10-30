@@ -403,15 +403,15 @@ const FeedbackReportPage: React.FC = () => {
     
     if (isViewAll) {
       return (
-        <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">
+        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-200">
+          <div className="flex items-center space-x-3">
+            <span className="text-[10px] text-gray-700">
               Showing all {total} results
             </span>
             <select
               value={limit}
               onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={5}>5 per page</option>
               <option value={10}>10 per page</option>
@@ -430,15 +430,15 @@ const FeedbackReportPage: React.FC = () => {
     const endItem = Math.min(page * limit, total);
 
     return (
-      <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-700">
+      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-200">
+        <div className="flex items-center space-x-3">
+          <span className="text-[10px] text-gray-700">
             Showing {startItem} to {endItem} of {total} results
           </span>
           <select
             value={limit}
             onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-            className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-md px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
@@ -452,7 +452,7 @@ const FeedbackReportPage: React.FC = () => {
           <button
             onClick={() => handlePageChange(page - 1)}
             disabled={page <= 1}
-            className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-2 py-1 text-[10px] border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Previous
           </button>
@@ -473,7 +473,7 @@ const FeedbackReportPage: React.FC = () => {
               <button
                 key={pageNum}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 text-sm border rounded-md ${
+                className={`px-2 py-1 text-[10px] border rounded-md ${
                   page === pageNum
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'border-gray-300 hover:bg-gray-50'
@@ -487,7 +487,7 @@ const FeedbackReportPage: React.FC = () => {
           <button
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages}
-            className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-2 py-1 text-[10px] border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Next
           </button>
@@ -543,18 +543,18 @@ const FeedbackReportPage: React.FC = () => {
       <div className="mb-6 flex space-x-4">
         <button
           onClick={() => navigate('/visibility-report')}
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 cursor-pointer"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 cursor-pointer text-[10px]"
         >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           View Visibility Reports
         </button>
         <button
           onClick={() => navigate('/availability-reports')}
-          className="inline-flex items-center text-green-600 hover:text-green-800 font-medium transition-colors duration-200 cursor-pointer"
+          className="inline-flex items-center text-green-600 hover:text-green-800 font-medium transition-colors duration-200 cursor-pointer text-[10px]"
         >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           View Availability Reports
@@ -562,41 +562,41 @@ const FeedbackReportPage: React.FC = () => {
       </div>
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Feedback Report</h1>
+        <h1 className="text-xl font-bold text-gray-900">Feedback Report</h1>
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setIsFilterModalOpen(true)}
-            className="bg-white text-gray-700 px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 flex items-center space-x-2"
+            className="bg-white text-gray-700 px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50 flex items-center space-x-2 text-[10px]"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
             </svg>
             <span>Filters</span>
             {getActiveFiltersCount() > 0 && (
-              <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+              <span className="bg-blue-600 text-white text-[8px] rounded-full px-1.5 py-0.5 min-w-[16px] text-center">
                 {getActiveFiltersCount()}
               </span>
             )}
           </button>
           <button
             onClick={handleViewAll}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 text-[10px]"
           >
             View All
           </button>
           <button
             onClick={handleExportCSV}
             disabled={exporting}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 text-[10px]"
           >
             {exporting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 <span>Exporting...</span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span>Export CSV</span>
@@ -617,24 +617,24 @@ const FeedbackReportPage: React.FC = () => {
       </div>
 
       {/* Date Header */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center space-x-2">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <div>
-              <h2 className="text-lg font-semibold text-blue-900">
+              <h2 className="text-xs font-semibold text-blue-900">
                 Reports for {formatDateRange()}
               </h2>
-              <p className="text-sm text-blue-700">
+              <p className="text-[10px] text-blue-700">
                 {startDate === endDate ? 'Single Date' : 'Date Range'} • {getSelectedCountryName()} • {getSelectedSalesRepName()}
                 {searchQuery.trim() && ` • Search: "${searchQuery}"`}
               </p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-blue-600 font-medium">
+            <div className="text-[10px] text-blue-600 font-medium">
               {reports.length} {reports.length === 1 ? 'report' : 'reports'} found
             </div>
           </div>
@@ -642,15 +642,15 @@ const FeedbackReportPage: React.FC = () => {
       </div>
       
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-3 text-[10px]">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading feedback reports...</p>
+        <div className="text-center py-6">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-[10px] text-gray-600">Loading feedback reports...</p>
         </div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
@@ -658,19 +658,19 @@ const FeedbackReportPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Outlet
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Country
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Sales Rep
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Comment
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
 
@@ -679,20 +679,20 @@ const FeedbackReportPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {reports.map((report) => (
                   <tr key={report.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{report.outlet || 'N/A'}</div>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] font-medium text-gray-900">{report.outlet || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{report.country || 'N/A'}</div>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] text-gray-900">{report.country || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{report.salesRep || 'N/A'}</div>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] text-gray-900">{report.salesRep || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{report.comment || 'N/A'}</div>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] text-gray-900">{report.comment || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] text-gray-900">
                         {new Date(report.createdAt).toLocaleString()}
                       </div>
                     </td>
@@ -701,7 +701,7 @@ const FeedbackReportPage: React.FC = () => {
                 ))}
                 {reports.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-3 py-2 text-center text-[10px] text-gray-500">
                       No feedback reports found for the selected filters.
                     </td>
                   </tr>

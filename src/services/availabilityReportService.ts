@@ -13,6 +13,9 @@ export interface AvailabilityReport {
   clientName?: string;
   countryName?: string;
   salesRepName?: string;
+  categoryId?: number;
+  categoryName?: string;
+  categoryOrder?: number;
 }
 
 export interface AvailabilityReportFilters {
