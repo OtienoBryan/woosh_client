@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Calendar, MapPin, User, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getWithAuth } from '../utils/fetchWithAuth';
 
 interface SalesRep {
   id: number;
@@ -79,12 +80,19 @@ const RouteCoveragePage: React.FC = () => {
   const mapInstanceRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
+    console.log('[RouteCoverage] Mount/useEffect', { salesRepId, hasState: !!location.state, tokenPresent: !!localStorage.getItem('token') });
     if (location.state) {
-      setSalesRep(location.state.salesRep);
-      setJourneyPlans(location.state.journeyPlans);
-      processDailyPerformance(location.state.journeyPlans);
+      console.log('[RouteCoverage] location.state received:', location.state);
+      const state: any = location.state as any;
+      const rep = state?.salesRep || null;
+      const plans = Array.isArray(state?.journeyPlans) ? state.journeyPlans : [];
+      console.log('[RouteCoverage] Parsed from state:', { rep, plansCount: plans.length });
+      setSalesRep(rep);
+      setJourneyPlans(plans);
+      processDailyPerformance(plans);
     } else {
       // If no state, fetch data from API
+      console.log('[RouteCoverage] No location.state, fetching from API...');
       fetchSalesRepData();
     }
     setIsLoading(false);
@@ -125,28 +133,49 @@ const RouteCoveragePage: React.FC = () => {
   const fetchSalesRepData = async () => {
     try {
       // Fetch sales rep data
-      const repResponse = await fetch(`/api/sales-reps/${salesRepId}`);
+      console.log('[RouteCoverage] Fetching sales rep:', salesRepId);
+      const repResponse = await getWithAuth(`/api/sales-reps/${salesRepId}`);
+      console.log('[RouteCoverage] Sales rep response status:', repResponse.status);
       const repData = await repResponse.json();
+      console.log('[RouteCoverage] Sales rep data:', repData);
       if (repData.success) {
         setSalesRep(repData.data);
       }
 
       // Fetch journey plans for this sales rep
-      const plansResponse = await fetch(`/api/journey-plans`);
+      console.log('[RouteCoverage] Fetching journey plans by user...');
+      const plansResponse = await getWithAuth(`/api/journey-plans/user/${salesRepId}`);
+      console.log('[RouteCoverage] Journey plans response status:', plansResponse.status);
       const plansData = await plansResponse.json();
-      if (plansData.success) {
-        const repPlans = plansData.data.filter((plan: JourneyPlan) => plan.userId === Number(salesRepId));
-        setJourneyPlans(repPlans);
-        processDailyPerformance(repPlans);
+      console.log('[RouteCoverage] Journey plans raw payload:', plansData);
+      const rawPlans = Array.isArray(plansData) ? plansData : (plansData?.data ?? []);
+      console.log('[RouteCoverage] Journey plans parsed length:', Array.isArray(rawPlans) ? rawPlans.length : 'not-array');
+      if (Array.isArray(rawPlans)) {
+        // Already filtered by backend, but keep a defensive filter cast
+        const repPlans = rawPlans.filter((plan: JourneyPlan) => Number(plan.userId) === Number(salesRepId));
+        console.log('[RouteCoverage] Plans length (server):', rawPlans.length, 'After defensive filter:', repPlans.length);
+        setJourneyPlans(repPlans.length ? repPlans : rawPlans);
+        processDailyPerformance(repPlans.length ? repPlans : rawPlans);
+      } else {
+        console.warn('[RouteCoverage] rawPlans was not an array; setting empty journeyPlans');
+        setJourneyPlans([]);
+        processDailyPerformance([]);
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('[RouteCoverage] Failed to fetch data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const processDailyPerformance = (plans: JourneyPlan[]) => {
+  const processDailyPerformance = (plans: JourneyPlan[] | undefined | null) => {
+    if (!Array.isArray(plans) || plans.length === 0) {
+      console.warn('[RouteCoverage] processDailyPerformance called with no plans or empty array');
+      setDailyPerformance([]);
+      setSelectedDate('');
+      return;
+    }
+    console.log('[RouteCoverage] Processing plans count:', plans.length);
     const dailyMap = new Map<string, DailyPerformance>();
 
     plans.forEach(plan => {
@@ -179,7 +208,7 @@ const RouteCoveragePage: React.FC = () => {
       daily.totalPlans++;
       daily.allPlans.push(plan);
       
-      if (plan.status === 3) { // Completed status
+      if (plan.status === 2 || plan.status === 3) { // Completed status (2=completed, 3=completed legacy)
         daily.completedPlans++;
         daily.achievedPlans.push(plan);
       }
@@ -192,9 +221,9 @@ const RouteCoveragePage: React.FC = () => {
     })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     // Debug: Log the unique dates found
-    console.log('Unique dates found:', dailyArray.map(d => d.date));
-    console.log('Total unique dates:', dailyArray.length);
-    console.log('Original plans count:', plans.length);
+    console.log('[RouteCoverage] Unique dates found:', dailyArray.map(d => d.date));
+    console.log('[RouteCoverage] Total unique dates:', dailyArray.length);
+    console.log('[RouteCoverage] Original plans count:', plans.length);
     
     // Ensure no duplicate dates (extra safety check)
     const uniqueDates = new Set();
@@ -207,14 +236,15 @@ const RouteCoveragePage: React.FC = () => {
       return true;
     });
     
-    console.log('Final unique dates after filtering:', finalDailyArray.map(d => d.date));
-    console.log('Final count after filtering:', finalDailyArray.length);
+    console.log('[RouteCoverage] Final unique dates after filtering:', finalDailyArray.map(d => d.date));
+    console.log('[RouteCoverage] Final count after filtering:', finalDailyArray.length);
 
     setDailyPerformance(finalDailyArray);
     
     // Set selected date to most recent
     if (finalDailyArray.length > 0) {
       setSelectedDate(finalDailyArray[0].date);
+      console.log('[RouteCoverage] Selected date set to:', finalDailyArray[0].date);
     }
   };
 
@@ -278,7 +308,7 @@ const RouteCoveragePage: React.FC = () => {
   };
 
   const openMapModal = (clients: JourneyPlan[]) => {
-    setMapClients(clients.filter(client => client.latitude && client.longitude && client.status === 3));
+    setMapClients(clients.filter(client => client.latitude && client.longitude && (client.status === 2 || client.status === 3)));
     setIsMapModalOpen(true);
   };
 
@@ -875,7 +905,7 @@ const RouteCoveragePage: React.FC = () => {
                         <BarChart3 className="h-5 w-5 text-blue-600" />
                         All Journey Plans ({selectedDayPerformance.allPlans.length})
                       </h3>
-                      {selectedDayPerformance.allPlans.some(plan => plan.latitude && plan.longitude && plan.status === 3) && (
+                      {selectedDayPerformance.allPlans.some(plan => plan.latitude && plan.longitude && (plan.status === 2 || plan.status === 3)) && (
                         <button
                           onClick={() => openMapModal(selectedDayPerformance.allPlans)}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
@@ -1020,7 +1050,7 @@ const RouteCoveragePage: React.FC = () => {
                                
                                {/* Coordinates */}
                                <td className="px-4 py-4 whitespace-nowrap text-center">
-                                 {plan.latitude && plan.longitude && plan.status === 3 ? (
+                                {plan.latitude && plan.longitude && (plan.status === 2 || plan.status === 3) ? (
                                    <button
                                      onClick={() => openMapModal([plan])}
                                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"

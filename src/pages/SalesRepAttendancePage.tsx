@@ -261,27 +261,27 @@ const SalesRepAttendancePage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-6 space-y-4 sm:space-y-0">
+        <div className="w-full px-3 sm:px-4 lg:px-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 space-y-3 sm:space-y-0">
             <div>
               <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg">
-                  <Activity className="h-6 w-6 text-white" />
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-1.5 rounded-lg">
+                  <Activity className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                     Sales Rep Attendance
                   </h1>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-xs text-gray-600">
                     Track individual sales representative attendance and working hours
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <Link
                 to="/sales-rep-working-days"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-md shadow-sm text-[11px] font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Working Days
@@ -289,7 +289,7 @@ const SalesRepAttendancePage: React.FC = () => {
               <button
                 onClick={exportToCSV}
                 disabled={!selectedRep}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-md shadow-sm text-[11px] font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
@@ -300,7 +300,7 @@ const SalesRepAttendancePage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-3 sm:px-4 lg:px-6 py-6">
         {loading && !selectedRep ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
@@ -326,16 +326,16 @@ const SalesRepAttendancePage: React.FC = () => {
         ) : (
           <>
             {/* Selection Controls */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 mb-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                 <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
                   <div>
-                    <label htmlFor="repSelect" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="repSelect" className="block text-xs font-medium text-gray-700 mb-1">
                       Sales Representative
                     </label>
         <select
           id="repSelect"
-                      className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                      className="w-full sm:w-56 px-3 py-1.5 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
           value={selectedRep}
           onChange={e => setSelectedRep(e.target.value)}
         >
@@ -348,13 +348,13 @@ const SalesRepAttendancePage: React.FC = () => {
         </select>
                   </div>
                   <div>
-                    <label htmlFor="monthSelect" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="monthSelect" className="block text-xs font-medium text-gray-700 mb-1">
                       Month
                     </label>
         <input
           id="monthSelect"
           type="month"
-                      className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                      className="w-full sm:w-44 px-3 py-1.5 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
           value={month}
           onChange={e => setMonth(e.target.value)}
         />
@@ -366,8 +366,8 @@ const SalesRepAttendancePage: React.FC = () => {
                       <Users className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{selectedRepDetails.name}</p>
-                      <p className="text-xs text-gray-500">{selectedRepDetails.email}</p>
+                      <p className="text-xs font-medium text-gray-900">{selectedRepDetails.name}</p>
+                      <p className="text-[11px] text-gray-500">{selectedRepDetails.email}</p>
                     </div>
             </div>
           )}
@@ -375,13 +375,13 @@ const SalesRepAttendancePage: React.FC = () => {
             </div>
 
             {!selectedRep ? (
-              <div className="text-center py-16">
+                <div className="text-center py-12">
                 <div className="text-gray-400 text-6xl mb-4">👤</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Select an Active Sales Representative</h3>
                 <p className="text-gray-500">Choose an active sales rep from the dropdown above to view their attendance details.</p>
               </div>
             ) : loading ? (
-              <div className="text-center py-16">
+              <div className="text-center py-12">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
                 </div>
@@ -391,18 +391,18 @@ const SalesRepAttendancePage: React.FC = () => {
             ) : (
               <>
                 {/* Month Info */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 mb-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-base font-semibold text-gray-900">
                         {formatDate(`${month}-01`).split(',')[1]} - {formatDate(`${month}-${String(daysInMonth).padStart(2, '0')}`).split(',')[1]}
                       </h3>
-                      <p className="mt-1 text-sm text-gray-600">
+                      <p className="mt-1 text-xs text-gray-600">
                         {daysInMonth} days in {new Date(`${month}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                       </p>
                     </div>
                     <div className="mt-4 sm:mt-0">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <CalendarDays className="h-4 w-4 mr-1" />
                         {stats.totalWorking} working days
                       </span>
@@ -411,18 +411,18 @@ const SalesRepAttendancePage: React.FC = () => {
                 </div>
 
                 {/* Enhanced Dashboard Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                   <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <div className="p-6">
+                    <div className="p-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
-                          <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-lg">
-                            <UserCheck className="h-6 w-6 text-white" />
+                          <div className="bg-gradient-to-r from-green-500 to-green-600 p-2.5 rounded-lg">
+                            <UserCheck className="h-5 w-5 text-white" />
                           </div>
                         </div>
                         <div className="ml-4 flex-1">
-                          <p className="text-sm font-medium text-gray-600">Days Present</p>
-                          <p className="text-2xl font-bold text-gray-900">{stats.totalPresent}</p>
+                          <p className="text-xs font-medium text-gray-600">Days Present</p>
+                          <p className="text-xl font-bold text-gray-900">{stats.totalPresent}</p>
                           <p className="text-xs text-gray-500 mt-1">Working days attended</p>
                         </div>
                       </div>
@@ -430,16 +430,16 @@ const SalesRepAttendancePage: React.FC = () => {
                   </div>
                   
                   <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <div className="p-6">
+                    <div className="p-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
-                          <div className="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-lg">
-                            <UserX className="h-6 w-6 text-white" />
+                          <div className="bg-gradient-to-r from-red-500 to-red-600 p-2.5 rounded-lg">
+                            <UserX className="h-5 w-5 text-white" />
                           </div>
                         </div>
                         <div className="ml-4 flex-1">
-                          <p className="text-sm font-medium text-gray-600">Days Absent</p>
-                          <p className="text-2xl font-bold text-gray-900">{stats.totalAbsent}</p>
+                          <p className="text-xs font-medium text-gray-600">Days Absent</p>
+                          <p className="text-xl font-bold text-gray-900">{stats.totalAbsent}</p>
                           <p className="text-xs text-gray-500 mt-1">Working days missed</p>
                         </div>
                       </div>
@@ -447,16 +447,16 @@ const SalesRepAttendancePage: React.FC = () => {
                   </div>
                   
                   <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <div className="p-6">
+                    <div className="p-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
-                          <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-3 rounded-lg">
-                            <FileText className="h-6 w-6 text-white" />
+                          <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-2.5 rounded-lg">
+                            <FileText className="h-5 w-5 text-white" />
                           </div>
                         </div>
                         <div className="ml-4 flex-1">
-                          <p className="text-sm font-medium text-gray-600">Leave Days</p>
-                          <p className="text-2xl font-bold text-gray-900">{stats.totalLeave}</p>
+                          <p className="text-xs font-medium text-gray-600">Leave Days</p>
+                          <p className="text-xl font-bold text-gray-900">{stats.totalLeave}</p>
                           <p className="text-xs text-gray-500 mt-1">Approved leaves</p>
                         </div>
                       </div>
@@ -464,16 +464,16 @@ const SalesRepAttendancePage: React.FC = () => {
                   </div>
                   
                   <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <div className="p-6">
+                    <div className="p-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
-                          <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-lg">
-                            <Target className="h-6 w-6 text-white" />
+                          <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-2.5 rounded-lg">
+                            <Target className="h-5 w-5 text-white" />
                           </div>
                         </div>
                         <div className="ml-4 flex-1">
-                          <p className="text-sm font-medium text-gray-600">Attendance Rate</p>
-                          <p className="text-2xl font-bold text-gray-900">{stats.attendancePct === 'N/A' ? 'N/A' : `${stats.attendancePct}%`}</p>
+                          <p className="text-xs font-medium text-gray-600">Attendance Rate</p>
+                          <p className="text-xl font-bold text-gray-900">{stats.attendancePct === 'N/A' ? 'N/A' : `${stats.attendancePct}%`}</p>
                           <p className="text-xs text-gray-500 mt-1">Overall performance</p>
                         </div>
                       </div>
@@ -483,13 +483,13 @@ const SalesRepAttendancePage: React.FC = () => {
 
                 {/* Enhanced Attendance Table */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                  <div className="px-4 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 className="text-xl font-semibold text-gray-900">
+                        <h3 className="text-base font-semibold text-gray-900">
                           Daily Attendance Records
                         </h3>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <p className="mt-1 text-[11px] text-gray-600">
                           Detailed attendance for {selectedRepDetails?.name}
                         </p>
                       </div>
@@ -516,30 +516,30 @@ const SalesRepAttendancePage: React.FC = () => {
                   
                   <div className="overflow-hidden">
           <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
+                      <table className="min-w-full divide-y divide-gray-200 text-xs">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Date
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Day
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Status
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Login Time
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Logout Time
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Working Hours
                             </th>
                 </tr>
               </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-gray-200 text-xs">
                           {attendanceRecords.map((rec, index) => {
                             const statusColor = rec.status === 'Present' ? 'bg-green-100 text-green-800' :
                               rec.status === 'Leave' || rec.status === 'Weekend (Leave)' ? 'bg-orange-100 text-orange-800' :
@@ -548,29 +548,29 @@ const SalesRepAttendancePage: React.FC = () => {
 
                             return (
                               <tr key={rec.date} className="hover:bg-gray-50 transition-colors duration-150">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm font-medium text-gray-900">{rec.date}</div>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                  <div className="text-xs font-medium text-gray-900">{rec.date}</div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                <td className="px-3 py-2 whitespace-nowrap text-center">
+                                  <span className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${
                                     rec.isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800'
                                   }`}>
                                     {rec.dayOfWeek}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColor}`}>
+                                <td className="px-3 py-2 whitespace-nowrap text-center">
+                                  <span className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${statusColor}`}>
                                     {rec.status}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  <div className="text-sm text-gray-900">{rec.loginTime || '-'}</div>
+                                <td className="px-3 py-2 whitespace-nowrap text-center">
+                                  <div className="text-xs text-gray-900">{rec.loginTime || '-'}</div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  <div className="text-sm text-gray-900">{rec.logoutTime || '-'}</div>
+                                <td className="px-3 py-2 whitespace-nowrap text-center">
+                                  <div className="text-xs text-gray-900">{rec.logoutTime || '-'}</div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  <div className="text-sm font-semibold text-gray-900">{rec.workingHours || '-'}</div>
+                                <td className="px-3 py-2 whitespace-nowrap text-center">
+                                  <div className="text-xs font-semibold text-gray-900">{rec.workingHours || '-'}</div>
                                 </td>
                   </tr>
                             );

@@ -109,6 +109,8 @@ import ClientActivityPage from './pages/ClientActivityPage';
 import AssetsPage from './pages/AssetsPage';
 import JourneyPlanPage from './pages/JourneyPlanPage';
 import RouteCoveragePage from './pages/RouteCoveragePage';
+import RouteComplianceCoveragePage from './pages/RouteComplianceCoveragePage';
+import RouteCompliancePage from './pages/RouteCompliancePage';
 import RouteReportPage from './pages/RouteReportPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ClientProfilePage from './pages/ClientProfilePage';
@@ -277,7 +279,9 @@ const App = () => {
             <Route path="/dashboard/clients/add" element={<AddClientPage />} />
             <Route path="/dashboard/clients/:id/branches" element={<ClientBranchesPage />} />
         <Route path="/dashboard/journey-plans" element={<JourneyPlanPage />} />
-        <Route path="/dashboard/route-coverage/:salesRepId" element={<RouteCoveragePage />} />
+            <Route path="/dashboard/route-coverage/:salesRepId" element={<RouteCoveragePage />} />
+            <Route path="/dashboard/route-compliance/coverage/:salesRepId" element={<RouteComplianceCoveragePage />} />
+            <Route path="/dashboard/route-compliance" element={<RouteCompliancePage />} />
         <Route path="/dashboard/route-report/:salesRepId" element={<RouteReportPage />} />
 <Route path="/financial/purchase-order" element={<PurchaseOrderPage />} />
             <Route path="/financial/create-customer-order" element={<CreateCustomerOrderPage />} />

@@ -91,48 +91,48 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">
+      <div className="bg-white rounded-lg p-5 w-full max-w-md">
+        <h2 className="text-lg font-bold mb-3">
           {salesRep ? 'Edit Sales Rep' : 'Add New Sales Rep'}
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name *</label>
+              <label className="block text-xs font-medium text-gray-700">Name *</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email *</label>
+              <label className="block text-xs font-medium text-gray-700">Email *</label>
               <input
                 type="email"
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Phone Number *</label>
+              <label className="block text-xs font-medium text-gray-700">Phone Number *</label>
               <input
                 type="number"
                 required
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Country</label>
+              <label className="block text-xs font-medium text-gray-700">Country</label>
               <select
                 value={formData.country}
                 onChange={e => setFormData({ ...formData, country: e.target.value, region: '' })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select country</option>
                 {countries.map(c => (
@@ -141,11 +141,11 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Region</label>
+              <label className="block text-xs font-medium text-gray-700">Region</label>
               <select
                 value={formData.region}
                 onChange={e => setFormData({ ...formData, region: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={!formData.country}
               >
                 <option value="">{formData.country ? 'Select region' : 'Select country first'}</option>
@@ -155,11 +155,11 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Route</label>
+              <label className="block text-xs font-medium text-gray-700">Route</label>
               <select
                 value={formData.route_name_update}
                 onChange={e => setFormData({ ...formData, route_name_update: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select route</option>
                 {routes.map(r => (
@@ -168,7 +168,7 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Photo</label>
+              <label className="block text-xs font-medium text-gray-700">Photo</label>
               <input
                 type="file"
                 accept="image/*"
@@ -195,10 +195,10 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
                   }
                   setUploading(false);
                 }}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {uploading && <div className="text-blue-600 text-sm mt-1">Uploading...</div>}
-              {uploadError && <div className="text-red-600 text-sm mt-1">{uploadError}</div>}
+              {uploading && <div className="text-blue-600 text-xs mt-1">Uploading...</div>}
+              {uploadError && <div className="text-red-600 text-xs mt-1">{uploadError}</div>}
               {formData.photoUrl && (
                 <div className="mt-2">
                   <img src={formData.photoUrl} alt="Preview" className="h-16 w-16 rounded-full object-cover border" />
@@ -206,7 +206,7 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label className="block text-xs font-medium text-gray-700">Status</label>
               <div className="flex items-center mt-1">
                 <input
                   type="checkbox"
@@ -215,24 +215,24 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   id="status-toggle"
                 />
-                <label htmlFor="status-toggle" className="ml-2 text-sm">
+                <label htmlFor="status-toggle" className="ml-2 text-xs">
                   {formData.status === 1 ? 'Active' : 'Inactive'}
                 </label>
               </div>
             </div>
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex justify-end space-x-3 mt-5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? 'Saving...' : (salesRep ? 'Update' : 'Create')}
             </button>
@@ -626,18 +626,18 @@ const SalesRepsPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+    <div className="w-full py-6 px-4">
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           {selectedCountry === 'Kenya' && (
             <>
-              <img src="/kenya_flag.jpeg" alt="Kenya Flag" className="h-8 w-auto inline-block align-middle rounded shadow" />
+              <img src="/kenya_flag.jpeg" alt="Kenya Flag" className="h-6 w-auto inline-block align-middle rounded shadow" />
               Kenya Sales Representatives
             </>
           )}
           {selectedCountry === 'Tanzania' && (
             <>
-              <img src="/tz_flag.jpeg" alt="Tanzania Flag" className="h-8 w-auto inline-block align-middle rounded shadow" />
+              <img src="/tz_flag.jpeg" alt="Tanzania Flag" className="h-6 w-auto inline-block align-middle rounded shadow" />
               Tanzania Sales Representatives
             </>
           )}
@@ -645,7 +645,7 @@ const SalesRepsPage: React.FC = () => {
         </h1>
         <button
           onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs hover:bg-blue-700"
         >
           Add Sales Rep
         </button>
@@ -658,16 +658,16 @@ const SalesRepsPage: React.FC = () => {
       )}
 
       {/* 10. Add the filter button and the filter modal */}
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-3 flex items-center gap-3 text-xs">
         <Link
           to="/overall-attendance"
-          className="bg-blue-100 text-blue-700 font-semibold px-4 py-2 rounded shadow hover:bg-blue-200"
+          className="bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded shadow hover:bg-blue-200"
         >
           Overall Attendance
         </Link>
         <Link
           to="/sales-rep-working-days"
-          className="bg-blue-100 text-blue-700 font-semibold px-4 py-2 rounded shadow hover:bg-blue-200"
+          className="bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded shadow hover:bg-blue-200"
         >
           Sales Rep Working Days
         </Link>
@@ -691,20 +691,20 @@ const SalesRepsPage: React.FC = () => {
         </Link> */}
         <button
           onClick={openFilterModal}
-          className="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow hover:bg-gray-200"
+          className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded shadow hover:bg-gray-200"
         >
           Filter
         </button>
         <button
           onClick={exportToCSV}
-          className="bg-green-100 text-green-800 px-4 py-2 rounded hover:bg-green-200 border border-green-300"
+          className="bg-green-100 text-green-800 px-3 py-1.5 rounded hover:bg-green-200 border border-green-300"
         >
           Export to CSV
         </button>
-        <label htmlFor="records-per-page" className="text-sm font-medium text-gray-700">Show:</label>
+        <label htmlFor="records-per-page" className="text-xs font-medium text-gray-700">Show:</label>
         <select
           id="records-per-page"
-          className="border border-gray-300 rounded px-2 py-1"
+          className="border border-gray-300 rounded px-2 py-1 text-xs"
           value={repsPerPage}
           onChange={e => setRepsPerPage(Number(e.target.value))}
         >
@@ -712,14 +712,14 @@ const SalesRepsPage: React.FC = () => {
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
-        <span className="text-sm text-gray-700">per page</span>
+        <span className="text-xs text-gray-700">per page</span>
       </div>
 
       {/* Country filter buttons at the top */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2 text-xs">
         <button
           type="button"
-          className={`px-3 py-1 rounded-md border text-sm ${selectedCountry === '' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+          className={`px-2.5 py-1 rounded-md border ${selectedCountry === '' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
           onClick={() => setSelectedCountry('')}
         >
           All Countries
@@ -728,7 +728,7 @@ const SalesRepsPage: React.FC = () => {
           <button
             key={c.id}
             type="button"
-            className={`px-3 py-1 rounded-md border text-sm ${selectedCountry === c.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+            className={`px-2.5 py-1 rounded-md border ${selectedCountry === c.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
             onClick={() => setSelectedCountry(c.name)}
           >
             {c.name}
@@ -742,82 +742,82 @@ const SalesRepsPage: React.FC = () => {
           <p className="mt-2 text-gray-600">Loading sales reps...</p>
         </div>
       ) : (
-        <div className="bg-white shadow overflow-x-auto w-full">
+        <div className="bg-white shadow overflow-x-auto w-full text-xs">
           <table className="min-w-full w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Photo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Phone Number
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Location
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden">
                     Route
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 text-xs">
                 {paginatedSalesReps.map((rep) => (
                   <tr key={rep.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {rep.photoUrl ? (
                         <img
                           src={rep.photoUrl}
                           alt={rep.name}
-                          className="h-10 w-10 rounded-full object-cover cursor-pointer"
+                          className="h-8 w-8 rounded-full object-cover cursor-pointer"
                           onClick={() => setExpandedPhotoUrl(rep.photoUrl!)}
                           onError={(e) => {
                             e.currentTarget.src = 'https://via.placeholder.com/40x40?text=' + rep.name.charAt(0);
                           }}
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-700">
+                        <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                          <span className="text-[11px] font-medium text-gray-700">
                             {rep.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{rep.name}</div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs font-medium text-gray-900">{rep.name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{rep.email}</div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-900">{rep.email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{rep.phoneNumber}</div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-900">{rep.phoneNumber}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-900">
                         {rep.country && <span>{rep.country}</span>}
                         {rep.country && rep.region && <span>, </span>}
                         {rep.region && <span>{rep.region}</span>}
                         {!rep.country && !rep.region && <span className="text-gray-400">Not specified</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap hidden">
+                      <div className="text-xs text-gray-900">
                         {rep.route_name_update || <span className="text-gray-400">Not specified</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-900">
                         {rep.status === 1 ? (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                         ) : rep.status === 0 ? (
@@ -828,29 +828,29 @@ const SalesRepsPage: React.FC = () => {
                         <span className="text-xs text-gray-400 ml-1">({rep.status ?? 'undefined'})</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
                       <div className="flex flex-wrap gap-2">
-                        <Link
+                        {/* <Link
                           to={`/sales-reps/${rep.id}`}
-                          className="bg-indigo-100 text-indigo-700 font-semibold px-3 py-1 rounded hover:bg-indigo-200 transition"
+                          className="bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-indigo-200 transition"
                         >
                           View Details
-                        </Link>
+                        </Link> */}
                         <button
                           onClick={() => handleSetTargets(rep)}
-                          className="bg-purple-100 text-purple-700 font-semibold px-3 py-1 rounded hover:bg-purple-200 transition"
+                          className="bg-purple-100 text-purple-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-purple-200 transition"
                         >
                           Set Targets
                         </button>
                         <button
                           onClick={() => handleEdit(rep)}
-                          className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded hover:bg-blue-200 transition"
+                          className="bg-blue-100 text-blue-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-blue-200 transition"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(rep.id)}
-                          className="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded hover:bg-red-200 transition"
+                          className="bg-red-100 text-red-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-red-200 transition"
                         >
                           Delete
                         </button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import axios from 'axios';
 import { upliftSaleService } from '../services/upliftSaleService';
 import { UpliftSale, UpliftSaleItem, OutletAccount, SalesRep } from '../types/financial';
 import { convertToCSV, downloadCSV, formatCurrencyForCSV, formatDateForCSV, formatStatusForCSV, CSVColumn } from '../utils/csvExport';
@@ -34,6 +35,11 @@ const formatDate = (date: string) => {
 
 
 const UpliftSalesPage: React.FC = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
   const [upliftSales, setUpliftSales] = useState<UpliftSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,66 +198,15 @@ const UpliftSalesPage: React.FC = () => {
 
   const loadClients = async () => {
     try {
-      console.log('🔄 [loadClients] Starting to load clients...');
-      console.log('🔄 [loadClients] Current clients state:', clients.length);
-      
-      const url = '/api/clients?limit=10000';
-      console.log('🔄 [loadClients] Fetching from URL:', url);
-      
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      console.log('📡 [loadClients] Response received:');
-      console.log('  - Status:', response.status);
-      console.log('  - Status Text:', response.statusText);
-      console.log('  - OK:', response.ok);
-      console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
-      
-      if (response.ok) {
-        console.log('✅ [loadClients] Response is OK, parsing JSON...');
-        const data = await response.json();
-        console.log('📊 [loadClients] Parsed data:', {
-          hasData: !!data.data,
-          dataLength: data.data?.length || 0,
-          total: data.total,
-          page: data.page,
-          firstClient: data.data?.[0] || 'No clients'
-        });
-        
-        if (data.data && Array.isArray(data.data)) {
-          console.log('✅ [loadClients] API returned valid data array');
-          console.log('📋 [loadClients] Setting clients state with', data.data.length, 'clients');
-          setClients(data.data);
-          console.log('✅ [loadClients] Clients state updated successfully');
-        } else {
-          console.error('❌ [loadClients] API returned invalid data structure');
-          console.error('❌ [loadClients] Full response:', JSON.stringify(data, null, 2));
-          console.error('❌ [loadClients] Data type:', typeof data.data);
-          console.error('❌ [loadClients] Is array:', Array.isArray(data.data));
-        }
-      } else {
-        console.error('❌ [loadClients] Response not OK');
-        console.error('❌ [loadClients] Status:', response.status);
-        console.error('❌ [loadClients] Status Text:', response.statusText);
-        
-        // Try to get error response body
-        try {
-          const errorData = await response.text();
-          console.error('❌ [loadClients] Error response body:', errorData);
-        } catch (e) {
-          console.error('❌ [loadClients] Could not read error response body:', e);
-        }
-      }
+      console.log('🔄 [loadClients] Loading clients via axios...');
+      const url = `${API_BASE_URL}/clients?limit=10000`;
+      const res = await axios.get(url, { headers: getAuthHeaders() });
+      const data = res.data;
+      const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+      console.log('📊 [loadClients] Received clients:', list.length);
+      setClients(list);
     } catch (err) {
-      console.error('💥 [loadClients] Exception caught:', err);
-      console.error('💥 [loadClients] Error details:', {
-        name: (err as Error).name,
-        message: (err as Error).message,
-        stack: (err as Error).stack
-      });
+      console.error('💥 [loadClients] Error loading clients:', err);
     }
   };
 
@@ -464,13 +419,13 @@ const UpliftSalesPage: React.FC = () => {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Uplift Sales</h1>
+            <h1 className="text-xl font-bold text-gray-900">Uplift Sales</h1>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleExportCSV}
               disabled={exporting}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4 mr-2" />
               {exporting ? 'Exporting...' : 'Export CSV'}
@@ -480,29 +435,29 @@ const UpliftSalesPage: React.FC = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Total Sales</p>
-            <p className="text-2xl font-bold text-gray-900">{summary.totalSales}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs text-gray-500">Total Sales</p>
+            <p className="text-lg font-bold text-gray-900">{summary.totalSales}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Total Amount</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.totalAmount)}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs text-gray-500">Total Amount</p>
+            <p className="text-lg font-bold text-gray-900">{formatCurrency(summary.totalAmount)}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">{summary.pendingCount}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs text-gray-500">Pending</p>
+            <p className="text-lg font-bold text-yellow-600">{summary.pendingCount}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Approved</p>
-            <p className="text-2xl font-bold text-blue-600">{summary.approvedCount}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs text-gray-500">Approved</p>
+            <p className="text-lg font-bold text-blue-600">{summary.approvedCount}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Rejected</p>
-            <p className="text-2xl font-bold text-red-600">{summary.rejectedCount}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs text-gray-500">Rejected</p>
+            <p className="text-lg font-bold text-red-600">{summary.rejectedCount}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Completed</p>
-            <p className="text-2xl font-bold text-green-600">{summary.completedCount}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs text-gray-500">Completed</p>
+            <p className="text-lg font-bold text-green-600">{summary.completedCount}</p>
           </div>
         </div>
 
@@ -510,11 +465,11 @@ const UpliftSalesPage: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-9 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
@@ -524,11 +479,11 @@ const UpliftSalesPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Outlet Account</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Outlet Account</label>
               <select
                 value={filters.outletAccountId}
                 onChange={(e) => setFilters(prev => ({ ...prev, outletAccountId: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
               >
                 <option value="">All Outlet Accounts</option>
                 {outletAccounts.map((account) => (
@@ -539,11 +494,11 @@ const UpliftSalesPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sales Rep</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Sales Rep</label>
               <select
                 value={filters.salesRepId}
                 onChange={(e) => setFilters(prev => ({ ...prev, salesRepId: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
               >
                 <option value="">All Sales Reps</option>
                 {salesReps.map((rep) => (
@@ -554,7 +509,7 @@ const UpliftSalesPage: React.FC = () => {
               </select>
             </div>
             <div className="relative client-dropdown-container">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Client ({clients.length})
               </label>
               <div className="relative">
@@ -565,7 +520,7 @@ const UpliftSalesPage: React.FC = () => {
                   onFocus={() => setShowClientDropdown(true)}
                   onKeyDown={handleClientKeyDown}
                   placeholder="Search clients..."
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                   <svg
@@ -589,7 +544,7 @@ const UpliftSalesPage: React.FC = () => {
                   {filteredClients.length > 0 ? (
                     <>
                       <div
-                        className={`px-3 py-2 text-sm cursor-pointer ${
+                        className={`px-3 py-2 text-xs cursor-pointer ${
                           selectedClientIndex === 0 
                             ? 'bg-blue-100 text-blue-900' 
                             : 'text-gray-500 hover:bg-gray-100'
@@ -601,7 +556,7 @@ const UpliftSalesPage: React.FC = () => {
                       {filteredClients.map((client, index) => (
                         <div
                           key={client.id}
-                          className={`px-3 py-2 text-sm cursor-pointer ${
+                          className={`px-3 py-2 text-xs cursor-pointer ${
                             selectedClientIndex === index + 1 
                               ? 'bg-blue-100 text-blue-900' 
                               : 'hover:bg-gray-100'
@@ -613,7 +568,7 @@ const UpliftSalesPage: React.FC = () => {
                       ))}
                     </>
                   ) : (
-                    <div className="px-3 py-2 text-sm text-gray-500">
+                    <div className="px-3 py-2 text-xs text-gray-500">
                       {clientSearchTerm ? 'No clients found' : 'Loading clients...'}
                     </div>
                   )}
@@ -621,13 +576,13 @@ const UpliftSalesPage: React.FC = () => {
               )}
               
               {clients.length === 0 && (
-                <div className="text-xs text-red-500 mt-1">
+                <div className="text-[11px] text-red-500 mt-1">
                   No clients loaded. Check console for errors.
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Start Date
                 {filters.startDate === currentMonthDates.startDate && (
                   <span className="text-xs text-blue-600 ml-1">({currentMonthDates.monthName})</span>
@@ -637,11 +592,11 @@ const UpliftSalesPage: React.FC = () => {
                 type="date"
                 value={filters.startDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 End Date
                 {filters.endDate === currentMonthDates.endDate && (
                   <span className="text-xs text-blue-600 ml-1">({currentMonthDates.monthName})</span>
@@ -651,17 +606,17 @@ const UpliftSalesPage: React.FC = () => {
                 type="date"
                 value={filters.endDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
               <input
                 type="text"
                 placeholder="Search client or sales rep..."
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
               />
             </div>
             <div className="flex items-end gap-2">

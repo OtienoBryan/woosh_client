@@ -143,6 +143,12 @@ const navigation = [
                 roles: ['admin', 'manager', 'sales', 'executive']
               },
   {
+    name: 'Route Compliance',
+    href: '/dashboard/route-compliance',
+    icon: MapIcon,
+    roles: ['admin', 'manager', 'sales', 'executive']
+  },
+  {
     name: 'Balance Sheet',
     href: '/reports/balance-sheet',
     icon: BarChart3,

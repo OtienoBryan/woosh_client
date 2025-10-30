@@ -73,9 +73,8 @@ const JourneyPlanPage: React.FC = () => {
     try {
       const response = await getWithAuth('/api/journey-plans');
       const data: any = await response.json();
-      if (data.success) {
-        setJourneyPlans(data.data);
-      }
+      const rawPlans = Array.isArray(data) ? data : (data?.data ?? []);
+      setJourneyPlans(Array.isArray(rawPlans) ? rawPlans : []);
     } catch (error) {
       console.error('Failed to fetch journey plans:', error);
     } finally {
@@ -92,7 +91,7 @@ const JourneyPlanPage: React.FC = () => {
     navigate(`/dashboard/route-coverage/${salesRep.id}`, { 
       state: { 
         salesRep, 
-        journeyPlans: journeyPlans.filter(plan => plan.userId === salesRep.id) 
+        journeyPlans: journeyPlans.filter(plan => Number(plan.userId) === Number(salesRep.id)) 
       } 
     });
   };
@@ -103,6 +102,23 @@ const JourneyPlanPage: React.FC = () => {
         salesRep
       } 
     });
+  };
+
+  const handleTestFetch = async () => {
+    try {
+      const userIdToTest = 109;
+      console.log('[JourneyPlanPage] Testing fetch for JourneyPlan userId:', userIdToTest);
+      const res = await getWithAuth(`/api/journey-plans/user/${userIdToTest}`);
+      console.log('[JourneyPlanPage] Response status:', res.status);
+      const json = await res.json();
+      const raw = Array.isArray(json) ? json : (json?.data ?? []);
+      console.log('[JourneyPlanPage] Raw payload:', json);
+      console.log('[JourneyPlanPage] Parsed plans length:', Array.isArray(raw) ? raw.length : 'not-array');
+      alert(`Fetched ${Array.isArray(raw) ? raw.length : 0} plans for userId ${userIdToTest}`);
+    } catch (e: any) {
+      console.error('[JourneyPlanPage] Test fetch error:', e);
+      alert(`Test fetch failed: ${e?.message || e}`);
+    }
   };
 
   const handleCreateSuccess = () => {
@@ -154,35 +170,41 @@ const JourneyPlanPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 py-6 text-xs">
       {/* Header */}
                        <div className="mb-8">
-           <div className="flex items-center gap-3 mb-4">
-             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-               <MapPin className="h-6 w-6 text-red-600" />
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-red-600" />
              </div>
              <div>
-               <h1 className="text-3xl font-bold text-gray-900">Journey Plans</h1>
-               <p className="text-gray-600">Manage sales representative route plans and client visits</p>
+              <h1 className="text-2xl font-bold text-gray-900">Journey Plans</h1>
+              <p className="text-gray-600 text-xs">Manage sales representative route plans and client visits</p>
              </div>
            </div>
          </div>
 
       {/* Sales Representatives Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                 <div className="flex items-center justify-between mb-6">
-           <div className="flex items-center gap-3">
-             <Users className="h-6 w-6 text-blue-600" />
-             <h2 className="text-xl font-semibold text-gray-900">Active Sales Representatives</h2>
-             <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <Users className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Active Sales Representatives</h2>
+            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
                {salesReps.length} reps
              </span>
            </div>
+          <button
+            onClick={handleTestFetch}
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-700 text-white text-xs rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+          >
+            Test Fetch (userId 109)
+          </button>
            <button
              onClick={() => setShowPendingModal(true)}
-             className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-600 text-white text-xs rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors"
            >
-             <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
              View Pending Plans
            </button>
          </div>
@@ -194,77 +216,61 @@ const JourneyPlanPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 text-xs">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Phone
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Route Name
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  
+                  <th className="px-4 py-2 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 text-xs">
                                  {salesReps.map((rep) => (
                    <tr 
                      key={rep.id} 
                      className="hover:bg-gray-50 cursor-pointer"
                      onClick={() => handleSalesRepClick(rep)}
                    >
-                     <td className="px-6 py-4 whitespace-nowrap">
-                       <div className="text-sm font-medium text-gray-900">{rep.name}</div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs font-medium text-gray-900">{rep.name}</div>
                      </td>
-                     <td className="px-6 py-4 whitespace-nowrap">
-                       <div className="text-sm text-gray-600">{rep.email}</div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-600">{rep.email}</div>
                      </td>
-                     <td className="px-6 py-4 whitespace-nowrap">
-                       <div className="text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-500">
                          {rep.phone || '-'}
                        </div>
                      </td>
-                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                       <div className="text-sm text-gray-900">
-                         {rep.route_name ? (
-                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                             🛣️ {rep.route_name}
-                           </span>
-                         ) : rep.route_id_update ? (
-                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                             ID: {rep.route_id_update}
-                           </span>
-                         ) : (
-                           <span className="text-xs text-gray-400">No route</span>
-                         )}
-                       </div>
-                     </td>
+                     
                      <td className="px-6 py-4 whitespace-nowrap text-center">
                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                          Active
                        </span>
                      </td>
-                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                       <div className="flex flex-col gap-2">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <div className="flex flex-row flex-wrap justify-center gap-1">
                          <button
                            onClick={(e) => {
                              e.stopPropagation();
                              handleCreateJourneyPlan(rep);
                            }}
-                           className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-[11px] rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
                          >
-                           <Plus className="h-4 w-4" />
+                          <Plus className="h-3 w-3" />
                            Create Route Plan
                          </button>
                                       <button
@@ -272,9 +278,9 @@ const JourneyPlanPage: React.FC = () => {
                  e.stopPropagation();
                  handleRouteCoverage(rep);
                }}
-               className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 text-white text-[11px] rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
              >
-               <MapPin className="h-4 w-4" />
+              <MapPin className="h-3 w-3" />
                Route Coverage
              </button>
              <button
@@ -282,9 +288,9 @@ const JourneyPlanPage: React.FC = () => {
                  e.stopPropagation();
                  handleRouteReport(rep);
                }}
-               className="inline-flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-purple-600 text-white text-[11px] rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
              >
-               <FileText className="h-4 w-4" />
+              <FileText className="h-3 w-3" />
                Route Report
              </button>
                        </div>

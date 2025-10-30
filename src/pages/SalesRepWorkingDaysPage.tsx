@@ -303,10 +303,10 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                   <Calendar className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  <h1 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                     Sales Rep Working Days
                   </h1>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-xs text-gray-600">
                     Track attendance, leaves, and performance metrics
                   </p>
                 </div>
@@ -315,23 +315,23 @@ const SalesRepWorkingDaysPage: React.FC = () => {
             <div className="flex items-center space-x-3">
         <Link
           to="/sales-rep-attendance"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
         >
-                <Activity className="h-4 w-4 mr-2" />
+                <Activity className="h-3 w-3 mr-1.5" />
                 Attendance View
         </Link>
         <button
           onClick={exportToCSV}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
         >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-3 w-3 mr-1.5" />
                 Export CSV
         </button>
         <button
           onClick={openFilterModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
         >
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-3 w-3 mr-1.5" />
           Filter
         </button>
       </div>
@@ -346,19 +346,19 @@ const SalesRepWorkingDaysPage: React.FC = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
             </div>
-            <p className="mt-6 text-lg font-medium text-gray-700">Loading working days data...</p>
-            <p className="mt-2 text-sm text-gray-500">Please wait while we fetch the latest information</p>
+            <p className="mt-6 text-sm font-medium text-gray-700">Loading working days data...</p>
+            <p className="mt-2 text-xs text-gray-500">Please wait while we fetch the latest information</p>
           </div>
       ) : error ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
               <div className="text-red-600 text-2xl">⚠️</div>
             </div>
-            <h3 className="mt-6 text-lg font-medium text-red-900">Error Loading Data</h3>
-            <p className="mt-2 text-red-600 max-w-md mx-auto">{error}</p>
+            <h3 className="mt-6 text-sm font-medium text-red-900">Error Loading Data</h3>
+            <p className="mt-2 text-xs text-red-600 max-w-md mx-auto">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              className="mt-4 inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               Try Again
             </button>
@@ -366,19 +366,19 @@ const SalesRepWorkingDaysPage: React.FC = () => {
         ) : (
           <>
             {/* Date Range Info */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-sm font-semibold text-gray-900">
                     Date Range: {formatDate(startDate)} - {formatDate(endDate)}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-xs text-gray-600">
                     {numWorkingDays} working days (excluding Sundays)
                   </p>
                 </div>
                 <div className="mt-4 sm:mt-0">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    <Clock className="h-4 w-4 mr-1" />
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <Clock className="h-3 w-3 mr-1" />
                     {formatDate(startDate).split(',')[1]} - {formatDate(endDate).split(',')[1]}
                   </span>
                 </div>
@@ -458,13 +458,13 @@ const SalesRepWorkingDaysPage: React.FC = () => {
 
             {/* Enhanced Working Days Table */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-              <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+              <div className="px-4 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-sm font-semibold text-gray-900">
                       Sales Representative Performance
                     </h3>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-xs text-gray-600">
                       Showing {filteredRepStats.length} sales representatives
                     </p>
                   </div>
@@ -496,31 +496,31 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               <div className="overflow-hidden">
                 {filteredRepStats.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-gray-400 text-6xl mb-4">📊</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-                    <p className="text-gray-500">No sales representatives found for the selected filters.</p>
+                    <div className="text-gray-400 text-4xl mb-4">📊</div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">No Data Available</h3>
+                    <p className="text-xs text-gray-500">No sales representatives found for the selected filters.</p>
                   </div>
       ) : (
         <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                                                  <tr>
-                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                              Sales Representative
                            </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                              Days Present
                            </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                              Days Absent
                            </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                              Leave Days
                            </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                              Attendance %
                            </th>
-                           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                              Performance
                            </th>
               </tr>
@@ -546,42 +546,42 @@ const SalesRepWorkingDaysPage: React.FC = () => {
 
                 return (
                             <tr key={stat.rep.id} className="hover:bg-gray-50 transition-colors duration-150">
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-3 py-2 whitespace-nowrap">
                                 <div className="flex items-center">
                                    
-                                  <div className="ml-3">
-                                    <div className="text-sm font-medium text-gray-900">{stat.rep.name}</div>
+                                  <div className="ml-2">
+                                    <div className="text-xs font-medium text-gray-900">{stat.rep.name}</div>
                                   </div>
                                 </div>
                               </td>
-                               <td className="px-6 py-4 whitespace-nowrap text-center">
-                                 <div className="text-sm font-semibold text-green-600">
+                               <td className="px-3 py-2 whitespace-nowrap text-center">
+                                 <div className="text-xs font-semibold text-green-600">
                                    {stat.present}
                                  </div>
-                                 <div className="text-xs text-gray-500">days</div>
+                                 <div className="text-[10px] text-gray-500">days</div>
                                </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-red-600">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className="text-xs font-semibold text-red-600">
                                   {stat.absent}
                                 </div>
-                                <div className="text-xs text-gray-500">days</div>
+                                <div className="text-[10px] text-gray-500">days</div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-orange-600">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className="text-xs font-semibold text-orange-600">
                                   {stat.leave}
                                 </div>
-                                <div className="text-xs text-gray-500">days</div>
+                                <div className="text-[10px] text-gray-500">days</div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className={`text-sm font-semibold ${attendanceColor}`}>
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className={`text-xs font-semibold ${attendanceColor}`}>
                                   {stat.attendance === 'N/A' ? 'N/A' : `${stat.attendance}%`}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-[10px] text-gray-500">
                                   of {stat.totalWorkingDays - stat.leave} days
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${performanceColor}`}>
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full ${performanceColor}`}>
                                   {performanceLevel}
                                 </span>
                               </td>
@@ -603,9 +603,9 @@ const SalesRepWorkingDaysPage: React.FC = () => {
       {/* Enhanced Filter Modal */}
       {filterModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Filter Working Days</h2>
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900">Filter Working Days</h2>
               <button
                 onClick={() => setFilterModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
@@ -616,14 +616,14 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </button>
             </div>
             
-                         <div className="space-y-6">
+                         <div className="space-y-4">
               <div>
-                 <label htmlFor="countryFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                 <label htmlFor="countryFilter" className="block text-xs font-medium text-gray-700 mb-1.5">
                    Country
                  </label>
                 <select
                   id="countryFilter"
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   value={pendingCountry}
                   onChange={e => setPendingCountry(e.target.value)}
                 >
@@ -635,12 +635,12 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </div>
                
                <div>
-                 <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                 <label htmlFor="statusFilter" className="block text-xs font-medium text-gray-700 mb-1.5">
                    Status
                  </label>
                  <select
                    id="statusFilter"
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                    value={pendingStatus}
                    onChange={e => setPendingStatus(e.target.value)}
                  >
@@ -651,12 +651,12 @@ const SalesRepWorkingDaysPage: React.FC = () => {
                </div>
                
               <div>
-                 <label htmlFor="repFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                 <label htmlFor="repFilter" className="block text-xs font-medium text-gray-700 mb-1.5">
                    Sales Representative
                  </label>
                 <select
                   id="repFilter"
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   value={pendingRep}
                   onChange={e => setPendingRep(e.target.value)}
                 >
@@ -668,13 +668,13 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </div>
               
               <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="startDate" className="block text-xs font-medium text-gray-700 mb-1.5">
                   Start Date
                 </label>
                 <input
                   id="startDate"
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   value={pendingStartDate}
                   onChange={e => setPendingStartDate(e.target.value)}
                   max={pendingEndDate}
@@ -682,13 +682,13 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </div>
               
               <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="endDate" className="block text-xs font-medium text-gray-700 mb-1.5">
                   End Date
                 </label>
                 <input
                   id="endDate"
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   value={pendingEndDate}
                   onChange={e => setPendingEndDate(e.target.value)}
                   min={pendingStartDate}
@@ -696,15 +696,15 @@ const SalesRepWorkingDaysPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex justify-end gap-3 mt-8">
+            <div className="flex justify-end gap-2 mt-6">
               <button
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                 onClick={clearFilters}
               >
                 Clear
               </button>
               <button
-                className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="px-3 py-1.5 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                 onClick={applyFilters}
               >
                 Apply Filters

@@ -60,14 +60,17 @@ const OverallAttendancePage: React.FC = () => {
   const year = now.getFullYear();
   const month = now.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const defaultStart = DateTime.now().startOf('month').toISODate();
-  const defaultEnd = DateTime.now().endOf('month').toISODate();
+  // Reduce initial range to last 7 days to improve load time
+  const defaultStart = DateTime.now().minus({ days: 6 }).toISODate();
+  const defaultEnd = DateTime.now().toISODate();
   
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(defaultEnd);
   const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([]);
   const [journeyPlans, setJourneyPlans] = useState<JourneyPlan[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [totalClients, setTotalClients] = useState<number>(0);
+  const [clientsLoading, setClientsLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
@@ -96,16 +99,22 @@ const OverallAttendancePage: React.FC = () => {
 
   // Data fetching
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
     setLoading(true);
     setError(null); // Reset error state
     
     console.log('OverallAttendancePage: Starting data fetch...');
     console.log('API_BASE_URL:', API_BASE_URL);
     
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
     Promise.all([
-      axios.get(`${API_BASE_URL}/login-history`, { headers: getAuthHeaders() }),
-      axios.get(`${API_BASE_URL}/journey-plans`, { headers: getAuthHeaders() }),
-      axios.get(`${API_BASE_URL}/clients?limit=10000`, { headers: getAuthHeaders() }),
+      axios.get(`${API_BASE_URL}/login-history?${params.toString()}`, { headers: getAuthHeaders(), signal }),
+      axios.get(`${API_BASE_URL}/journey-plans?${params.toString()}`, { headers: getAuthHeaders(), signal }),
+      axios.get(`${API_BASE_URL}/clients?limit=1`, { headers: getAuthHeaders(), signal }),
       salesService.getCountries(),
       salesService.getAllSalesReps(),
     ])
@@ -113,7 +122,7 @@ const OverallAttendancePage: React.FC = () => {
                  console.log('OverallAttendancePage: Data fetch successful');
          console.log('Login history count:', loginRes.data?.length || 0);
          console.log('Journey plans count:', journeyRes.data?.length || 0);
-         console.log('Clients count:', clientsRes.data?.data?.length || 0);
+        console.log('Clients meta:', clientsRes.data);
          console.log('Countries count:', countriesRes?.length || 0);
          console.log('Sales reps count:', salesRepsRes?.length || 0);
          
@@ -136,18 +145,43 @@ const OverallAttendancePage: React.FC = () => {
         
         setLoginHistory(Array.isArray(loginRes.data) ? loginRes.data : []);
         setJourneyPlans(Array.isArray(journeyRes.data) ? journeyRes.data : []);
-        // Fix: Handle the paginated response structure for clients
-        setClients(Array.isArray(clientsRes.data?.data) ? clientsRes.data.data : Array.isArray(clientsRes.data) ? clientsRes.data : []);
+        // Only set total clients; defer full list until modal open
+        const total = typeof clientsRes.data?.total === 'number'
+          ? clientsRes.data.total
+          : (Array.isArray(clientsRes.data?.data) ? clientsRes.data.data.length : (Array.isArray(clientsRes.data) ? clientsRes.data.length : 0));
+        setTotalClients(total || 0);
         setCountries(Array.isArray(countriesRes) ? countriesRes : []);
         setSalesReps(Array.isArray(salesRepsRes) ? salesRepsRes : []);
         setLoading(false);
       })
       .catch((error) => {
+        if (error?.name === 'CanceledError') return; // ignore cancellations
         console.error('Error fetching overall attendance data:', error);
         setError(`Failed to fetch data: ${error.response?.data?.message || error.message || 'Unknown error'}`);
         setLoading(false);
       });
+    return () => controller.abort();
   }, []);
+
+  // Lazy-load full clients only when needed (clients modal opens)
+  useEffect(() => {
+    if (clientsModalOpen && clients.length === 0 && !clientsLoading) {
+      setClientsLoading(true);
+      const controller = new AbortController();
+      const { signal } = controller;
+      axios.get(`${API_BASE_URL}/clients?limit=10000`, { headers: getAuthHeaders(), signal })
+        .then((res) => {
+          const list = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+          setClients(list);
+          if (!totalClients) {
+            const total = typeof res.data?.total === 'number' ? res.data.total : list.length;
+            setTotalClients(total);
+          }
+        })
+        .finally(() => setClientsLoading(false));
+      return () => controller.abort();
+    }
+  }, [clientsModalOpen]);
 
   // Build attendance rows
   useEffect(() => {
@@ -430,10 +464,10 @@ const OverallAttendancePage: React.FC = () => {
                   <Activity className="h-6 w-6 text-white" />
                 </div>
             <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                     Overall Attendance
                   </h1>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-xs text-gray-600">
                     Comprehensive sales team performance and client visit tracking
                   </p>
                 </div>
@@ -442,14 +476,14 @@ const OverallAttendancePage: React.FC = () => {
             <div className="flex items-center space-x-3">
               <button
                 onClick={exportToCSV}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
               </button>
               <button
                 onClick={openFilterModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
@@ -531,7 +565,7 @@ const OverallAttendancePage: React.FC = () => {
                     </div>
                     <div className="ml-4 flex-1">
                       <p className="text-sm font-medium text-gray-600">Total Clients</p>
-                      <p className="text-2xl font-bold text-gray-900">{clients.length.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">{(totalClients || clients.length).toLocaleString()}</p>
                       <p className="text-xs text-gray-500 mt-1">Registered clients</p>
                     </div>
                   </div>
@@ -563,21 +597,21 @@ const OverallAttendancePage: React.FC = () => {
               <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900">
                       Daily Attendance Overview
                     </h3>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-xs text-gray-600">
                       Showing {filteredRows.length} days of attendance data
                     </p>
                   </div>
                   <div className="mt-4 sm:mt-0 flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-xs text-gray-600">Sales Reps</span>
+                      <span className="text-[10px] text-gray-600">Sales Reps</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-xs text-gray-600">Client Visits</span>
+                      <span className="text-[10px] text-gray-600">Client Visits</span>
                     </div>
                   </div>
                 </div>
@@ -592,24 +626,24 @@ const OverallAttendancePage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 text-xs">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                             Clients Visited
                           </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                             Active Sales Reps
                           </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                             Activity Level
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white divide-y divide-gray-200 text-xs">
                         {filteredRows.map((row, index) => {
                           const activityLevel = row.clientsVisited > 50 ? 'High' : 
                                                row.clientsVisited > 20 ? 'Medium' : 'Low';
@@ -621,20 +655,15 @@ const OverallAttendancePage: React.FC = () => {
                             <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
-                                  <div className="flex-shrink-0">
-                                    <Calendar className="h-5 w-5 text-gray-400" />
-                                  </div>
                                   <div className="ml-3">
-                                    <div className="text-sm font-medium text-gray-900">
+                                  <div className="text-xs font-medium text-gray-900">
                                       {formatDate(row.date)}
                                     </div>
-                                    <div className="text-sm text-gray-500">
-                                      {row.date}
-                                    </div>
+                                 
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <td className="px-6 py-3 whitespace-nowrap text-center">
                                 <button
                                   onClick={() => {
                                     console.log('Clients visited clicked for date:', row.date);
@@ -644,13 +673,13 @@ const OverallAttendancePage: React.FC = () => {
                                     setClientsForDate(clientsForDate);
                                     setClientsModalOpen(true);
                                   }}
-                                  className="text-sm font-semibold text-green-600 hover:text-green-800 transition-colors duration-150 cursor-pointer"
+                                className="text-xs font-semibold text-green-600 hover:text-green-800 transition-colors duration-150 cursor-pointer"
                                 >
-                                  {row.clientsVisited.toLocaleString()}
-                                </button>
-                                <div className="text-xs text-gray-500">visits</div>
+                                  {row.clientsVisited.toLocaleString()} Visits
+                                </button> 
+                              
                               </td>
-                                                             <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <td className="px-6 py-3 whitespace-nowrap text-center">
                                  <button
                                    onClick={() => {
                                      console.log('Modal button clicked for date:', row.date);
@@ -700,14 +729,13 @@ const OverallAttendancePage: React.FC = () => {
                                      setActiveSalesRepsForDate(repsForDate);
                                      setSalesRepsModalOpen(true);
                                    }}
-                                   className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors duration-150 cursor-pointer"
+                                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors duration-150 cursor-pointer"
                                  >
-                                   {row.activeSalesReps.toLocaleString()}
+                                   {row.activeSalesReps.toLocaleString()} Reps
                                  </button>
-                                 <div className="text-xs text-gray-500">reps</div>
                                </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${activityColor}`}>
+                              <td className="px-6 py-3 whitespace-nowrap text-center">
+                                <span className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${activityColor}`}>
                                   {activityLevel}
                                 </span>
                               </td>

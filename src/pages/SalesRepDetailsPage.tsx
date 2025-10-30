@@ -57,30 +57,30 @@ const AddKeyAccountTargetModal: React.FC<{
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">{initial ? 'Edit' : 'Add'} Key Account Targets</h2>
+      <div className="bg-white rounded-lg p-5 w-full max-w-md">
+        <h2 className="text-lg font-bold mb-3">{initial ? 'Edit' : 'Add'} Key Account Targets</h2>
         <form onSubmit={e => { e.preventDefault(); onSubmit(form); }}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Month</label>
-              <input type="month" required value={form.target_month} onChange={e => setForm(f => ({ ...f, target_month: e.target.value }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" />
+              <label className="block text-xs font-medium text-gray-700">Month</label>
+              <input type="month" required value={form.target_month} onChange={e => setForm(f => ({ ...f, target_month: e.target.value }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Vapes Targets</label>
-              <input type="number" min={0} value={form.vapes_targets} onChange={e => setForm(f => ({ ...f, vapes_targets: Number(e.target.value) }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" />
+              <label className="block text-xs font-medium text-gray-700">Vapes Targets</label>
+              <input type="number" min={0} value={form.vapes_targets} onChange={e => setForm(f => ({ ...f, vapes_targets: Number(e.target.value) }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Pouches Targets</label>
-              <input type="number" min={0} value={form.pouches_targets} onChange={e => setForm(f => ({ ...f, pouches_targets: Number(e.target.value) }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" />
+              <label className="block text-xs font-medium text-gray-700">Pouches Targets</label>
+              <input type="number" min={0} value={form.pouches_targets} onChange={e => setForm(f => ({ ...f, pouches_targets: Number(e.target.value) }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">New Outlets Targets</label>
-              <input type="number" min={0} value={form.new_outlets_targets} onChange={e => setForm(f => ({ ...f, new_outlets_targets: Number(e.target.value) }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" />
+              <label className="block text-xs font-medium text-gray-700">New Outlets Targets</label>
+              <input type="number" min={0} value={form.new_outlets_targets} onChange={e => setForm(f => ({ ...f, new_outlets_targets: Number(e.target.value) }))} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs" />
             </div>
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{loading ? 'Saving...' : (initial ? 'Save' : 'Add')}</button>
+          <div className="flex justify-end space-x-3 mt-5">
+            <button type="button" onClick={onClose} className="px-3 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={loading} className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 disabled:opacity-50">{loading ? 'Saving...' : (initial ? 'Save' : 'Add')}</button>
           </div>
         </form>
       </div>
@@ -152,40 +152,40 @@ const KeyAccountTargetsModal: React.FC<{
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Key Account Targets</h2>
+      <div className="bg-white rounded shadow-lg p-5 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold">Key Account Targets</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">&times;</button>
         </div>
-        {error && <div className="text-red-600 mb-2">{error}</div>}
-        <button onClick={() => setTargetModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4">Add Targets</button>
+        {error && <div className="text-red-600 mb-2 text-sm">{error}</div>}
+        <button onClick={() => setTargetModalOpen(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 mb-3">Add Targets</button>
         {loading ? <div>Loading...</div> : (
-          <table className="min-w-full divide-y divide-gray-200 mb-4">
+          <table className="min-w-full divide-y divide-gray-200 mb-3 text-xs">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vapes</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pouches</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Outlets</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Vapes</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Pouches</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">New Outlets</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {targets.map(tgt => (
                 <tr key={tgt.id}>
-                  <td className="px-4 py-2">{tgt.vapes_targets}</td>
-                  <td className="px-4 py-2">{tgt.pouches_targets}</td>
-                  <td className="px-4 py-2">{tgt.new_outlets_targets}</td>
-                  <td className="px-4 py-2">{tgt.target_month}</td>
-                  <td className="px-4 py-2 text-right">
-                    <button onClick={() => handleEditTarget(tgt)} className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-blue-200 transition">Edit</button>
-                    <button onClick={() => handleDeleteTarget(tgt.id)} className="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                  <td className="px-3 py-2">{tgt.vapes_targets}</td>
+                  <td className="px-3 py-2">{tgt.pouches_targets}</td>
+                  <td className="px-3 py-2">{tgt.new_outlets_targets}</td>
+                  <td className="px-3 py-2">{tgt.target_month}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button onClick={() => handleEditTarget(tgt)} className="bg-blue-100 text-blue-700 font-semibold px-2.5 py-1 rounded mr-2 text-[11px] hover:bg-blue-200 transition">Edit</button>
+                    <button onClick={() => handleDeleteTarget(tgt.id)} className="bg-red-100 text-red-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-red-200 transition">Delete</button>
                   </td>
                 </tr>
               ))}
               {targets.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-center text-gray-500">No targets set.</td>
+                  <td colSpan={5} className="px-3 py-3 text-center text-gray-500 text-sm">No targets set.</td>
                 </tr>
               )}
             </tbody>
@@ -267,40 +267,40 @@ const RetailTargetsModal: React.FC<{
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Retail Targets</h2>
+      <div className="bg-white rounded shadow-lg p-5 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold">Retail Targets</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">&times;</button>
         </div>
-        {error && <div className="text-red-600 mb-2">{error}</div>}
-        <button onClick={() => setTargetModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4">Add Targets</button>
+        {error && <div className="text-red-600 mb-2 text-sm">{error}</div>}
+        <button onClick={() => setTargetModalOpen(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 mb-3">Add Targets</button>
         {loading ? <div>Loading...</div> : (
-          <table className="min-w-full divide-y divide-gray-200 mb-4">
+          <table className="min-w-full divide-y divide-gray-200 mb-3 text-xs">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vapes</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pouches</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Outlets</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Vapes</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Pouches</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">New Outlets</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {targets.map(tgt => (
                 <tr key={tgt.id}>
-                  <td className="px-4 py-2">{tgt.vapes_targets}</td>
-                  <td className="px-4 py-2">{tgt.pouches_targets}</td>
-                  <td className="px-4 py-2">{tgt.new_outlets_targets}</td>
-                  <td className="px-4 py-2">{tgt.target_month}</td>
-                  <td className="px-4 py-2 text-right">
-                    <button onClick={() => handleEditTarget(tgt)} className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-blue-200 transition">Edit</button>
-                    <button onClick={() => handleDeleteTarget(tgt.id)} className="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                  <td className="px-3 py-2">{tgt.vapes_targets}</td>
+                  <td className="px-3 py-2">{tgt.pouches_targets}</td>
+                  <td className="px-3 py-2">{tgt.new_outlets_targets}</td>
+                  <td className="px-3 py-2">{tgt.target_month}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button onClick={() => handleEditTarget(tgt)} className="bg-blue-100 text-blue-700 font-semibold px-2.5 py-1 rounded mr-2 text-[11px] hover:bg-blue-200 transition">Edit</button>
+                    <button onClick={() => handleDeleteTarget(tgt.id)} className="bg-red-100 text-red-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-red-200 transition">Delete</button>
                   </td>
                 </tr>
               ))}
               {targets.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-center text-gray-500">No targets set.</td>
+                  <td colSpan={5} className="px-3 py-3 text-center text-gray-500 text-sm">No targets set.</td>
                 </tr>
               )}
             </tbody>
@@ -382,40 +382,40 @@ const DistributorsTargetsModal: React.FC<{
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Distributors Targets</h2>
+      <div className="bg-white rounded shadow-lg p-5 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold">Distributors Targets</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">&times;</button>
         </div>
-        {error && <div className="text-red-600 mb-2">{error}</div>}
-        <button onClick={() => setTargetModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4">Add Targets</button>
+        {error && <div className="text-red-600 mb-2 text-sm">{error}</div>}
+        <button onClick={() => setTargetModalOpen(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 mb-3">Add Targets</button>
         {loading ? <div>Loading...</div> : (
-          <table className="min-w-full divide-y divide-gray-200 mb-4">
+          <table className="min-w-full divide-y divide-gray-200 mb-3 text-xs">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vapes</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pouches</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Outlets</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Vapes</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Pouches</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">New Outlets</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {targets.map(tgt => (
                 <tr key={tgt.id}>
-                  <td className="px-4 py-2">{tgt.vapes_targets}</td>
-                  <td className="px-4 py-2">{tgt.pouches_targets}</td>
-                  <td className="px-4 py-2">{tgt.new_outlets_targets}</td>
-                  <td className="px-4 py-2">{tgt.target_month}</td>
-                  <td className="px-4 py-2 text-right">
-                    <button onClick={() => handleEditTarget(tgt)} className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded mr-2 hover:bg-blue-200 transition">Edit</button>
-                    <button onClick={() => handleDeleteTarget(tgt.id)} className="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                  <td className="px-3 py-2">{tgt.vapes_targets}</td>
+                  <td className="px-3 py-2">{tgt.pouches_targets}</td>
+                  <td className="px-3 py-2">{tgt.new_outlets_targets}</td>
+                  <td className="px-3 py-2">{tgt.target_month}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button onClick={() => handleEditTarget(tgt)} className="bg-blue-100 text-blue-700 font-semibold px-2.5 py-1 rounded mr-2 text-[11px] hover:bg-blue-200 transition">Edit</button>
+                    <button onClick={() => handleDeleteTarget(tgt.id)} className="bg-red-100 text-red-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-red-200 transition">Delete</button>
                   </td>
                 </tr>
               ))}
               {targets.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-center text-gray-500">No targets set.</td>
+                  <td colSpan={5} className="px-3 py-3 text-center text-gray-500 text-sm">No targets set.</td>
                 </tr>
               )}
             </tbody>
@@ -483,22 +483,22 @@ const AssignManagerTypesModal: React.FC<{
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Assign Managers by Type</h2>
+      <div className="bg-white rounded shadow-lg p-5 w-full max-w-md">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold">Assign Managers by Type</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">&times;</button>
         </div>
-        {error && <div className="text-red-600 mb-2">{error}</div>}
+        {error && <div className="text-red-600 mb-2 text-sm">{error}</div>}
         {loading ? <div>Loading...</div> : (
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               {managerTypes.map(type => (
                 <div key={type}>
-                  <label className="block text-sm font-medium text-gray-700">{type} Manager</label>
+                  <label className="block text-xs font-medium text-gray-700">{type} Manager</label>
                   <select
                     value={assignments[type]}
                     onChange={e => handleChange(type, e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs"
                   >
                     <option value="">Select {type} Manager</option>
                     {allManagers.map(m => (
@@ -508,9 +508,9 @@ const AssignManagerTypesModal: React.FC<{
                 </div>
               ))}
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+            <div className="flex justify-end space-x-3 mt-5">
+              <button type="button" onClick={onClose} className="px-3 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button type="submit" disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
         )}
@@ -563,50 +563,50 @@ const SalesRepDetailsPage: React.FC = () => {
   if (!salesRep) return <div className="p-8 text-gray-500">Sales rep not found.</div>;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
-      <Link to="/sales-reps" className="text-blue-600 hover:underline mb-4 inline-block">&larr; Back to Sales Reps</Link>
-      <div className="bg-white rounded shadow p-6 mb-6">
-        <div className="flex items-center gap-6 mb-4">
+    <div className="max-w-3xl mx-auto py-6 px-4">
+      <Link to="/sales-reps" className="text-blue-600 hover:underline mb-3 inline-block text-sm">&larr; Back to Sales Reps</Link>
+      <div className="bg-white rounded shadow p-5 mb-5">
+        <div className="flex items-center gap-5 mb-3">
           {salesRep.photoUrl ? (
             <img src={salesRep.photoUrl} alt={salesRep.name} className="h-20 w-20 rounded-full object-cover border" />
           ) : (
-            <div className="h-20 w-20 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-2xl font-bold text-gray-700">{salesRep.name.charAt(0).toUpperCase()}</span>
+            <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
+              <span className="text-xl font-bold text-gray-700">{salesRep.name.charAt(0).toUpperCase()}</span>
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold mb-1">{salesRep.name}</h1>
-            <div className="text-gray-700">{salesRep.email}</div>
-            <div className="text-gray-500">{salesRep.phoneNumber}</div>
+            <h1 className="text-xl font-bold mb-1">{salesRep.name}</h1>
+            <div className="text-gray-700 text-sm">{salesRep.email}</div>
+            <div className="text-gray-500 text-sm">{salesRep.phoneNumber}</div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
           <div><span className="font-semibold">Country:</span> {salesRep.country || <span className="text-gray-400">Not specified</span>}</div>
           <div><span className="font-semibold">Region:</span> {salesRep.region || <span className="text-gray-400">Not specified</span>}</div>
           <div><span className="font-semibold">Route:</span> {salesRep.route_name_update || <span className="text-gray-400">Not specified</span>}</div>
         </div>
         <div className="mt-4">
-          <h2 className="text-lg font-semibold mb-2">Assigned Managers by Type</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <h2 className="text-base font-semibold mb-2">Assigned Managers by Type</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
             {['Retail', 'Key Account', 'Distribution'].map(type => (
-              <div key={type} className="border rounded p-3 bg-gray-50">
-                <div className="font-semibold text-gray-700 mb-1">{type} Manager</div>
+              <div key={type} className="border rounded p-2.5 bg-gray-50">
+                <div className="font-semibold text-gray-700 mb-1 text-sm">{type} Manager</div>
                 {managerAssignments[type] ? (
                   <>
-                    <div className="text-gray-900">{managerAssignments[type]!.name}</div>
-                    <div className="text-gray-500 text-sm">{managerAssignments[type]!.email}</div>
+                    <div className="text-gray-900 text-sm">{managerAssignments[type]!.name}</div>
+                    <div className="text-gray-500 text-[11px]">{managerAssignments[type]!.email}</div>
                   </>
                 ) : (
-                  <div className="text-gray-400">Not assigned</div>
+                  <div className="text-gray-400 text-sm">Not assigned</div>
                 )}
               </div>
             ))}
           </div>
         </div>
-        <button onClick={() => setTargetsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-6">Manage Key Account Targets</button>
-        <button onClick={() => setRetailTargetsModalOpen(true)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-6 ml-4">Manage Retail Targets</button>
-        <button onClick={() => setDistributorsTargetsModalOpen(true)} className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 mt-6 ml-4">Manage Distributors Targets</button>
-        <button onClick={() => setAssignManagerTypesModalOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mt-6 ml-4">Assign Managers by Type</button>
+        <button onClick={() => setTargetsModalOpen(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 mt-5">Manage Key Account Targets</button>
+        <button onClick={() => setRetailTargetsModalOpen(true)} className="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700 mt-5 ml-3">Manage Retail Targets</button>
+        <button onClick={() => setDistributorsTargetsModalOpen(true)} className="bg-yellow-600 text-white px-3 py-1.5 rounded text-xs hover:bg-yellow-700 mt-5 ml-3">Manage Distributors Targets</button>
+        <button onClick={() => setAssignManagerTypesModalOpen(true)} className="bg-purple-600 text-white px-3 py-1.5 rounded text-xs hover:bg-purple-700 mt-5 ml-3">Assign Managers by Type</button>
       </div>
       <KeyAccountTargetsModal
         isOpen={targetsModalOpen}
