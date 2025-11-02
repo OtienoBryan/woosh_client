@@ -40,6 +40,11 @@ export const chartOfAccountsService = {
     return response.data;
   },
 
+  getAccountTypes: async (): Promise<ApiResponse<Array<{ id: number; name: string; color: string }>>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/accounts/types`);
+    return response.data;
+  },
+
   getById: async (id: number): Promise<ApiResponse<ChartOfAccount>> => {
     const response = await axios.get(`${API_BASE_URL}/financial/accounts/${id}`);
     return response.data;
@@ -393,6 +398,63 @@ export const myAssetsService = {
 
   getStats: async (): Promise<ApiResponse<any>> => {
     const response = await axios.get(`${API_BASE_URL}/my-assets/stats/overview`);
+    return response.data;
+  },
+
+  bulkCreate: async (data: {
+    supplier_id: number;
+    purchase_date: string;
+    notes?: string;
+    assets: Array<{
+      asset_name: string;
+      asset_type: string;
+      price: number;
+      quantity: number;
+    }>;
+  }): Promise<ApiResponse<any>> => {
+    const response = await axios.post(`${API_BASE_URL}/my-assets/bulk-create`, data);
+    return response.data;
+  }
+};
+
+// Asset Purchase Orders Service
+export const assetPurchaseOrdersService = {
+  getAll: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/asset-purchase-orders`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<ApiResponse<any>> => {
+    const response = await axios.get(`${API_BASE_URL}/asset-purchase-orders/${id}`);
+    return response.data;
+  },
+
+  create: async (data: {
+    supplier_id: number;
+    order_date: string;
+    expected_delivery_date?: string;
+    notes?: string;
+    assets: Array<{
+      asset_id: number;
+      quantity: number;
+      unit_price: number;
+      tax_type?: string;
+    }>;
+  }): Promise<ApiResponse<any>> => {
+    const response = await axios.post(`${API_BASE_URL}/asset-purchase-orders`, data);
+    return response.data;
+  },
+
+  updateStatus: async (id: number, status: string): Promise<ApiResponse<any>> => {
+    const response = await axios.patch(`${API_BASE_URL}/asset-purchase-orders/${id}/status`, { status });
+    return response.data;
+  },
+
+  receiveAssets: async (assetPurchaseOrderId: number, data: {
+    location: string;
+    notes?: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await axios.post(`${API_BASE_URL}/asset-purchase-orders/${assetPurchaseOrderId}/receive`, data);
     return response.data;
   }
 };

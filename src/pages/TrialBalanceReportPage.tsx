@@ -210,8 +210,8 @@ const TrialBalanceReportPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading trial balance report...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600">Loading trial balance report...</p>
         </div>
       </div>
     );
@@ -221,14 +221,14 @@ const TrialBalanceReportPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Report</h3>
-          <p className="text-red-600 mb-4">{error}</p>
+          <XCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">Error Loading Report</h3>
+          <p className="text-xs text-red-600 mb-4">{error}</p>
           <button
             onClick={fetchTrialBalanceReport}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="inline-flex items-center px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <RefreshCw className="w-3 h-3 mr-1.5" />
             Retry
           </button>
         </div>
@@ -240,15 +240,15 @@ const TrialBalanceReportPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-teal-100 rounded-lg">
-                <Calculator className="h-8 w-8 text-teal-600" />
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <Calculator className="h-5 w-5 text-teal-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Trial Balance</h1>
-                <p className="text-gray-600">
+                <h1 className="text-xl font-bold text-gray-900">Trial Balance</h1>
+                <p className="text-xs text-gray-600">
                   {reportData?.date_range || `As of ${reportData?.as_of_date || 'Latest'}`} • {reportData?.metadata.total_accounts || 0} accounts
                 </p>
               </div>
@@ -256,29 +256,29 @@ const TrialBalanceReportPage: React.FC = () => {
             <button
               onClick={exportToCSV}
               disabled={!reportData}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-3 h-3 mr-1.5" />
               Export CSV
             </button>
           </div>
 
           {/* Balance Status */}
           {reportData && (
-            <div className={`flex items-center justify-center p-4 rounded-lg ${
+            <div className={`flex items-center justify-center p-3 rounded-lg ${
               reportData.totals.is_balanced ? 'bg-green-50' : 'bg-red-50'
             }`}>
               {reportData.totals.is_balanced ? (
                 <>
-                  <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
-                  <span className="text-green-900 font-semibold text-lg">
+                  <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                  <span className="text-green-900 font-semibold text-sm">
                     Books are balanced ✓
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle className="w-6 h-6 text-red-600 mr-2" />
-                  <span className="text-red-900 font-semibold text-lg">
+                  <XCircle className="w-4 h-4 text-red-600 mr-2" />
+                  <span className="text-red-900 font-semibold text-sm">
                     Out of balance by {number_format(Math.abs(reportData.totals.difference))}
                   </span>
                 </>
@@ -288,41 +288,41 @@ const TrialBalanceReportPage: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div className="flex items-center space-x-2 mb-3">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                <Calendar className="w-3 h-3 inline mr-1" />
                 From Date
               </label>
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="Start date"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                <Calendar className="w-3 h-3 inline mr-1" />
                 To Date
               </label>
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="End date"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Eye className="w-4 h-4 inline mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                <Eye className="w-3 h-3 inline mr-1" />
                 Search Accounts
               </label>
               <input
@@ -330,7 +330,7 @@ const TrialBalanceReportPage: React.FC = () => {
                 placeholder="Account code or name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
             <div className="flex items-end">
@@ -339,9 +339,9 @@ const TrialBalanceReportPage: React.FC = () => {
                   type="checkbox"
                   checked={showOnlyNonZero}
                   onChange={(e) => setShowOnlyNonZero(e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                  className="w-3.5 h-3.5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-xs font-medium text-gray-700">
                   Show only non-zero balances
                 </span>
               </label>
@@ -385,25 +385,25 @@ const TrialBalanceReportPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Account Code
                   </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Account Name
                   </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-blue-600 uppercase tracking-wider">
                       Opening Balance
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-green-600 uppercase tracking-wider">
                       Period Debit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-red-600 uppercase tracking-wider">
                       Period Credit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-purple-600 uppercase tracking-wider">
                       Period Balance
                   </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -414,17 +414,17 @@ const TrialBalanceReportPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredAccounts.length === 0 ? (
                   <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-4 py-4 text-center text-xs text-gray-500">
                       No accounts found matching your criteria
                     </td>
                   </tr>
                 ) : (
                   filteredAccounts.map((account) => (
                     <tr key={account.account_code} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
                         {account.account_code}
                       </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs">
                         <span
                           onClick={() => handleAccountClick(account.account_code)}
                           className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
@@ -441,24 +441,24 @@ const TrialBalanceReportPage: React.FC = () => {
                           {account.account_name}
                         </span>
                       </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800">
                           {account.account_type_name}
                         </span>
                       </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-blue-700">
                           {number_format(account.opening_balance || 0)}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-green-700">
                           {(account.period_debit || 0) !== 0 ? number_format(account.period_debit || 0) : '-'}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-red-700">
                           {(account.period_credit || 0) !== 0 ? number_format(account.period_credit || 0) : '-'}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-purple-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-purple-700">
                           {number_format(account.period_balance || 0)}
                       </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-gray-900">
                           {number_format(account.closing_balance || 0)}
                       </td>
                     </tr>
@@ -468,19 +468,19 @@ const TrialBalanceReportPage: React.FC = () => {
               {reportData && (
                 <tfoot className="bg-gray-100 border-t-2 border-gray-300">
                   <tr>
-                      <td colSpan={3} className="px-4 py-4 text-sm font-bold text-gray-900 uppercase">
+                      <td colSpan={3} className="px-3 py-2 text-xs font-bold text-gray-900 uppercase">
                         Total
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-blue-700">
                         {number_format(reportData.totals.total_opening_balance || 0)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-green-700">
                         {number_format(reportData.totals.total_period_debit || 0)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-red-700">
                         {number_format(reportData.totals.total_period_credit || 0)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-purple-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-purple-700">
                         {number_format(reportData.totals.total_period_balance || 0)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
@@ -489,10 +489,10 @@ const TrialBalanceReportPage: React.FC = () => {
                     </tr>
                     {!reportData.totals.is_balanced && (
                       <tr className="bg-red-50">
-                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-red-900">
+                        <td colSpan={6} className="px-3 py-2 text-xs font-semibold text-red-900">
                           Period Difference (Out of Balance)
                         </td>
-                        <td colSpan={2} className="px-4 py-3 text-sm text-right font-bold text-red-900">
+                        <td colSpan={2} className="px-3 py-2 text-xs text-right font-bold text-red-900">
                           {number_format(Math.abs(reportData.totals.difference))}
                         </td>
                       </tr>
@@ -505,7 +505,7 @@ const TrialBalanceReportPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Account Code
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -514,16 +514,16 @@ const TrialBalanceReportPage: React.FC = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-blue-600 uppercase tracking-wider">
                       Opening Balance
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-green-600 uppercase tracking-wider">
                       Debit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-red-600 uppercase tracking-wider">
                       Credit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-purple-600 uppercase tracking-wider">
                       Period Balance
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -534,17 +534,17 @@ const TrialBalanceReportPage: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredAccounts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-4 py-4 text-center text-xs text-gray-500">
                         No accounts found matching your criteria
                       </td>
                     </tr>
                   ) : (
                     filteredAccounts.map((account) => (
                       <tr key={account.account_code} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
                           {account.account_code}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs">
                           <span
                             onClick={() => handleAccountClick(account.account_code)}
                             className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
@@ -561,24 +561,24 @@ const TrialBalanceReportPage: React.FC = () => {
                             {account.account_name}
                           </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800">
                             {account.account_type_name}
                           </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-blue-700">
                           0.00
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-green-700">
                           {account.debit !== 0 ? number_format(account.debit) : '-'}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-red-700">
                           {account.credit !== 0 ? number_format(account.credit) : '-'}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-purple-700">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-semibold text-purple-700">
                           {number_format(account.balance)}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-gray-900">
                           {number_format(account.balance)}
                         </td>
                       </tr>
@@ -588,19 +588,19 @@ const TrialBalanceReportPage: React.FC = () => {
                 {reportData && (
                   <tfoot className="bg-gray-100 border-t-2 border-gray-300">
                     <tr>
-                      <td colSpan={3} className="px-4 py-4 text-sm font-bold text-gray-900 uppercase">
+                      <td colSpan={3} className="px-3 py-2 text-xs font-bold text-gray-900 uppercase">
                         Total
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-blue-700">
                         0.00
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-green-700">
                         {number_format(reportData.totals.total_debits)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-red-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-red-700">
                         {number_format(reportData.totals.total_credits)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-purple-700">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right font-bold text-purple-700">
                         {number_format(reportData.totals.difference)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
@@ -609,10 +609,10 @@ const TrialBalanceReportPage: React.FC = () => {
                     </tr>
                     {!reportData.totals.is_balanced && (
                       <tr className="bg-red-50">
-                        <td colSpan={7} className="px-4 py-3 text-sm font-semibold text-red-900">
+                        <td colSpan={7} className="px-3 py-2 text-xs font-semibold text-red-900">
                           Difference (Out of Balance)
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-bold text-red-900">
+                        <td className="px-3 py-2 text-xs text-right font-bold text-red-900">
                           {number_format(Math.abs(reportData.totals.difference))}
                         </td>
                       </tr>
@@ -626,7 +626,7 @@ const TrialBalanceReportPage: React.FC = () => {
 
         {/* Metadata Footer */}
         {reportData && (
-          <div className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-4 text-center text-xs text-gray-500">
             <p>
               Report generated on {new Date(reportData.metadata.generated_at).toLocaleString()} • 
               Showing {filteredAccounts.length} of {reportData.metadata.total_accounts} accounts

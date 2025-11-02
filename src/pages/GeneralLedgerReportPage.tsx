@@ -119,17 +119,17 @@ const GeneralLedgerReportPage: React.FC = () => {
   const selectedAccountDetails = accounts.find(acc => acc.account_code === selectedAccount);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
       <div className="max-w-8xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">General Ledger Report</h1>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">General Ledger Report</h1>
         {selectedAccount && selectedAccountDetails && (
-          <div className="mb-4 flex items-center gap-2">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
-              <span className="font-semibold">Viewing Account: </span>
-              <span className="ml-2">{selectedAccount} - {selectedAccountDetails.account_name}</span>
+          <div className="mb-3 flex items-center gap-2">
+            <div className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg">
+              <span className="text-xs font-semibold">Viewing Account: </span>
+              <span className="ml-2 text-xs">{selectedAccount} - {selectedAccountDetails.account_name}</span>
               <button
                 onClick={() => setSelectedAccount('')}
-                className="ml-3 text-blue-600 hover:text-blue-800 font-bold"
+                className="ml-2 text-blue-600 hover:text-blue-800 font-bold text-xs"
                 title="Clear filter"
               >
                 ✕
@@ -138,12 +138,12 @@ const GeneralLedgerReportPage: React.FC = () => {
           </div>
         )}
         {/* Account Filter and Search */}
-        <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
+        <div className="mb-3 flex flex-col md:flex-row md:items-center gap-3">
           <div className="flex items-center gap-2">
-            <label htmlFor="account-select" className="text-sm font-medium text-gray-700">Account:</label>
+            <label htmlFor="account-select" className="text-xs font-medium text-gray-700">Account:</label>
             <select
               id="account-select"
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className="border border-gray-300 rounded px-2 py-1.5 text-xs"
               value={selectedAccount}
               onChange={e => setSelectedAccount(e.target.value)}
             >
@@ -156,55 +156,55 @@ const GeneralLedgerReportPage: React.FC = () => {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="search-input" className="text-sm font-medium text-gray-700">Search:</label>
+            <label htmlFor="search-input" className="text-xs font-medium text-gray-700">Search:</label>
             <input
               id="search-input"
               type="text"
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className="border border-gray-300 rounded px-2 py-1.5 text-xs"
               placeholder="Description, reference, account..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-4">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center items-center h-24">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             </div>
           ) : error ? (
-            <div className="text-red-600 text-center">
+            <div className="text-xs text-red-600 text-center">
               <div className="mb-2">{error}</div>
-              <button onClick={fetchEntries} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Retry</button>
+              <button onClick={fetchEntries} className="bg-blue-600 text-white px-3 py-1.5 text-xs rounded-lg hover:bg-blue-700">Retry</button>
             </div>
           ) : filteredEntries.length === 0 ? (
-            <div className="text-gray-500 text-center">No general ledger entries found.</div>
+            <div className="text-xs text-gray-500 text-center">No general ledger entries found.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account Code</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account Name</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-green-700 uppercase">Debit</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-red-700 uppercase">Credit</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-indigo-700 uppercase bg-indigo-50">Running Balance</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase">Account Code</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase">Account Name</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase">Description</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase">Reference</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-green-700 uppercase">Debit</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-red-700 uppercase">Credit</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-indigo-700 uppercase bg-indigo-50">Running Balance</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {filteredEntries.map(entry => (
                     <tr key={entry.id}>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{entry.date}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{entry.account_code}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{entry.account_name}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{entry.description || '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{entry.reference || '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-green-700 text-right font-medium">{entry.debit ? entry.debit.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-red-700 text-right font-medium">{entry.credit ? entry.credit.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-indigo-900 font-bold text-right bg-indigo-50">{entry.balance.toLocaleString()}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{entry.date}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{entry.account_code}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{entry.account_name}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{entry.description || '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{entry.reference || '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-green-700 text-right font-medium">{entry.debit ? entry.debit.toLocaleString() : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-red-700 text-right font-medium">{entry.credit ? entry.credit.toLocaleString() : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-indigo-900 font-bold text-right bg-indigo-50">{entry.balance.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Save, X, Calendar, DollarSign, Tag, FileText, UserPlus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Save, X, Calendar, DollarSign, Tag, FileText, UserPlus, ShoppingCart } from 'lucide-react';
 import { suppliersService, myAssetsService } from '../services/financialService';
 import { staffService } from '../services/staffService';
 import { assetAssignmentService, AssetAssignment } from '../services/assetAssignmentService';
@@ -41,6 +41,7 @@ interface AssetAssignmentForm {
 }
 
 const MyAssetsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [assets, setAssets] = useState<MyAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -458,13 +459,29 @@ const MyAssetsPage: React.FC = () => {
               </Link>
               <h1 className="text-3xl font-bold text-gray-900">Assets Management</h1>
             </div>
-            <button
-              onClick={handleAddAsset}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Asset
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => navigate('/asset-purchase-order')}
+                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                <ShoppingCart className="h-4 w-4 mr-1" />
+                New PO
+              </button>
+              <button
+                onClick={() => navigate('/asset-purchase-orders')}
+                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <ShoppingCart className="h-4 w-4 mr-1" />
+                List POs
+              </button>
+              <button
+                onClick={handleAddAsset}
+                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Asset
+              </button>
+            </div>
           </div>
         </div>
 

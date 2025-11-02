@@ -36,7 +36,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'profit-loss',
       title: 'Profit & Loss Statement',
       description: 'Comprehensive income statement showing revenue, expenses, and profitability over a specified period.',
-      icon: <TrendingUp className="w-8 h-8" />,
+      icon: <TrendingUp className="w-5 h-5" />,
       color: 'bg-blue-500',
       route: '/dashboard/reports/profit-loss',
       features: [
@@ -52,7 +52,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'balance-sheet',
       title: 'Balance Sheet',
       description: 'Complete financial position statement showing assets, liabilities, and equity as of a specific date.',
-      icon: <BarChart3 className="w-8 h-8" />,
+      icon: <BarChart3 className="w-5 h-5" />,
       color: 'bg-green-500',
       route: '/dashboard/reports/balance-sheet',
       features: [
@@ -70,7 +70,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'cash-flow',
       title: 'Cash Flow Statement',
       description: 'Detailed cash flow analysis showing operating, investing, and financing activities.',
-      icon: <Activity className="w-8 h-8" />,
+      icon: <Activity className="w-5 h-5" />,
       color: 'bg-purple-500',
       route: '/dashboard/reports/cash-flow',
       features: [
@@ -87,7 +87,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'journal-entries',
       title: 'Journal Entries',
       description: 'View and search all accounting journal entries with filters for date, account, reference, and description.',
-      icon: <FileText className="w-8 h-8" />,
+      icon: <FileText className="w-5 h-5" />,
       color: 'bg-yellow-500',
       route: '/journal-entries',
       features: [
@@ -103,7 +103,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'general-ledger',
       title: 'General Ledger',
       description: 'Detailed listing of all account transactions with running balances for full auditability.',
-      icon: <BarChart3 className="w-8 h-8" />,
+      icon: <BarChart3 className="w-5 h-5" />,
       color: 'bg-indigo-500',
       route: '/dashboard/reports/general-ledger',
       features: [
@@ -119,7 +119,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'chart-of-accounts',
       title: 'Chart of Accounts',
       description: 'Complete listing of all accounts with codes, names, types, and descriptions organized by category.',
-      icon: <BookOpen className="w-8 h-8" />,
+      icon: <BookOpen className="w-5 h-5" />,
       color: 'bg-cyan-500',
       route: '/dashboard/reports/chart-of-accounts',
       features: [
@@ -136,7 +136,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'sales-tax',
       title: 'Sales Tax Report',
       description: 'Detailed report of all sales tax transactions from journal entries for Sales Tax Payable account.',
-      icon: <TaxIcon className="w-8 h-8" />,
+      icon: <TaxIcon className="w-5 h-5" />,
       color: 'bg-red-500',
       route: '/dashboard/reports/sales-tax',
       features: [
@@ -153,7 +153,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       id: 'trial-balance',
       title: 'Trial Balance',
       description: 'Comprehensive trial balance report showing all account balances with debits and credits.',
-      icon: <Calculator className="w-8 h-8" />,
+      icon: <Calculator className="w-5 h-5" />,
       color: 'bg-teal-500',
       route: '/dashboard/reports/trial-balance',
       features: [
@@ -186,7 +186,7 @@ const FinancialReportsIndexPage: React.FC = () => {
           id: 'collection-report',
           title: 'Collection Report',
           description: 'Comprehensive report of all confirmed payments received, with filtering and analysis capabilities.',
-          icon: <DollarSign className="w-8 h-8" />,
+          icon: <DollarSign className="w-5 h-5" />,
           color: 'bg-green-500',
           route: '/dashboard/reports/collection-report',
           features: [
@@ -259,9 +259,9 @@ const FinancialReportsIndexPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-600">Moonsun Trade International</h1>
-              <h2 className="text-3xl font-bold text-gray-600">Financial Reports</h2>
-              <p className="text-gray-600 mt-1">Comprehensive financial reporting and analysis tools</p>
+              <h1 className="text-xl font-bold text-gray-600">Moonsun Trade International</h1>
+              <h2 className="text-xl font-bold text-gray-600">Financial Reports</h2>
+              <p className="text-sm text-gray-600 mt-1">Comprehensive financial reporting and analysis tools</p>
             </div>
             <div className="flex space-x-3">
                
@@ -278,7 +278,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Quick Actions */}
         {/* <div className="mb-8">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
@@ -304,37 +304,37 @@ const FinancialReportsIndexPage: React.FC = () => {
         </div> */}
 
         {/* Reports Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {reports.map((report) => (
             <div key={report.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
               {/* Header */}
-              <div className={`${report.color} p-4`}>
+              <div className={`${report.color} p-3`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
                     <div className="text-white">
                       {report.icon}
                     </div>
-                    <h3 className="text-lg font-semibold text-white">{report.title}</h3>
+                    <h3 className="text-sm font-semibold text-white">{report.title}</h3>
                   </div>
                   <Link
                     to={report.route}
-                    className="bg-white bg-opacity-20 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-opacity-30 transition-colors"
+                    className="bg-white bg-opacity-20 text-white px-2 py-0.5 rounded text-xs font-medium hover:bg-opacity-30 transition-colors"
                   >
-                    View Report
+                    View
                   </Link>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="p-6">
-                <p className="text-gray-600 text-sm mb-4">{report.description}</p>
+              <div className="p-3">
+                <p className="text-gray-600 text-xs mb-3">{report.description}</p>
                 
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Key Features:</h4>
-                  <ul className="space-y-1">
+                <div className="mb-3">
+                  <h4 className="text-xs font-medium text-gray-900 mb-1.5">Key Features:</h4>
+                  <ul className="space-y-0.5">
                     {report.features.map((feature, index) => (
-                      <li key={index} className="text-xs text-gray-600 flex items-center">
-                        <div className="w-1 h-1 bg-gray-400 rounded-full mr-2"></div>
+                      <li key={index} className="text-[10px] text-gray-600 flex items-center">
+                        <div className="w-0.5 h-0.5 bg-gray-400 rounded-full mr-1.5"></div>
                         {feature}
                       </li>
                     ))}
@@ -345,13 +345,13 @@ const FinancialReportsIndexPage: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="bg-gray-50 px-6 py-3 border-t">
+              <div className="bg-gray-50 px-3 py-2 border-t">
                 <div className="flex justify-between items-center">
                   <Link
                     to={report.route}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center"
                   >
-                    <Eye className="w-4 h-4 mr-1" />
+                    <Eye className="w-3 h-3 mr-1" />
                     View Full Report
                   </Link>
                   {/* <button className="text-sm text-gray-500 hover:text-gray-700 flex items-center">

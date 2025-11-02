@@ -122,6 +122,10 @@ import PostReceiptPage from './pages/PostReceiptPage';
 import ViewReceiptsPage from './pages/ViewReceiptsPage';
 import SuppliersManagementPage from './pages/SuppliersManagementPage';
 import MyAssetsPage from './pages/MyAssetsPage';
+import AssetPurchaseOrderPage from './pages/AssetPurchaseOrderPage';
+import AssetPurchaseOrdersPage from './pages/AssetPurchaseOrdersPage';
+import AssetPurchaseOrderDetailsPage from './pages/AssetPurchaseOrderDetailsPage';
+import ReceiveAssetPurchaseOrderPage from './pages/ReceiveAssetPurchaseOrderPage';
 import PostFaultyProductsPage from './pages/PostFaultyProductsPage';
 import ViewFaultyReportsPage from './pages/ViewFaultyReportsPage';
 import InventoryStaffDashboardPage from './pages/InventoryStaffDashboardPage';
@@ -290,6 +294,10 @@ const App = () => {
             <Route path="/financial/view-receipts" element={<ViewReceiptsPage />} />
             <Route path="/financial/suppliers" element={<SuppliersManagementPage />} />
             <Route path="/my-assets" element={<MyAssetsPage />} />
+            <Route path="/asset-purchase-order" element={<AssetPurchaseOrderPage />} />
+            <Route path="/asset-purchase-orders" element={<AssetPurchaseOrdersPage />} />
+            <Route path="/asset-purchase-order/:id" element={<AssetPurchaseOrderDetailsPage />} />
+            <Route path="/receive-asset-purchase-order/:assetPurchaseOrderId" element={<ReceiveAssetPurchaseOrderPage />} />
             <Route path="/faulty-products" element={
               <RoleBasedRoute allowedRoles={['stock', 'admin']} fallbackPath="/">
                 <PostFaultyProductsPage />

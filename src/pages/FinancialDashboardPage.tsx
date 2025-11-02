@@ -28,7 +28,8 @@ import {
   TrendingDownIcon,
   EyeIcon,
   ArrowUpRightIcon,
-  ArrowDownRightIcon
+  ArrowDownRightIcon,
+  ShoppingBasketIcon
 } from 'lucide-react';
 import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
@@ -203,6 +204,8 @@ const FinancialDashboardPage = () => {
     { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
     { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-3.5 w-3.5" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/asset-purchase-order', label: 'New Asset PO', icon: <ShoppingBasketIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/asset-purchase-orders', label: 'Asset POs', icon: <ShoppingBasketIcon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
     //{ to: '/expenses', label: 'Expenses', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
     { to: '/expense-summary', label: 'Expense Summary', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/products', label: 'Products', icon: <BoxIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
