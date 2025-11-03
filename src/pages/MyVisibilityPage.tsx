@@ -5,6 +5,7 @@ import {
   PaginationInfo 
 } from '../services/myVisibilityReportService';
 import { useNavigate } from 'react-router-dom';
+import { DateTime } from 'luxon';
 import { 
   Eye, 
   Calendar, 
@@ -109,16 +110,25 @@ const MyVisibilityPage: React.FC = () => {
     fetchReports(1);
   }, [fetchReports]);
 
-  // Memoized date formatter
+  // Memoized date formatter (no timezone conversion; show DB time as-is)
   const formatDate = useMemo(() => {
     return (dateString: string) => {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      if (!dateString) return 'N/A';
+
+      // Try SQL datetime like "YYYY-MM-DD HH:mm:ss"
+      let dt = DateTime.fromSQL(dateString);
+      if (dt.isValid) {
+        return dt.toFormat('d LLL yyyy, HH:mm');
+      }
+
+      // Try ISO; preserve provided zone if any without converting
+      dt = DateTime.fromISO(dateString, { setZone: true });
+      if (dt.isValid) {
+        return dt.toFormat('d LLL yyyy, HH:mm');
+      }
+
+      // Fallback: return original string to keep it exactly as in DB
+      return dateString;
     };
   }, []);
 
@@ -134,7 +144,8 @@ const MyVisibilityPage: React.FC = () => {
       report.country || '',
       report.salesRep || '',
       report.comment,
-      formatDate(report.createdAt)
+      // Use raw DB value for CSV to avoid any conversion
+      report.createdAt || ''
     ]);
 
     const csvContent = [headers, ...csvData]
