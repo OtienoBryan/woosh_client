@@ -224,9 +224,9 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 h-full flex flex-col overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-8 h-full flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex-shrink-0">
               <div className="flex items-center gap-2 text-red-700">
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">{error}</span>
@@ -234,13 +234,13 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 overflow-hidden" style={{ height: 'calc(100vh - 400px)' }}>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 flex-1 min-h-0">
             {/* Client Selection Section */}
-            <div>
+            <div className="flex flex-col min-h-0">
               <h4 className="text-xl font-semibold text-gray-900 mb-6">Select Clients</h4>
               
               {/* Search */}
-              <div className="mb-6">
+              <div className="mb-6 flex-shrink-0">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
@@ -254,7 +254,7 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
               </div>
 
               {/* Client List */}
-                             <div className="border border-gray-200 rounded-md h-80 overflow-y-auto">
+              <div className="border border-gray-200 rounded-md flex-1 min-h-0 overflow-y-auto mb-4">
                 {filteredClients.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
                     {searchQuery ? 'No clients found matching your search' : 'No clients available'}
@@ -314,24 +314,26 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
                 type="button"
                 onClick={addJourneyPlanItems}
                 disabled={selectedClients.size === 0}
-                className="mt-6 w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg font-medium"
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg font-medium flex-shrink-0"
               >
                 Add Selected Clients ({selectedClients.size})
               </button>
             </div>
 
             {/* Journey Plan Items Section */}
-            <div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-6">Journey Plan Items</h4>
+            <div className="flex flex-col min-h-0">
+              <h4 className="text-xl font-semibold text-gray-900 mb-6 flex-shrink-0">Journey Plan Items</h4>
               
               {journeyPlanItems.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                  <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No journey plan items added yet</p>
-                  <p className="text-sm text-gray-400">Select clients from the left panel to get started</p>
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg flex-1 flex items-center justify-center">
+                  <div>
+                    <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No journey plan items added yet</p>
+                    <p className="text-sm text-gray-400">Select clients from the left panel to get started</p>
+                  </div>
                 </div>
               ) : (
-                                 <div className="space-y-4 h-80 overflow-y-auto">
+                                 <div className="space-y-4 flex-1 min-h-0 overflow-y-auto">
                   {journeyPlanItems.map((item, index) => (
                     <div key={item.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -412,8 +414,7 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t mt-6 bg-gray-50 p-4 rounded-lg">
-            <div className="text-sm text-gray-500 mr-auto">Footer Section - Buttons Below</div>
+          <div className="flex justify-end gap-3 pt-6 border-t mt-6 bg-gray-50 p-4 rounded-lg flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
