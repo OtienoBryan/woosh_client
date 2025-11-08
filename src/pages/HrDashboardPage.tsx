@@ -254,7 +254,7 @@ const HrDashboardPage: React.FC = () => {
       { to: '/sales-reps', label: 'Sales reps', icon: <BuildingIcon className="h-3 w-3" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
       //{ to: '/positions', label: 'Positions', icon: <BriefcaseIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
       //{ to: '/payroll', label: 'Payroll', icon: <ClipboardListIcon className="h-3 w-3" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
-      { to: '/chat-room', label: 'Chat Room', icon: <MessageCircleIcon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+      { to: '/instant-chat', label: 'Chat Room', icon: <MessageCircleIcon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
       //{ to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-3 w-3" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
     ];
 

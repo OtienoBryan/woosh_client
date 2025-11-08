@@ -222,7 +222,7 @@ const FinancialDashboardPage = () => {
     { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     { to: '/cash-equivalents', label: 'Cash & Equivalents', icon: <PiggyBankIcon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/instant-chat', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
     { to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-3.5 w-3.5" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
   ];
 
