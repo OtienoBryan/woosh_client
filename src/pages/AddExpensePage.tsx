@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 interface Account {
@@ -30,6 +31,7 @@ interface ExpenseItem {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const AddExpensePage: React.FC = () => {
+  const navigate = useNavigate();
   const [expenseAccounts, setExpenseAccounts] = useState<Account[]>([]);
   const [paymentAccounts, setPaymentAccounts] = useState<Account[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -237,9 +239,9 @@ const AddExpensePage: React.FC = () => {
 
       if (res.data.success) {
         setSuccess('Expense posted successfully!');
-        // Refresh the page after a short delay to show success message
+        // Redirect to expense-summary page after a short delay to show success message
         setTimeout(() => {
-          window.location.reload();
+          navigate('/expense-summary');
         }, 1500);
       } else {
         setError(res.data.error || 'Failed to post expense');
@@ -252,56 +254,56 @@ const AddExpensePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Add Expense</h1>
-        <p className="text-gray-600 mt-2">Record business expenses with multiple items and supplier details</p>
+    <div className="max-w-7xl mx-auto py-4 px-4">
+      <div className="mb-3">
+        <h1 className="text-sm font-bold text-gray-900">Add Expense</h1>
+        <p className="text-xs text-gray-600 mt-1">Record business expenses with multiple items and supplier details</p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md mb-3">
           <div className="flex">
-            <svg className="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 mr-1.5 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            {error}
+            <span className="text-xs">{error}</span>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+        <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-md mb-3">
           <div className="flex">
-            <svg className="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 mr-1.5 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            {success}
+            <span className="text-xs">{success}</span>
           </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8">
+      <form onSubmit={handleSubmit} className="bg-white rounded-md shadow-sm p-3">
         {/* Header Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1">Date *</label>
             <input
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Reference *</label>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1">Reference *</label>
             <input
               type="text"
               value={reference}
               onChange={e => setReference(e.target.value)}
               placeholder="EXP-001"
-              className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full border rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
                 !reference.trim() ? 'border-red-300' : 'border-gray-300'
               }`}
               required
@@ -309,11 +311,11 @@ const AddExpensePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1">Payment Status</label>
           <select
               value={isPaid ? 'paid' : 'unpaid'}
               onChange={e => setIsPaid(e.target.value === 'paid')}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="paid">Paid</option>
               <option value="unpaid">Unpaid (Accrued)</option>
@@ -321,21 +323,21 @@ const AddExpensePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Total Amount</label>
-            <div className="text-2xl font-bold text-gray-900">
+            <label className="block text-[10px] font-medium text-gray-700 mb-1">Total Amount</label>
+            <div className="text-base font-bold text-gray-900">
               {getTotalAmount().toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* Supplier and Account Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Supplier *</label>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1">Supplier *</label>
           <select
               value={selectedSupplier ? String(selectedSupplier.id) : ''}
               onChange={handleSupplierChange}
-              className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full border rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
                 !selectedSupplier ? 'border-red-300' : 'border-gray-300'
               }`}
             required
@@ -349,15 +351,13 @@ const AddExpensePage: React.FC = () => {
           </select>
         </div>
 
-
-
         {isPaid && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Account *</label>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">Payment Account *</label>
             <select
               value={selectedPaymentAccount ? String(selectedPaymentAccount.id) : ''}
               onChange={handlePaymentAccountChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
               required={isPaid}
             >
               <option value="">Select Payment Account</option>
@@ -372,30 +372,30 @@ const AddExpensePage: React.FC = () => {
         </div>
 
         {/* Expense Items */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Expense Items</h3>
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-gray-900">Expense Items</h3>
             <button
               type="button"
               onClick={addExpenseItem}
               disabled={!reference.trim() || !selectedSupplier || expenseItems.some(item => !item.description.trim() || item.unit_price <= 0 || item.expense_account_id <= 0)}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Add Item
             </button>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-3">
             {expenseItems.map((item, index) => (
-              <div key={item.id} className={`bg-gray-50 rounded-lg p-6 border ${isItemComplete(item) ? 'border-gray-200' : 'border-red-300'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium text-gray-700">
+              <div key={item.id} className={`bg-gray-50 rounded-md p-3 border ${isItemComplete(item) ? 'border-gray-200' : 'border-red-300'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium text-gray-700">
                     Item {index + 1}
                     {!isItemComplete(item) && (
-                      <span className="ml-2 text-xs text-red-600">(Incomplete)</span>
+                      <span className="ml-2 text-[9px] text-red-600">(Incomplete)</span>
                     )}
                   </h4>
                   {expenseItems.length > 1 && (
@@ -404,22 +404,22 @@ const AddExpensePage: React.FC = () => {
                       onClick={() => removeExpenseItem(item.id)}
                       className="text-red-600 hover:text-red-800"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-6 gap-2.5">
                   <div className="lg:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Description *</label>
                     <input
                       type="text"
                       value={item.description}
                       onChange={e => updateExpenseItem(item.id, 'description', e.target.value)}
                       placeholder="Enter item description"
-                      className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      className={`w-full border rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
                         item.description.trim() === '' ? 'border-red-300' : 'border-gray-300'
                       }`}
                       required
@@ -427,11 +427,11 @@ const AddExpensePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Expense Type *</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Expense Type *</label>
                     <select
                       value={item.expense_account_id > 0 ? String(item.expense_account_id) : ''}
                       onChange={e => updateExpenseItem(item.id, 'expense_account_id', e.target.value ? parseInt(e.target.value) : 0)}
-                                              className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                              className={`w-full border rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
                           item.expense_account_id <= 0 ? 'border-red-300' : 'border-gray-300'
                         }`}
                       required
@@ -446,7 +446,7 @@ const AddExpensePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Quantity</label>
                     <input
                       type="number"
                       min="1"
@@ -460,12 +460,12 @@ const AddExpensePage: React.FC = () => {
                           updateExpenseItem(item.id, 'quantity', 1);
                         }
                       }}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price (Tax Excl.) *</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Unit Price (Tax Excl.) *</label>
           <input
             type="number"
             min="0.01"
@@ -480,7 +480,7 @@ const AddExpensePage: React.FC = () => {
                           updateExpenseItem(item.id, 'unit_price', 0);
                         }
                       }}
-                      className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      className={`w-full border rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
                         item.unit_price <= 0 ? 'border-red-300' : 'border-gray-300'
                       }`}
             required
@@ -488,11 +488,11 @@ const AddExpensePage: React.FC = () => {
         </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Tax Type</label>
                     <select
                       value={item.tax_type}
                       onChange={e => updateExpenseItem(item.id, 'tax_type', e.target.value as '16%' | 'zero_rated' | 'exempted')}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="16%">16% VAT</option>
                       <option value="zero_rated">Zero Rated</option>
@@ -501,13 +501,13 @@ const AddExpensePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-3 text-right">
-                  <div className="text-sm text-gray-500">
+                <div className="mt-2 text-right">
+                  <div className="text-xs text-gray-500">
                     <div>Subtotal: {(item.quantity * item.unit_price).toFixed(2)}</div>
                     {item.tax_type === '16%' && (
                       <div>VAT (16%): {(item.quantity * item.unit_price * 0.16).toFixed(2)}</div>
                     )}
-                    <div className="text-lg font-semibold text-gray-900">
+                    <div className="text-xs font-semibold text-gray-900">
                       Total: {item.amount.toFixed(2)}
                     </div>
                   </div>
@@ -518,12 +518,12 @@ const AddExpensePage: React.FC = () => {
         </div>
 
         {/* Expense Summary */}
-        <div className="mb-8 bg-gray-50 rounded-lg p-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="mb-3 bg-gray-50 rounded-md p-3">
+          <h3 className="text-xs font-semibold text-gray-900 mb-2">Expense Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Tax Breakdown</h4>
-              <div className="space-y-2 text-sm">
+              <h4 className="text-[10px] font-medium text-gray-700 mb-1.5">Tax Breakdown</h4>
+              <div className="space-y-1 text-xs">
                 {(() => {
                   const vatItems = expenseItems.filter(item => item.tax_type === '16%');
                   const vatSubtotal = vatItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
@@ -567,13 +567,13 @@ const AddExpensePage: React.FC = () => {
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Total Summary</h4>
-              <div className="space-y-2 text-sm">
+              <h4 className="text-[10px] font-medium text-gray-700 mb-1.5">Total Summary</h4>
+              <div className="space-y-1 text-xs">
                 <div className="flex justify-between font-medium">
                   <span>Total Amount:</span>
-                  <span className="text-lg font-semibold text-gray-900">{getTotalAmount().toFixed(2)}</span>
+                  <span className="text-xs font-semibold text-gray-900">{getTotalAmount().toFixed(2)}</span>
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-[9px] text-gray-500">
                   {expenseItems.length} item{expenseItems.length !== 1 ? 's' : ''}
                 </div>
               </div>
@@ -582,14 +582,14 @@ const AddExpensePage: React.FC = () => {
         </div>
 
         {/* Notes */}
-        <div className="mb-8">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+        <div className="mb-3">
+          <label className="block text-[10px] font-medium text-gray-700 mb-1">Additional Notes</label>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            rows={3}
+            rows={2}
             placeholder="Enter any additional notes or comments..."
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -598,11 +598,11 @@ const AddExpensePage: React.FC = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -610,7 +610,7 @@ const AddExpensePage: React.FC = () => {
               </>
             ) : (
               <>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Post Expense

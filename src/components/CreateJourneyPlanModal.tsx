@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle, Plus, Trash2, Search } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { X, Save, AlertCircle, Plus, Trash2, Search, Loader2 } from 'lucide-react';
 import { getWithAuth, postWithAuth } from '../utils/fetchWithAuth';
 
 interface SalesRep {
@@ -52,45 +52,125 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
   const [selectedClients, setSelectedClients] = useState<Set<number>>(new Set());
   const [journeyPlanItems, setJourneyPlanItems] = useState<JourneyPlanItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchClients();
-      resetForm();
-      console.log('SalesRep data:', salesRep);
-      console.log('SalesRep route_id_update:', salesRep.route_id_update);
+  // Debounced search function - only fetch when user searches
+  const fetchClients = useCallback(async (search: string = '') => {
+    // Only fetch if search query is provided (at least 2 characters)
+    if (!search.trim() || search.trim().length < 2) {
+      setClients([]);
+      setFilteredClients([]);
+      setIsLoadingClients(false);
+      return;
     }
-  }, [isOpen, salesRep]);
 
-  useEffect(() => {
-    // Filter clients based on search query
-    const filtered = clients.filter(client =>
-      (client.name && client.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.company_name && client.company_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.email && client.email.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-    setFilteredClients(filtered);
-  }, [searchQuery, clients]);
-
-  const fetchClients = async () => {
+    setIsLoadingClients(true);
     try {
-      const response = await getWithAuth('/api/clients?limit=10000');
+      // Use search parameter to filter on backend, limit to reasonable number
+      // Use lightweight mode to fetch only minimal fields (no JOINs) for faster performance
+      const params = new URLSearchParams();
+      params.append('search', search.trim());
+      params.append('lightweight', 'true'); // Enable lightweight mode for faster queries
+      // Limit to 100 results when searching (reduced for better performance)
+      params.append('limit', '100');
+      params.append('page', '1');
+      
+      const url = `/api/clients?${params.toString()}`;
+      console.log('[CreateJourneyPlanModal] Fetching clients with lightweight mode:', url);
+      const startTime = performance.now();
+      
+      const response = await getWithAuth(url);
       const data = await response.json();
+      
+      const endTime = performance.now();
+      console.log(`[CreateJourneyPlanModal] Client fetch completed in ${(endTime - startTime).toFixed(2)}ms`);
       if (data.data) {
         setClients(data.data);
+        setFilteredClients(data.data);
+      } else {
+        setClients([]);
+        setFilteredClients([]);
       }
     } catch (error) {
       console.error('Failed to fetch clients:', error);
+      setError('Failed to load clients. Please try again.');
+      setClients([]);
+      setFilteredClients([]);
+    } finally {
+      setIsLoadingClients(false);
     }
-  };
+  }, []);
+
+  // Initialize modal - NO CLIENTS LOADED ON OPEN (lazy loading)
+  // Clients are only fetched when user types in search box (minimum 2 characters)
+  useEffect(() => {
+    if (isOpen) {
+      resetForm();
+      setClients([]);
+      setFilteredClients([]);
+      setSearchQuery(''); // Clear search query
+      setIsLoadingClients(false); // Ensure loading state is false
+      console.log('SalesRep data:', salesRep);
+      console.log('SalesRep route_id_update:', salesRep.route_id_update);
+      // NOTE: No fetchClients() call here - clients load only when user searches
+    }
+  }, [isOpen, salesRep]);
+
+  // Debounced search effect - only search when user types
+  useEffect(() => {
+    // Clear previous timer
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current);
+    }
+
+    // If search is empty or too short, clear results
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setClients([]);
+      setFilteredClients([]);
+      setIsLoadingClients(false);
+      return;
+    }
+
+    // Set new timer for debounced search
+    searchDebounceTimerRef.current = setTimeout(() => {
+      fetchClients(searchQuery);
+    }, 250); // 250ms debounce delay (reduced for faster response)
+
+    // Cleanup
+    return () => {
+      if (searchDebounceTimerRef.current) {
+        clearTimeout(searchDebounceTimerRef.current);
+      }
+    };
+  }, [searchQuery, fetchClients]);
 
   const resetForm = () => {
     setSelectedClients(new Set());
     setJourneyPlanItems([]);
     setSearchQuery('');
     setError(null);
+    // Clear clients when modal closes to free memory
+    if (!isOpen) {
+      setClients([]);
+      setFilteredClients([]);
+    }
   };
+
+  // Cleanup when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setClients([]);
+      setFilteredClients([]);
+      setSearchQuery('');
+      // Clear any pending debounce timer
+      if (searchDebounceTimerRef.current) {
+        clearTimeout(searchDebounceTimerRef.current);
+        searchDebounceTimerRef.current = null;
+      }
+    }
+  }, [isOpen]);
 
   const handleClientToggle = (clientId: number) => {
     const newSelected = new Set(selectedClients);
@@ -243,21 +323,48 @@ const CreateJourneyPlanModal: React.FC<CreateJourneyPlanModalProps> = ({
               <div className="mb-6 flex-shrink-0">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  {isLoadingClients && (
+                    <Loader2 className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-red-600 animate-spin" />
+                  )}
                   <input
                     type="text"
-                    placeholder="Search clients..."
+                    placeholder="Search clients by name, email, or company..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-lg"
+                    disabled={isLoadingClients}
                   />
                 </div>
+                {searchQuery.trim().length >= 2 && !isLoadingClients && filteredClients.length > 0 && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Showing {filteredClients.length} result{filteredClients.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+                {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
+                  <p className="mt-2 text-xs text-amber-600">
+                    Type at least 2 characters to search
+                  </p>
+                )}
               </div>
 
               {/* Client List */}
               <div className="border border-gray-200 rounded-md flex-1 min-h-0 overflow-y-auto mb-4">
-                {filteredClients.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
-                    {searchQuery ? 'No clients found matching your search' : 'No clients available'}
+                {isLoadingClients ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="h-8 w-8 text-red-600 animate-spin mx-auto mb-3" />
+                    <p className="text-gray-600">Searching clients...</p>
+                  </div>
+                ) : !searchQuery.trim() || searchQuery.trim().length < 2 ? (
+                  <div className="p-8 text-center">
+                    <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium mb-2">Start typing to search for clients</p>
+                    <p className="text-sm text-gray-500">Enter at least 2 characters to search</p>
+                  </div>
+                ) : filteredClients.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium mb-2">No clients found</p>
+                    <p className="text-sm text-gray-500">Try a different search term</p>
                   </div>
                 ) : (
                   filteredClients.map((client) => (

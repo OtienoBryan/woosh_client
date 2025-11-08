@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import api from '../services/api';
 
 interface LeaveRequest {
   id: number;
@@ -21,10 +22,8 @@ const EmployeeLeavesPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/leave-requests/employee-leaves');
-        if (!res.ok) throw new Error('Failed to fetch leave requests');
-        const data = await res.json();
-        setLeaveRequests(data);
+        const response = await api.get('/leave-requests/employee-leaves');
+        setLeaveRequests(response.data);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch leave requests');
       } finally {
@@ -36,12 +35,7 @@ const EmployeeLeavesPage: React.FC = () => {
 
   const handleUpdateStatus = async (id: number, newStatus: number) => {
     try {
-      const res = await fetch(`/api/leave-requests/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error('Failed to update status');
+      await api.patch(`/leave-requests/${id}/status`, { status: newStatus });
       setLeaveRequests((prev) => prev.map(lr => lr.id === id ? { ...lr, status: String(newStatus) } : lr));
     } catch (err: any) {
       alert(err.message || 'Failed to update status');

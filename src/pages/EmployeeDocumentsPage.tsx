@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Download, Trash2, Eye, ArrowLeft, FileText, Calendar, Upload, X } from 'lucide-react';
+import api from '../services/api';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
+import { API_CONFIG } from '../config/api';
 
 interface EmployeeDocument {
   id: number;
@@ -108,11 +111,8 @@ const EmployeeDocumentsPage: React.FC = () => {
 
   const fetchEmployeeData = async () => {
     try {
-      const response = await fetch(`/api/staff/${staffId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setEmployee(data);
-      }
+      const response = await api.get(`/staff/${staffId}`);
+      setEmployee(response.data);
     } catch (err) {
       console.error('Error fetching employee data:', err);
     }
@@ -122,13 +122,8 @@ const EmployeeDocumentsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/staff/${staffId}/documents`);
-      if (response.ok) {
-        const data = await response.json();
-        setDocuments(data);
-      } else {
-        setError('Failed to fetch documents');
-      }
+      const response = await api.get(`/staff/${staffId}/documents`);
+      setDocuments(response.data);
     } catch (err) {
       setError('Failed to fetch documents');
     } finally {
@@ -139,17 +134,9 @@ const EmployeeDocumentsPage: React.FC = () => {
   const fetchContracts = async () => {
     console.log('Fetching contracts for staff ID:', staffId);
     try {
-      const response = await fetch(`/api/staff/${staffId}/contracts`);
-      console.log('Contracts response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Contracts data:', data);
-        setContracts(data);
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to fetch contracts:', response.status, errorText);
-      }
+      const response = await api.get(`/staff/${staffId}/contracts`);
+      console.log('Contracts data:', response.data);
+      setContracts(response.data);
     } catch (err) {
       console.error('Error fetching contracts:', err);
     }
@@ -158,17 +145,9 @@ const EmployeeDocumentsPage: React.FC = () => {
   const fetchTerminationLetters = async () => {
     console.log('Fetching termination letters for staff ID:', staffId);
     try {
-      const response = await fetch(`/api/staff/${staffId}/termination-letters`);
-      console.log('Termination letters response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Termination letters data:', data);
-        setTerminationLetters(data);
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to fetch termination letters:', response.status, errorText);
-      }
+      const response = await api.get(`/staff/${staffId}/termination-letters`);
+      console.log('Termination letters data:', response.data);
+      setTerminationLetters(response.data);
     } catch (err) {
       console.error('Error fetching termination letters:', err);
     }
@@ -177,17 +156,9 @@ const EmployeeDocumentsPage: React.FC = () => {
   const fetchWarningLetters = async () => {
     console.log('Fetching warning letters for staff ID:', staffId);
     try {
-      const response = await fetch(`/api/staff/${staffId}/warning-letters`);
-      console.log('Warning letters response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Warning letters data:', data);
-        setWarningLetters(data);
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to fetch warning letters:', response.status, errorText);
-      }
+      const response = await api.get(`/staff/${staffId}/warning-letters`);
+      console.log('Warning letters data:', response.data);
+      setWarningLetters(response.data);
     } catch (err) {
       console.error('Error fetching warning letters:', err);
     }
@@ -200,15 +171,8 @@ const EmployeeDocumentsPage: React.FC = () => {
 
     try {
       setDeletingDoc(docId);
-      const response = await fetch(`/api/staff/documents/${docId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setDocuments(docs => docs.filter(doc => doc.id !== docId));
-      } else {
-        alert('Failed to delete document');
-      }
+      await api.delete(`/staff/documents/${docId}`);
+      setDocuments(docs => docs.filter(doc => doc.id !== docId));
     } catch (err) {
       alert('Failed to delete document');
     } finally {
@@ -276,7 +240,7 @@ const EmployeeDocumentsPage: React.FC = () => {
         console.log(key, ':', value);
       }
 
-      const response = await fetch(`/api/staff/${staffId}/contracts`, {
+      const response = await fetchWithAuth(API_CONFIG.getUrl(`/staff/${staffId}/contracts`), {
         method: 'POST',
         body: formData,
       });
@@ -331,7 +295,7 @@ const EmployeeDocumentsPage: React.FC = () => {
         console.log(key, ':', value);
       }
 
-      const response = await fetch(`/api/staff/${staffId}/documents`, {
+      const response = await fetchWithAuth(API_CONFIG.getUrl(`/staff/${staffId}/documents`), {
         method: 'POST',
         body: formData,
       });
@@ -388,7 +352,7 @@ const EmployeeDocumentsPage: React.FC = () => {
         console.log(key, ':', value);
       }
 
-      const response = await fetch(`/api/staff/${staffId}/termination-letters`, {
+      const response = await fetchWithAuth(API_CONFIG.getUrl(`/staff/${staffId}/termination-letters`), {
         method: 'POST',
         body: formData,
       });
@@ -446,7 +410,7 @@ const EmployeeDocumentsPage: React.FC = () => {
         console.log(key, ':', value);
       }
 
-      const response = await fetch(`/api/staff/${staffId}/warning-letters`, {
+      const response = await fetchWithAuth(API_CONFIG.getUrl(`/staff/${staffId}/warning-letters`), {
         method: 'POST',
         body: formData,
       });

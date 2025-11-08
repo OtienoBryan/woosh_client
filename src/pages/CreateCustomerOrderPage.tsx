@@ -395,38 +395,38 @@ const CreateCustomerOrderPage: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-12">
             <div className="flex items-center">
-              <ShoppingCart className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Create Customer Order</h1>
+              <ShoppingCart className="h-5 w-5 text-blue-600 mr-2" />
+              <h1 className="text-sm font-bold text-gray-900">Create Customer Order</h1>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-full mx-auto py-3 px-4 sm:px-6 lg:px-8">
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-3 text-xs">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded mb-3 text-xs">
             {success}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8">
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4">
           {/* Customer and Date Information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="relative customer-dropdown">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Customer *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+                  <Search className="h-3 w-3 text-gray-400" />
                 </div>
                 <input
                   type="text"
@@ -464,7 +464,7 @@ const CreateCustomerOrderPage: React.FC = () => {
                     }
                   }}
                   placeholder={selectedCustomer ? selectedCustomerName : "Search customers..."}
-                  className="w-full border border-gray-300 rounded-md pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-md pl-10 pr-10 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {selectedCustomer && (
                   <button
@@ -490,7 +490,7 @@ const CreateCustomerOrderPage: React.FC = () => {
                       filteredCustomers.slice(0, 10).map((customer, index) => (
                         <div
                           key={customer.id}
-                          className={`px-4 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                          className={`px-3 py-1.5 cursor-pointer border-b border-gray-100 last:border-b-0 ${
                             index === selectedIndex ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-100'
                           }`}
                           onClick={() => {
@@ -500,28 +500,28 @@ const CreateCustomerOrderPage: React.FC = () => {
                             setSelectedIndex(-1);
                           }}
                         >
-                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          <div className="font-medium text-xs text-gray-900">{customer.name}</div>
                           {customer.contact && (
-                            <div className="text-sm text-gray-500">Contact: {customer.contact}</div>
+                            <div className="text-[10px] text-gray-500">Contact: {customer.contact}</div>
                           )}
                           {customer.email && (
-                            <div className="text-sm text-gray-500">Email: {customer.email}</div>
+                            <div className="text-[10px] text-gray-500">Email: {customer.email}</div>
                           )}
                         </div>
                       ))
                     ) : (
-                      <div className="px-4 py-2 text-gray-500">No customers found</div>
+                      <div className="px-3 py-1.5 text-[10px] text-gray-500">No customers found</div>
                     )
                   ) : (
                     // Show first 10 customers when no search
                     <>
-                      <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                      <div className="px-3 py-1.5 text-[10px] text-gray-500 border-b border-gray-100">
                         Type to search or select from recent customers:
                       </div>
                       {customers.slice(0, 10).map((customer, index) => (
                         <div
                           key={customer.id}
-                          className={`px-4 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                          className={`px-3 py-1.5 cursor-pointer border-b border-gray-100 last:border-b-0 ${
                             index === selectedIndex ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-100'
                           }`}
                           onClick={() => {
@@ -531,12 +531,12 @@ const CreateCustomerOrderPage: React.FC = () => {
                             setSelectedIndex(-1);
                           }}
                         >
-                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          <div className="font-medium text-xs text-gray-900">{customer.name}</div>
                           {customer.contact && (
-                            <div className="text-sm text-gray-500">Contact: {customer.contact}</div>
+                            <div className="text-[10px] text-gray-500">Contact: {customer.contact}</div>
                           )}
                           {customer.email && (
-                            <div className="text-sm text-gray-500">Email: {customer.email}</div>
+                            <div className="text-[10px] text-gray-500">Email: {customer.email}</div>
                           )}
                         </div>
                       ))}
@@ -547,68 +547,68 @@ const CreateCustomerOrderPage: React.FC = () => {
               
               {/* Validation for required field */}
               {!selectedCustomer && (
-                <div className="text-red-500 text-sm mt-1">Please select a customer</div>
+                <div className="text-red-500 text-[10px] mt-1">Please select a customer</div>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Order Date *
               </label>
               <input
                 type="date"
                 value={orderDate}
                 onChange={(e) => setOrderDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Expected Delivery Date
               </label>
               <input
                 type="date"
                 value={expectedDeliveryDate}
                 onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           {/* Order Items */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Order Items</h3>
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-medium text-gray-900">Order Items</h3>
               <button
                 type="button"
                 onClick={addItem}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3 w-3 mr-1.5" />
                 Add Item
               </button>
             </div>
 
             {items.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No items added yet. Click "Add Item" to start building your order.</p>
+              <div className="text-center py-6 text-gray-500">
+                <Package className="h-8 w-8 mx-auto mb-3 text-gray-300" />
+                <p className="text-xs">No items added yet. Click "Add Item" to start building your order.</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {items.map((item, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-6">
+                  <div key={index} className="border border-gray-200 rounded-lg p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           Product *
                         </label>
                         <select
                           value={item.product_id}
                           onChange={(e) => updateItem(index, 'product_id', Number(e.target.value))}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         >
                           <option value={0}>Select Product</option>
@@ -629,13 +629,13 @@ const CreateCustomerOrderPage: React.FC = () => {
                               </option>
                             ))}
                         </select>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-[9px] text-gray-500 mt-0.5">
                           Product's selling price will be used as the base unit price (exclusive of tax)
                         </p>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           Quantity *
                         </label>
                         <input
@@ -643,13 +643,13 @@ const CreateCustomerOrderPage: React.FC = () => {
                           min="1"
                           value={item.quantity}
                           onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           Unit Price (Exclusive of Tax) *
                         </label>
                         <input
@@ -662,12 +662,12 @@ const CreateCustomerOrderPage: React.FC = () => {
                             console.log('Updating unit price:', { index, value, currentItem: item });
                             updateItem(index, 'unit_price', value);
                           }}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
                         
           {item.unit_price > 0 && (
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs hidden">
+            <div className="mt-1.5 p-1.5 bg-gray-50 rounded text-[9px] hidden">
               <div className="flex justify-between">
                 <span>Base Price:</span>
                 <span>{formatCurrency(item.unit_price)}</span>
@@ -676,7 +676,7 @@ const CreateCustomerOrderPage: React.FC = () => {
                 <span>Tax ({item.tax_type || '16%'}):</span>
                 <span>{formatCurrency(item.tax_amount || 0)}</span>
               </div>
-              <div className="flex justify-between font-medium border-t pt-1">
+              <div className="flex justify-between font-medium border-t pt-0.5">
                 <span>Total Price:</span>
                 <span>{formatCurrency(item.total_price || 0)}</span>
               </div>
@@ -685,13 +685,13 @@ const CreateCustomerOrderPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           Tax Type *
                         </label>
                         <select
                           value={item.tax_type}
                           onChange={(e) => updateItem(index, 'tax_type', e.target.value as '16%' | 'zero_rated' | 'exempted')}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         >
                           <option value="16%">16% VAT</option>
@@ -702,27 +702,27 @@ const CreateCustomerOrderPage: React.FC = () => {
 
                       <div className="flex items-end space-x-2">
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
                             Tax Amount
                           </label>
-                          <div className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-900 text-sm">
+                          <div className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 bg-gray-50 text-gray-900 text-xs">
                              {item.tax_amount.toFixed(2)}
                           </div>
                         </div>
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
                             Total
                           </label>
-                          <div className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-900">
+                          <div className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 bg-gray-50 text-gray-900 text-xs">
                             {item.total_price.toFixed(2)}
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeItem(index)}
-                          className="p-2 text-red-600 hover:text-red-800 focus:outline-none"
+                          className="p-1.5 text-red-600 hover:text-red-800 focus:outline-none"
                         >
-                          <Trash2 className="h-5 w-5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
@@ -737,8 +737,8 @@ const CreateCustomerOrderPage: React.FC = () => {
                      {/* Debug Information */}
            {items.length > 0 && (
              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md hidden">
-               <h4 className="text-sm font-medium text-yellow-800 mb-2">Debug Info (Current Items State)</h4>
-               <pre className="text-xs text-yellow-700 overflow-auto">
+               <h4 className="text-xs font-medium text-yellow-800 mb-2">Debug Info (Current Items State)</h4>
+               <pre className="text-[10px] text-yellow-700 overflow-auto">
                  {JSON.stringify(items, null, 2)}
                </pre>
              </div>
@@ -746,56 +746,56 @@ const CreateCustomerOrderPage: React.FC = () => {
            
            {/* Order Summary */}
            {items.length > 0 && (
-            <div className="bg-gray-50 rounded-lg p-8 mb-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h3 className="text-xs font-medium text-gray-900 mb-3">Order Summary</h3>
               
               {/* Pricing Information Note */}
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md hidden">
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md hidden">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    <DollarSign className="h-4 w-4 text-blue-600" />
                   </div>
-                  <div className="ml-3">
-                    <h4 className="text-sm font-medium text-blue-800">Pricing Information</h4>
-                    <p className="text-sm text-blue-700 mt-1">
+                  <div className="ml-2">
+                    <h4 className="text-xs font-medium text-blue-800">Pricing Information</h4>
+                    <p className="text-xs text-blue-700 mt-0.5">
                       Unit prices are entered exclusive of tax. Tax is calculated and added automatically based on the selected tax type for each item.
                     </p>
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Notes
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Add any additional notes for this order..."
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Amount Summary</h4>
-                  <div className="flex justify-between">
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-medium text-gray-900 mb-2">Amount Summary</h4>
+                  <div className="flex justify-between text-xs">
                     <span className="text-gray-600">Net Amount:</span>
                     <span className="font-medium">KES {calculateSubtotal().toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-xs">
                     <span className="text-gray-600">Tax Amount:</span>
                     <span className="font-medium">KES {calculateTax().toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <div className="flex justify-between text-xs font-bold border-t pt-1.5">
                     <span>Total:</span>
                     <span>KES {calculateTotal().toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Tax Breakdown</h4>
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-medium text-gray-900 mb-2">Tax Breakdown</h4>
                   {(() => {
                     const taxBreakdown = calculateTaxBreakdown();
                     const netBreakdown = calculateNetBreakdown();
@@ -803,7 +803,7 @@ const CreateCustomerOrderPage: React.FC = () => {
                     
                     if (!hasTaxItems) {
                       return (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           No taxable items in this order
                         </div>
                       );
@@ -812,19 +812,19 @@ const CreateCustomerOrderPage: React.FC = () => {
                     return (
                       <div className="space-y-1">
                         {taxBreakdown['16%'] > 0 && (
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs">
                             <span className="text-gray-600">16% VAT:</span>
                             <span className="font-medium">KES {taxBreakdown['16%'].toFixed(2)}</span>
                           </div>
                         )}
                         {taxBreakdown['zero_rated'] > 0 && (
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Zero Rated Tax:</span>
                             <span className="font-medium">KES {taxBreakdown['zero_rated'].toFixed(2)}</span>
                           </div>
                         )}
                         {taxBreakdown['exempted'] > 0 && (
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Exempted Tax:</span>
                             <span className="font-medium">KES {taxBreakdown['exempted'].toFixed(2)}</span>
                           </div>
@@ -838,7 +838,7 @@ const CreateCustomerOrderPage: React.FC = () => {
           )}
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-2">
             <button
               type="button"
               onClick={() => {
@@ -850,24 +850,24 @@ const CreateCustomerOrderPage: React.FC = () => {
                 setError(null);
                 setSuccess(null);
               }}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <X className="h-4 w-4 mr-2" />
+              <X className="h-3 w-3 mr-1.5" />
               Clear Form
             </button>
             <button
               type="submit"
               disabled={saving || items.length === 0}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
                   Creating Order...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-3 w-3 mr-1.5" />
                   Create Customer Order
                 </>
               )}

@@ -125,9 +125,14 @@ export const useSendMessage = () => {
       if (context?.previousMessages) {
         queryClient.setQueryData(['messages', variables.roomId], context.previousMessages);
       }
+      console.error('❌ Failed to send message:', err);
     },
     onSuccess: (data, variables) => {
-      console.log('Message sent successfully:', data);
+      console.log('✅ Message sent successfully:', data);
+      // Invalidate messages to ensure fresh data
+      if (data.room_id) {
+        queryClient.invalidateQueries({ queryKey: ['messages', data.room_id] });
+      }
     },
   });
 };
@@ -168,15 +173,21 @@ export const useEditMessage = () => {
       return res.data;
     },
     onSuccess: (data, variables) => {
-      // Update the message in the cache optimistically
-      queryClient.setQueryData(['messages', data.room_id], (oldMessages: Message[] | undefined) => {
-        if (!oldMessages) return oldMessages;
-        return oldMessages.map(msg => 
-          msg.id === variables.messageId 
-            ? { ...msg, message: variables.message }
-            : msg
-        );
-      });
+      // Update the message in the cache optimistically using room_id from response
+      if (data.room_id) {
+        queryClient.setQueryData(['messages', data.room_id], (oldMessages: Message[] | undefined) => {
+          if (!oldMessages) return oldMessages;
+          return oldMessages.map(msg => 
+            msg.id === variables.messageId 
+              ? { ...msg, message: variables.message }
+              : msg
+          );
+        });
+        console.log(`✅ Message ${variables.messageId} updated in cache for room ${data.room_id}`);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ Failed to edit message:', error);
     },
   });
 };
@@ -195,11 +206,17 @@ export const useDeleteMessage = () => {
       return res.data;
     },
     onSuccess: (data, variables) => {
-      // Remove the message from the cache optimistically
-      queryClient.setQueryData(['messages', data.room_id], (oldMessages: Message[] | undefined) => {
-        if (!oldMessages) return oldMessages;
-        return oldMessages.filter(msg => msg.id !== variables);
-      });
+      // Remove the message from the cache optimistically using room_id from response
+      if (data.room_id) {
+        queryClient.setQueryData(['messages', data.room_id], (oldMessages: Message[] | undefined) => {
+          if (!oldMessages) return oldMessages;
+          return oldMessages.filter(msg => msg.id !== variables);
+        });
+        console.log(`✅ Message ${variables} deleted from cache for room ${data.room_id}`);
+      }
+    },
+    onError: (error) => {
+      console.error('❌ Failed to delete message:', error);
     },
   });
 };
@@ -238,7 +255,7 @@ export const useSocket = (userId: number | undefined) => {
 
     // Listen for new messages
     newSocket.on('newMessage', (message: Message) => {
-      console.log('New message received:', message);
+      console.log('📨 New message received:', message);
       
       // Update the messages cache for the specific room
       queryClient.setQueryData(['messages', message.room_id], (oldMessages: Message[] | undefined) => {
@@ -257,7 +274,7 @@ export const useSocket = (userId: number | undefined) => {
           // Replace the optimistic message with the real one
           const updatedMessages = [...oldMessages];
           updatedMessages[existingMessageIndex] = message;
-          console.log('Replacing optimistic message with real message:', message);
+          console.log('🔄 Replacing optimistic message with real message:', message.id);
           return updatedMessages;
         }
         
@@ -266,6 +283,57 @@ export const useSocket = (userId: number | undefined) => {
 
       // Invalidate rooms to update unread counts
       queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+      
+      // Trigger unread count recalculation for the room
+      // This will be handled by useUnreadCounts watching readMessages state
+      console.log(`📊 New message in room ${message.room_id} - unread count will update`);
+    });
+
+    // Listen for edited messages
+    newSocket.on('messageEdited', (data: { messageId: number; message: string; room_id: number }) => {
+      console.log('✏️  Message edited:', data);
+      
+      queryClient.setQueryData(['messages', data.room_id], (oldMessages: Message[] | undefined) => {
+        if (!oldMessages) return oldMessages;
+        return oldMessages.map(msg => 
+          msg.id === data.messageId 
+            ? { ...msg, message: data.message }
+            : msg
+        );
+      });
+    });
+
+    // Listen for deleted messages
+    newSocket.on('messageDeleted', (data: { messageId: number; room_id: number }) => {
+      console.log('🗑️  Message deleted:', data);
+      
+      queryClient.setQueryData(['messages', data.room_id], (oldMessages: Message[] | undefined) => {
+        if (!oldMessages) return oldMessages;
+        return oldMessages.filter(msg => msg.id !== data.messageId);
+      });
+    });
+
+    // Listen for room joined confirmation
+    newSocket.on('roomJoined', (data: { roomId: number; success: boolean }) => {
+      console.log('✅ Room joined:', data.roomId);
+    });
+
+    // Listen for message sent confirmation
+    newSocket.on('messageSent', (data: { messageId: number; success: boolean }) => {
+      console.log('✅ Message sent confirmation:', data.messageId);
+    });
+
+    // Listen for errors
+    newSocket.on('messageError', (data: { error: string }) => {
+      console.error('❌ Message error:', data.error);
+    });
+
+    newSocket.on('editError', (data: { error: string }) => {
+      console.error('❌ Edit error:', data.error);
+    });
+
+    newSocket.on('deleteError', (data: { error: string }) => {
+      console.error('❌ Delete error:', data.error);
     });
 
     setSocket(newSocket);
@@ -324,10 +392,14 @@ export const useReadMessages = (currentUserId?: number) => {
 
   // Mark a specific message as read
   const markMessageAsRead = async (messageId: number) => {
-    console.log('Marking message as read:', messageId);
+    console.log('✅ Marking message as read:', messageId);
     setReadMessages(prev => {
+      if (prev[messageId]) {
+        // Already marked as read, no need to update
+        return prev;
+      }
       const newState = { ...prev, [messageId]: true };
-      console.log('Updated read messages state:', newState);
+      console.log('📝 Updated read messages state for message:', messageId);
       return newState;
     });
     
@@ -339,9 +411,10 @@ export const useReadMessages = (currentUserId?: number) => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log('Read receipt sent to server');
+      console.log('✅ Read receipt sent to server');
     } catch (error) {
-      console.log('Read receipt failed (this is expected if server endpoint doesn\'t exist):', error);
+      // Silently fail - this endpoint might not exist
+      console.log('ℹ️  Read receipt endpoint not available (this is optional)');
     }
   };
 
@@ -350,11 +423,13 @@ export const useReadMessages = (currentUserId?: number) => {
     const now = new Date().toISOString();
     setLastReadTimestamps(prev => ({ ...prev, [roomId]: now }));
     
-    const newReadMessages = { ...readMessages };
-    messageIds.forEach(id => {
-      newReadMessages[id] = true;
+    setReadMessages(prev => {
+      const newReadMessages = { ...prev };
+      messageIds.forEach(id => {
+        newReadMessages[id] = true;
+      });
+      return newReadMessages;
     });
-    setReadMessages(newReadMessages);
   };
 
   // Check if a message is read
@@ -382,35 +457,35 @@ export const useReadMessages = (currentUserId?: number) => {
 export const useUnreadCounts = (currentUserId?: number) => {
   const { data: rooms } = useChatRooms();
   const [unreadCounts, setUnreadCounts] = useState<{ [roomId: number]: number }>({});
-  const { lastReadTimestamps, getUnreadMessages, markRoomMessagesAsRead } = useReadMessages(currentUserId);
+  const { lastReadTimestamps, getUnreadMessages, markRoomMessagesAsRead, readMessages, isMessageRead } = useReadMessages(currentUserId);
+  const queryClient = useQueryClient();
 
-  // Initialize last read timestamps - this is now handled by useReadMessages
-  // We just need to trigger the unread count calculation when rooms change
-
-  // Calculate unread counts using the read message tracking
+  // Calculate unread counts - reactive to messages and read status
   useEffect(() => {
     if (!rooms) return;
 
-    const calculateUnreadCounts = async () => {
-      const token = localStorage.getItem('token');
+    const calculateUnreadCounts = () => {
       const newUnreadCounts: { [roomId: number]: number } = {};
       
       for (const room of rooms) {
         try {
-          const res = await axios.get(`${API_BASE_URL}/chat/rooms/${room.id}/messages`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          // Get messages from cache first (fast)
+          const cachedMessages = queryClient.getQueryData<Message[]>(['messages', room.id]);
           
-          // Use the read message tracking to get unread count
-          const unreadMessages = getUnreadMessages(res.data);
-          
-          console.log(`Room ${room.id} unread calculation:`, {
-            totalMessages: res.data.length,
-            unreadCount: unreadMessages.length,
-            unreadMessages: unreadMessages.map(m => ({ id: m.id, sender_id: m.sender_id, sent_at: m.sent_at }))
-          });
-          
-          newUnreadCounts[room.id] = unreadMessages.length;
+          if (cachedMessages && cachedMessages.length > 0) {
+            // Use cached messages for instant calculation
+            const unreadMessages = cachedMessages.filter(msg => {
+              // Only count messages from other users
+              if (msg.sender_id === currentUserId) return false;
+              // Check if message is read using readMessages state directly
+              return !readMessages[msg.id!] && !msg.is_read;
+            });
+            
+            newUnreadCounts[room.id] = unreadMessages.length;
+          } else {
+            // If no cached messages, set to 0 (will be calculated when messages load)
+            newUnreadCounts[room.id] = 0;
+          }
         } catch (error) {
           console.error(`Error calculating unread count for room ${room.id}:`, error);
           newUnreadCounts[room.id] = 0;
@@ -421,7 +496,27 @@ export const useUnreadCounts = (currentUserId?: number) => {
     };
 
     calculateUnreadCounts();
-  }, [rooms, getUnreadMessages]);
+  }, [rooms, readMessages, currentUserId, queryClient]);
+
+  // Update unread count for a specific room when messages change
+  const updateRoomUnreadCount = (roomId: number) => {
+    const cachedMessages = queryClient.getQueryData<Message[]>(['messages', roomId]);
+    if (cachedMessages) {
+      const unreadMessages = cachedMessages.filter(msg => {
+        // Only count messages from other users
+        if (msg.sender_id === currentUserId) return false;
+        // Check if message is read using readMessages state directly
+        return !readMessages[msg.id!] && !msg.is_read;
+      });
+      
+      setUnreadCounts(prev => ({
+        ...prev,
+        [roomId]: unreadMessages.length
+      }));
+      
+      console.log(`📊 Updated unread count for room ${roomId}: ${unreadMessages.length}`);
+    }
+  };
 
   const markRoomAsRead = (roomId: number, messageIds?: number[]) => {
     setUnreadCounts(prev => ({ ...prev, [roomId]: 0 }));
@@ -429,6 +524,8 @@ export const useUnreadCounts = (currentUserId?: number) => {
     // If message IDs are provided, mark them as read using the read messages hook
     if (messageIds && messageIds.length > 0) {
       markRoomMessagesAsRead(roomId, messageIds);
+      // Update count immediately
+      updateRoomUnreadCount(roomId);
     }
   };
 
@@ -441,5 +538,6 @@ export const useUnreadCounts = (currentUserId?: number) => {
     lastReadTimestamps,
     markRoomAsRead,
     getTotalUnreadCount,
+    updateRoomUnreadCount, // Export for external updates
   };
 };

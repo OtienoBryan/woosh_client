@@ -28,8 +28,8 @@ export const fetchWithAuth = async (
     headers.set('Authorization', `Bearer ${token}`);
   }
   
-  // Add Content-Type if not already set and body is provided
-  if (options.body && !headers.has('Content-Type')) {
+  // Add Content-Type if not already set and body is provided (but not for FormData)
+  if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
   

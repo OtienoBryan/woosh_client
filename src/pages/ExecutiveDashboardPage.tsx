@@ -25,7 +25,6 @@ import {
   TargetIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
 
 interface StatCardProps {
@@ -99,30 +98,30 @@ const StatCard: React.FC<StatCardProps> = memo(({
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
       >
-        <div className="p-6">
+        <div className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p className={`text-xs font-medium ${textColor} opacity-90`}>
+              <p className={`text-[9px] font-medium ${textColor} opacity-90`}>
                 {title}
               </p>
-              <p className={`text-lg font-bold ${textColor} mt-1`}>
+              <p className={`text-xs font-bold ${textColor} mt-0.5`}>
                 {prefix}{value}{suffix}
               </p>
               {change && (
-                <div className="flex items-center mt-2">
+                <div className="flex items-center mt-1">
                   {change.positive ? (
-                    <ArrowUpRightIcon className="h-4 w-4 text-green-300" />
+                    <ArrowUpRightIcon className="h-2.5 w-2.5 text-green-300" />
                   ) : (
-                    <ArrowDownRightIcon className="h-4 w-4 text-red-300" />
+                    <ArrowDownRightIcon className="h-2.5 w-2.5 text-red-300" />
                   )}
-                  <span className={`text-xs font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
+                  <span className={`text-[9px] font-medium ml-0.5 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
                     {change.positive ? '+' : ''}{change.value}%
                   </span>
                 </div>
               )}
             </div>
             <div className="flex-shrink-0">
-              <div className={`p-3 rounded-lg ${textColor} bg-white bg-opacity-20`}>
+              <div className={`p-1.5 rounded-lg ${textColor} bg-white bg-opacity-20`}>
                 {icon}
               </div>
             </div>
@@ -179,47 +178,39 @@ const FinancialDashboardPage = () => {
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Optimized parallel data fetching with caching
-  const fetchAllData = useCallback(async () => {
+  // Optimized parallel data fetching with caching - Phase 1: Critical data only
+  const fetchCriticalData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setSalesLoading(true);
-    setCategoryLoading(true);
 
     try {
-      // Parallel API calls for better performance
+      // Parallel API calls for critical data only (counts and chat status)
       const [
-        statsResult,
         newOrdersResult,
         newCreditNotesResult,
-        chatResult,
-        salesResult,
-        categoryResult
+        chatResult
       ] = await Promise.allSettled([
-        // Dashboard stats with cache
-        fetchWithCache('dashboard-stats', () => dashboardService.getStats()),
-        
-        // New orders count with cache
-        fetchWithCache('new-orders', async () => {
-          const url = API_CONFIG.getUrl('/financial/sales-orders-all');
+        // New orders count - OPTIMIZED: uses count endpoint instead of fetching all
+        fetchWithCache('new-orders-count', async () => {
+          const url = API_CONFIG.getUrl('/financial/sales-orders/new-count');
           const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
           const data = await res.json();
-          if (res.ok && data && data.success && Array.isArray(data.data)) {
-            return data.data.filter((o: any) => String(o.my_status || '0') === '0').length;
+          if (res.ok && data && data.success) {
+            return data.data.count || 0;
           }
           return 0;
-        }),
+        }, 2 * 60 * 1000), // 2 minute cache for counts
         
-        // New credit notes count with cache
-        fetchWithCache('new-credit-notes', async () => {
-          const url = API_CONFIG.getUrl('/financial/credit-notes');
+        // New credit notes count - OPTIMIZED: uses count endpoint instead of fetching all
+        fetchWithCache('new-credit-notes-count', async () => {
+          const url = API_CONFIG.getUrl('/financial/credit-notes/new-count');
           const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
           const data = await res.json();
-          if (res.ok && data && data.success && Array.isArray(data.data)) {
-            return data.data.filter((cn: any) => String(cn.my_status || '0') === '0').length;
+          if (res.ok && data && data.success) {
+            return data.data.count || 0;
           }
           return 0;
-        }),
+        }, 2 * 60 * 1000), // 2 minute cache for counts
         
         // Chat status with cache
         fetchWithCache('chat-status', async () => {
@@ -232,36 +223,10 @@ const FinancialDashboardPage = () => {
             return lastMessage > lastVisited;
           }
           return false;
-        }),
-        
-        // Sales data with cache
-        fetchWithCache('sales-data', async () => {
-          const url = API_CONFIG.getUrl('/financial/sales-orders/current-month-data');
-          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-          const data = await res.json();
-          if (res.ok && data && data.success) {
-            return { dailyData: data.data.dailyData, summary: data.data.summary };
-          }
-          throw new Error(data.error || 'Failed to load sales data');
-        }),
-        
-        // Category data with cache
-        fetchWithCache('category-data', async () => {
-          const url = API_CONFIG.getUrl('/financial/sales-orders/category-performance');
-          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-          const data = await res.json();
-          if (res.ok && data && data.success) {
-            return { chartData: data.data.chartData, summary: data.data.summary };
-          }
-          throw new Error(data.error || 'Failed to load category data');
-        })
+        }, 1 * 60 * 1000) // 1 minute cache for chat status
       ]);
 
-      // Process results
-      if (statsResult.status === 'rejected') {
-        setError('Failed to load dashboard stats');
-      }
-
+      // Process critical results
       if (newOrdersResult.status === 'fulfilled') {
         setNewOrdersCount(newOrdersResult.value);
       }
@@ -273,6 +238,48 @@ const FinancialDashboardPage = () => {
       if (chatResult.status === 'fulfilled') {
         setHasNewChat(chatResult.value);
       }
+
+    } catch (err) {
+      console.error('Error loading critical dashboard data:', err);
+      // Don't set error for critical data failures, just log
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Lazy load chart data after critical data is loaded
+  const fetchChartData = useCallback(async () => {
+    setSalesLoading(true);
+    setCategoryLoading(true);
+
+    try {
+      // Load chart data in parallel but after critical data
+      const [
+        salesResult,
+        categoryResult
+      ] = await Promise.allSettled([
+        // Sales data with cache
+        fetchWithCache('sales-data', async () => {
+          const url = API_CONFIG.getUrl('/financial/sales-orders/current-month-data');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success) {
+            return { dailyData: data.data.dailyData, summary: data.data.summary };
+          }
+          throw new Error(data.error || 'Failed to load sales data');
+        }, 5 * 60 * 1000), // 5 minute cache for chart data
+        
+        // Category data with cache
+        fetchWithCache('category-data', async () => {
+          const url = API_CONFIG.getUrl('/financial/sales-orders/category-performance');
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          const data = await res.json();
+          if (res.ok && data && data.success) {
+            return { chartData: data.data.chartData, summary: data.data.summary };
+          }
+          throw new Error(data.error || 'Failed to load category data');
+        }, 5 * 60 * 1000) // 5 minute cache for chart data
+      ]);
 
       if (salesResult.status === 'fulfilled') {
         setSalesData(salesResult.value.dailyData);
@@ -291,15 +298,36 @@ const FinancialDashboardPage = () => {
       }
 
     } catch (err) {
-      setError('Failed to load dashboard data');
+      console.error('Error loading chart data:', err);
+      setSalesError('Failed to load sales data');
+      setCategoryError('Failed to load category data');
     } finally {
-      setLoading(false);
       setSalesLoading(false);
       setCategoryLoading(false);
     }
   }, []);
 
+  // Main fetch function - loads critical data first, then charts
+  const fetchAllData = useCallback(async () => {
+    await fetchCriticalData();
+    // Defer chart loading by 100ms to prioritize rendering critical UI
+    setTimeout(() => {
+      fetchChartData();
+    }, 100);
+  }, [fetchCriticalData, fetchChartData]);
+
   useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  // Refresh function that clears cache and reloads
+  const handleRefresh = useCallback(() => {
+    // Clear cache for fresh data
+    dataCache.delete('new-orders-count');
+    dataCache.delete('new-credit-notes-count');
+    dataCache.delete('chat-status');
+    dataCache.delete('sales-data');
+    dataCache.delete('category-data');
     fetchAllData();
   }, [fetchAllData]);
 
@@ -315,35 +343,37 @@ const FinancialDashboardPage = () => {
 
   // Memoized navigation items to prevent unnecessary re-renders
   const navigationItems = useMemo(() => [
-    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
-    { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/expense-summary', label: 'Expenses Summary', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/products', label: 'Products', icon: <BoxIcon className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/dashboard/reports/product-performance', label: 'Products Performance', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/payables', label: 'Payables', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/employee-working-hours', label: 'Employees Attendance', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/employee-working-days', label: 'Employees Working Days', icon: <FileTextIcon className="h-4 w-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-3 w-3" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-3 w-3" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
+    //{ to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/overall-stock', label: 'Store Inventory', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/expense-summary', label: 'Expenses Summary', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/products', label: 'Products', icon: <BoxIcon className="h-3 w-3" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { to: '/dashboard/reports/product-performance', label: 'Products Performance', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/payables', label: 'Payables', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    //{ to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/instant-chat', label: 'Chat Room', icon: <ZapIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+    //{ to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/employee-working-hours', label: 'Employees Attendance', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/employee-working-days', label: 'Employees Working Days', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
   ], []);
 
   // Memoized skeleton components for better loading experience
@@ -365,59 +395,38 @@ const FinancialDashboardPage = () => {
   SkeletonCard.displayName = 'SkeletonCard';
   SkeletonChart.displayName = 'SkeletonChart';
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          {/* Navigation Menu Skeleton */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-              {Array.from({ length: 28 }).map((_, index) => (
-                <div key={index} className="bg-gray-100 rounded-lg p-4 animate-pulse">
-                  <div className="h-4 w-4 bg-gray-300 rounded mx-auto mb-2"></div>
-                  <div className="h-3 bg-gray-300 rounded w-3/4 mx-auto"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Charts Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <SkeletonChart />
-            <SkeletonChart />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  // Memoized chart components for better performance
-  const SalesChart = memo(({ data, loading, error }: { data: SalesData[], loading: boolean, error: string | null }) => {
+  // Memoized chart components for better performance with optimized rendering
+  const SalesChart = memo(({ data, loading, error, formatCurrency }: { data: SalesData[], loading: boolean, error: string | null, formatCurrency: (amount: number) => string }) => {
     if (loading) return <SkeletonChart />;
-    if (error) return <div className="text-red-500 text-center h-64 flex items-center justify-center">{error}</div>;
-    if (data.length === 0) return <div className="text-gray-500 text-center h-64 flex items-center justify-center">No sales data available</div>;
+    if (error) return <div className="text-red-500 text-center h-64 flex items-center justify-center text-xs">{error}</div>;
+    if (data.length === 0) return <div className="text-gray-500 text-center h-64 flex items-center justify-center text-xs">No sales data available</div>;
 
     return (
-      <div className="h-80">
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 12, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis 
               dataKey="date" 
               stroke="#6b7280"
+              tick={{ fontSize: 10 }}
               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             />
             <YAxis 
               stroke="#6b7280"
+              tick={{ fontSize: 10 }}
               tickFormatter={(value) => `KES ${(value / 1000).toFixed(0)}K`}
             />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: 'white', 
                 border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                borderRadius: '6px',
+                boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
+                fontSize: '11px'
               }}
+              labelStyle={{ fontSize: '11px' }}
               labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
                 weekday: 'short', 
                 month: 'short', 
@@ -432,9 +441,10 @@ const FinancialDashboardPage = () => {
               type="monotone" 
               dataKey="total_amount" 
               stroke="#3b82f6" 
-              strokeWidth={3}
-              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+              strokeWidth={2}
+              dot={{ fill: '#3b82f6', strokeWidth: 1.5, r: 3 }}
+              activeDot={{ r: 4, stroke: '#3b82f6', strokeWidth: 1.5 }}
+              isAnimationActive={false}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -442,14 +452,14 @@ const FinancialDashboardPage = () => {
     );
   });
 
-  const CategoryChart = memo(({ data, loading, error }: { data: CategoryPerformance[], loading: boolean, error: string | null }) => {
+  const CategoryChart = memo(({ data, loading, error, formatCurrency }: { data: CategoryPerformance[], loading: boolean, error: string | null, formatCurrency: (amount: number) => string }) => {
     if (loading) return <SkeletonChart />;
-    if (error) return <div className="text-red-500 text-center h-64 flex items-center justify-center">{error}</div>;
-    if (data.length === 0) return <div className="text-gray-500 text-center h-64 flex items-center justify-center">No category data available</div>;
+    if (error) return <div className="text-red-500 text-center h-64 flex items-center justify-center text-xs">{error}</div>;
+    if (data.length === 0) return <div className="text-gray-500 text-center h-64 flex items-center justify-center text-xs">No category data available</div>;
 
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="h-80">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -458,9 +468,10 @@ const FinancialDashboardPage = () => {
                 cy="50%"
                 labelLine={false}
                 label={({ name, percentage }) => `${name} (${percentage}%)`}
-                outerRadius={100}
+                outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
+                isAnimationActive={false}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
@@ -474,35 +485,37 @@ const FinancialDashboardPage = () => {
                 contentStyle={{ 
                   backgroundColor: 'white', 
                   border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
+                  fontSize: '11px'
                 }}
+                labelStyle={{ fontSize: '11px' }}
               />
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="space-y-4">
-          <h4 className="text-base font-semibold text-gray-900 mb-4">Category Breakdown</h4>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-gray-900 mb-2">Category Breakdown</h4>
+          <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {data.map((category, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
+              <div key={`${category.name}-${index}`} className="flex items-center justify-between p-1.5 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-1.5">
                   <div 
-                    className="w-4 h-4 rounded-full" 
+                    className="w-2.5 h-2.5 rounded-full" 
                     style={{ backgroundColor: category.color }}
                   ></div>
                         <div>
-                          <div className="font-medium text-gray-900 text-sm">{category.name}</div>
-                          <div className="text-xs text-gray-600">
+                          <div className="font-medium text-gray-900 text-[10px]">{category.name}</div>
+                          <div className="text-[9px] text-gray-600">
                             {category.orderCount} orders • {category.totalQuantity} units
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold text-gray-900 text-sm">
+                        <div className="font-semibold text-gray-900 text-[10px]">
                           {formatCurrency(category.value)}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-[9px] text-gray-600">
                           {category.percentage}%
                         </div>
                       </div>
@@ -521,11 +534,11 @@ const FinancialDashboardPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <AlertTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 font-semibold">{error}</p>
+          <AlertTriangleIcon className="h-8 w-8 text-red-500 mx-auto mb-3" />
+          <p className="text-red-600 font-semibold text-xs">{error}</p>
           <button 
             onClick={fetchAllData}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="mt-3 px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Retry
           </button>
@@ -635,37 +648,41 @@ const FinancialDashboardPage = () => {
         </div> */}
 
         {/* Navigation Menu */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={fetchAllData}
-              className="flex items-center px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              onClick={handleRefresh}
+              disabled={loading || salesLoading || categoryLoading}
+              className="flex items-center px-1.5 py-1 text-[9px] font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ActivityIcon className="h-4 w-4 mr-2" />
+              <ActivityIcon className={`h-2.5 w-2.5 mr-1 ${(loading || salesLoading || categoryLoading) ? 'animate-spin' : ''}`} />
               Refresh Data
             </button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2">
             {navigationItems.map((item, index) => (
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} relative flex flex-col items-center justify-center p-4 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 hover:shadow-md`}
+                className={`${item.color} relative flex flex-col items-center justify-center p-2 rounded-lg font-medium text-[9px] transition-all duration-200 hover:scale-105 hover:shadow-md`}
               >
                 {item.icon}
-                <span className="mt-2 text-center">{item.label}</span>
+                <span className="mt-1 text-center">{item.label}</span>
                 {item.to === '/financial/customer-orders' && newOrdersCount > 0 && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-red-600 text-white shadow">
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[9px] font-semibold bg-red-600 text-white shadow">
                     {newOrdersCount}
                   </span>
                 )}
                 {item.to === '/credit-note-summary' && newCreditNotesCount > 0 && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-orange-600 text-white shadow">
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[9px] font-semibold bg-orange-600 text-white shadow">
                     {newCreditNotesCount}
                   </span>
                 )}
                 {item.to === '/chat-room' && hasNewChat && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-3 w-3 rounded-full bg-emerald-500 shadow ring-2 ring-white" />
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-2 w-2 rounded-full bg-emerald-500 shadow ring-2 ring-white" />
+                )}
+                {item.to === '/instant-chat' && hasNewChat && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-2 w-2 rounded-full bg-blue-500 shadow ring-2 ring-white" />
                 )}
               </Link>
             ))}
@@ -673,96 +690,96 @@ const FinancialDashboardPage = () => {
         </div>
 
         {/* Sales Graph Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Current Month Sales</h3>
-              <p className="text-xs text-gray-600">Daily sales performance for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              <h3 className="text-xs font-semibold text-gray-900">Current Month Sales</h3>
+              <p className="text-[9px] text-gray-600">Daily sales performance for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
             </div>
             {salesSummary && (
               <div className="text-right">
-                <div className="text-lg font-bold text-green-600">
+                <div className="text-sm font-bold text-green-600">
                   {formatCurrency(salesSummary.total_sales)}
                 </div>
-                <div className="flex items-center text-xs">
+                <div className="flex items-center text-[9px]">
                   {salesSummary.growth_percentage >= 0 ? (
-                    <ArrowUpRightIcon className="h-4 w-4 text-green-500 mr-1" />
+                    <ArrowUpRightIcon className="h-2.5 w-2.5 text-green-500 mr-0.5" />
                   ) : (
-                    <ArrowDownRightIcon className="h-4 w-4 text-red-500 mr-1" />
+                    <ArrowDownRightIcon className="h-2.5 w-2.5 text-red-500 mr-0.5" />
                   )}
                   <span className={salesSummary.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'}>
                     {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
                   </span>
-                  <span className="text-gray-500 ml-1 text-xs">vs last month</span>
+                  <span className="text-gray-500 ml-0.5 text-[9px]">vs last month</span>
                 </div>
               </div>
             )}
           </div>
 
-          <SalesChart data={salesData} loading={salesLoading} error={salesError} />
+          <SalesChart data={salesData} loading={salesLoading} error={salesError} formatCurrency={formatCurrency} />
 
           {/* Sales Summary Cards */}
           {salesSummary && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-3 pt-3 border-t border-gray-100">
               <div className="text-center">
-                <div className="text-lg font-bold text-blue-600">{salesSummary.total_orders}</div>
-                <div className="text-xs text-gray-600">Total Orders</div>
+                <div className="text-sm font-bold text-blue-600">{salesSummary.total_orders}</div>
+                <div className="text-[9px] text-gray-600">Total Orders</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-green-600">{formatCurrency(salesSummary.avg_order_value)}</div>
-                <div className="text-xs text-gray-600">Avg Order Value</div>
+                <div className="text-sm font-bold text-green-600">{formatCurrency(salesSummary.avg_order_value)}</div>
+                <div className="text-[9px] text-gray-600">Avg Order Value</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-purple-600">
+                <div className="text-sm font-bold text-purple-600">
                   {salesData.length > 0 ? (salesSummary.total_orders / salesData.length).toFixed(1) : '0'}
                 </div>
-                <div className="text-xs text-gray-600">Orders/Day</div>
+                <div className="text-[9px] text-gray-600">Orders/Day</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-orange-600">
+                <div className="text-sm font-bold text-orange-600">
                   {salesSummary.growth_percentage >= 0 ? '+' : ''}{salesSummary.growth_percentage.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">Growth Rate</div>
+                <div className="text-[9px] text-gray-600">Growth Rate</div>
               </div>
             </div>
           )}
         </div>
 
         {/* Category Performance Pie Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Category Performance</h3>
-              <p className="text-xs text-gray-600">Sales distribution by product category for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              <h3 className="text-xs font-semibold text-gray-900">Category Performance</h3>
+              <p className="text-[9px] text-gray-600">Sales distribution by product category for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
             </div>
             {categorySummary && (
               <div className="text-right">
-                <div className="text-lg font-bold text-blue-600">
+                <div className="text-sm font-bold text-blue-600">
                   {categorySummary.totalCategories} Categories
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-[9px] text-gray-600">
                   Top: {categorySummary.topCategory} ({categorySummary.topCategoryPercentage}%)
                 </div>
               </div>
             )}
           </div>
 
-          <CategoryChart data={categoryData} loading={categoryLoading} error={categoryError} />
+          <CategoryChart data={categoryData} loading={categoryLoading} error={categoryError} formatCurrency={formatCurrency} />
 
           {/* Category Summary Stats */}
           {categorySummary && categoryData.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100">
               <div className="text-center">
-                <div className="text-lg font-bold text-blue-600">{categorySummary.totalCategories}</div>
-                <div className="text-xs text-gray-600">Total Categories</div>
+                <div className="text-sm font-bold text-blue-600">{categorySummary.totalCategories}</div>
+                <div className="text-[9px] text-gray-600">Total Categories</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-green-600">{categorySummary.topCategory}</div>
-                <div className="text-xs text-gray-600">Top Category</div>
+                <div className="text-sm font-bold text-green-600">{categorySummary.topCategory}</div>
+                <div className="text-[9px] text-gray-600">Top Category</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-purple-600">{categorySummary.topCategoryPercentage}%</div>
-                <div className="text-xs text-gray-600">Top Category Share</div>
+                <div className="text-sm font-bold text-purple-600">{categorySummary.topCategoryPercentage}%</div>
+                <div className="text-[9px] text-gray-600">Top Category Share</div>
               </div>
             </div>
           )}

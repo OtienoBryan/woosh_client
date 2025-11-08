@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { teamService } from '../services/teamService';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 
 // Enhanced SVG icons for modern design
 const Icons = {
@@ -111,7 +112,7 @@ const StaffList: React.FC = () => {
         
         const [staffData, departmentsData, myDepartmentsData] = await Promise.all([
           staffService.getStaffList(),
-          fetch('/api/departments').then(res => res.json()),
+          api.get('/departments').then(res => res.data),
           staffService.getDepartments()
         ]);
         
@@ -525,8 +526,8 @@ const StaffList: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-lg font-medium text-gray-900">Loading staff list...</p>
-              <p className="text-sm text-gray-500">Please wait while we fetch your team data</p>
+              <p className="mt-4 text-sm font-medium text-gray-900">Loading staff list...</p>
+              <p className="text-[10px] text-gray-500">Please wait while we fetch your team data</p>
             </div>
           </div>
         </div>
@@ -542,8 +543,8 @@ const StaffList: React.FC = () => {
             <div className="py-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h1 className="text-base font-bold text-gray-900">Staff Management</h1>
+                  <p className="mt-1 text-[10px] text-gray-500">
                     Manage your team members and track their information
                   </p>
                 </div>
@@ -559,14 +560,14 @@ const StaffList: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Staff Data</h3>
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Try Again
-            </button>
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Error Loading Staff Data</h3>
+                  <p className="text-red-600 mb-4 text-[10px]">{error}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-[10px]"
+                  >
+                    Try Again
+                  </button>
           </div>
         </div>
       </div>
@@ -581,14 +582,14 @@ const StaffList: React.FC = () => {
           <div className="py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
-                <p className="mt-1 text-sm text-gray-500">
+                <h1 className="text-base font-bold text-gray-900">Staff Management</h1>
+                <p className="mt-1 text-[10px] text-gray-500">
                   Manage your team members and track their information
                 </p>
               </div>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-[10px]"
               >
                 <Icons.Plus />
                 <span className="ml-2">Add Staff</span>
@@ -614,8 +615,8 @@ const StaffList: React.FC = () => {
                 <Icons.Badge />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active</p>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-[10px] font-medium text-gray-600">Active</p>
+                <p className="text-base font-semibold text-gray-900">
                   {staff.filter(s => s.status === 1).length}
                 </p>
               </div>
@@ -635,8 +636,8 @@ const StaffList: React.FC = () => {
                 <Icons.UserMinus />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Inactive</p>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-[10px] font-medium text-gray-600">Inactive</p>
+                <p className="text-base font-semibold text-gray-900">
                   {staff.filter(s => s.status === 0).length}
                 </p>
               </div>
@@ -658,7 +659,7 @@ const StaffList: React.FC = () => {
                   placeholder="Search staff..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                 />
               </div>
 
@@ -667,12 +668,12 @@ const StaffList: React.FC = () => {
                 {/* Filters Toggle */}
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                  className="inline-flex items-center px-2 py-1.5 border border-gray-300 rounded-lg text-[10px] text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <Icons.Filter />
                   <span className="ml-2">Filters</span>
                   {(selectedRole || selectedStatus !== 'all' || selectedEmploymentType || selectedGender) && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">
                       {selectedStatus === 'active' ? 'Active' : selectedStatus === 'inactive' ? 'Inactive' : 'Filtered'}
                     </span>
                   )}
@@ -701,7 +702,7 @@ const StaffList: React.FC = () => {
                   <button
                     onClick={exportToPDF}
                     disabled={isExporting}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="inline-flex items-center px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   >
                     <Icons.Download />
                     <span className="ml-2">{isExporting ? 'Exporting...' : 'Export'}</span>
@@ -714,7 +715,7 @@ const StaffList: React.FC = () => {
                         e.stopPropagation();
                         setShowBulkActions(!showBulkActions);
                       }}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                      className="inline-flex items-center px-2 py-1.5 border border-gray-300 rounded-lg text-[10px] text-gray-700 bg-white hover:bg-gray-50"
                     >
                       <Icons.MoreVertical />
                       <Icons.ChevronDown />
@@ -728,28 +729,28 @@ const StaffList: React.FC = () => {
                         <div className="py-1">
                           <Link
                             to="/dashboard/photo-list"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                             onClick={() => setShowBulkActions(false)}
               >
                 Photo List
                           </Link>
               <Link
                 to="/dashboard/employee-warnings"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                             onClick={() => setShowBulkActions(false)}
               >
                 Employee Warnings
               </Link>
               <Link
                 to="/dashboard/expiring-contracts"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                             onClick={() => setShowBulkActions(false)}
               >
                 Expiring Contracts
               </Link>
               <Link
                 to="/upload-document"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                             onClick={() => setShowBulkActions(false)}
               >
                 Upload Documents
@@ -767,11 +768,11 @@ const StaffList: React.FC = () => {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Role</label>
                     <select
                       value={selectedRole}
                       onChange={(e) => setSelectedRole(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                     >
                       <option value="">All Roles</option>
                       {departments.map((dept) => (
@@ -783,11 +784,11 @@ const StaffList: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Status</label>
                     <select
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                     >
                       <option value="all">All Status</option>
                       <option value="active">Active</option>
@@ -796,11 +797,11 @@ const StaffList: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Employment Type</label>
                     <select
                       value={selectedEmploymentType}
                       onChange={(e) => setSelectedEmploymentType(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                     >
                       <option value="">All Types</option>
                       <option value="Consultant">Consultant</option>
@@ -810,11 +811,11 @@ const StaffList: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Gender</label>
                     <select
                       value={selectedGender}
                       onChange={(e) => setSelectedGender(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                     >
                       <option value="">All Genders</option>
                       <option value="Male">Male</option>
@@ -826,7 +827,7 @@ const StaffList: React.FC = () => {
                   <div className="flex items-end">
               <button
                       onClick={clearFilters}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-[10px] text-gray-700 bg-white hover:bg-gray-50"
                     >
                       Clear Filters
               </button>
@@ -843,8 +844,8 @@ const StaffList: React.FC = () => {
             // Empty State
             <div className="bg-white rounded-lg shadow text-center py-12">
               <Icons.UserPlus />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No staff members found</h3>
-              <p className="mt-2 text-sm text-gray-500">
+              <h3 className="mt-4 text-sm font-medium text-gray-900">No staff members found</h3>
+              <p className="mt-2 text-[10px] text-gray-500">
                 {searchTerm || selectedRole || selectedStatus !== 'all' || selectedEmploymentType || selectedGender
                   ? 'Try adjusting your search or filters'
                   : 'Get started by adding your first staff member'}
@@ -852,7 +853,7 @@ const StaffList: React.FC = () => {
               {!searchTerm && !selectedRole && selectedStatus === 'all' && !selectedEmploymentType && !selectedGender && (
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="mt-4 inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-[10px]"
                 >
                   <Icons.Plus />
                   <span className="ml-2">Add Staff Member</span>
@@ -866,40 +867,40 @@ const StaffList: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Staff Member
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">
                         Role
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Designation
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Department
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Employee #
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         ID Number
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Employment Type
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Gender
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Business Email
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Department Email
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Salary
                       </th>
                       <th scope="col" className="relative px-6 py-3">
@@ -910,7 +911,7 @@ const StaffList: React.FC = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredStaff.map((member) => (
                       <tr key={member.id} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="relative">
                               {member.photo_url ? (
@@ -922,7 +923,7 @@ const StaffList: React.FC = () => {
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                  <span className="text-sm font-semibold text-gray-600">
+                                  <span className="text-xs font-semibold text-gray-600">
                                     {member.name.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
@@ -932,65 +933,65 @@ const StaffList: React.FC = () => {
                               }`}></div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                              <div className="text-sm text-gray-500">{member.role}</div>
+                              <div className="text-[10px] font-medium text-gray-900">{member.name}</div>
+                              <div className="text-[10px] text-gray-500">{member.role}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden">
-                          <div className="text-sm text-gray-900">{member.role}</div>
+                        <td className="px-3 py-2 whitespace-nowrap hidden">
+                          <div className="text-[10px] text-gray-900">{member.role}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{member.designation || member.role || <span className="text-gray-500">-</span>}</div>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900">{member.designation || member.role || <span className="text-gray-500">-</span>}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900">
                             {member.department_name || member.department || <span className="text-gray-500">-</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-mono">{member.empl_no}</div>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900 font-mono">{member.empl_no}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-mono">{member.id_no}</div>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900 font-mono">{member.id_no}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(member.status)}`}>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadgeColor(member.status)}`}>
                             {member.status === 1 ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {member.employment_type && (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
                               {member.employment_type}
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {member.gender ? (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getGenderBadgeColor(member.gender)}`}>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getGenderBadgeColor(member.gender)}`}>
                               {member.gender}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-500">-</span>
+                            <span className="text-[10px] text-gray-500">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900">
                             {member.business_email || <span className="text-gray-500">-</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900">
                             {member.department_email || <span className="text-gray-500">-</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-mono">
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900 font-mono">
                             {member.salary ? member.salary.toLocaleString() : <span className="text-gray-500">-</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-3 py-2 whitespace-nowrap text-right text-[10px] font-medium">
                           <div className="relative">
                             <button
                               onClick={(e) => {
@@ -1014,7 +1015,7 @@ const StaffList: React.FC = () => {
                                       handleEdit(member);
                                       setActionMenuStaffId(null);
                                     }}
-                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                    className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100 flex items-center"
                                   >
                                     <Icons.Edit />
                                     <span className="ml-2">Edit Profile</span>
@@ -1024,14 +1025,14 @@ const StaffList: React.FC = () => {
                                       handleToggleStatus(member.id, member.status);
                                       setActionMenuStaffId(null);
                                     }}
-                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                    className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100 flex items-center"
                                   >
                                     {member.status === 1 ? <Icons.UserMinus /> : <Icons.UserPlus />}
                                     <span className="ml-2">{member.status === 1 ? 'Deactivate' : 'Activate'}</span>
                                   </button>
                                   {/* <Link
                                     to={`/upload-document?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                    className="block px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
                                     onClick={() => setActionMenuStaffId(null)}
                                   >
                                     <Icons.Upload />
@@ -1039,7 +1040,7 @@ const StaffList: React.FC = () => {
                                   </Link> */}
                                   <Link
                                     to={`/employee-documents?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                    className="block px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
                                     onClick={() => setActionMenuStaffId(null)}
                                   >
                                     <Icons.Eye />
@@ -1077,7 +1078,7 @@ const StaffList: React.FC = () => {
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-xl font-semibold text-gray-600">
+                            <span className="text-base font-semibold text-gray-600">
                               {member.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -1088,10 +1089,10 @@ const StaffList: React.FC = () => {
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                        <h3 className="text-sm font-semibold text-gray-900 truncate">
                           {member.name}
                         </h3>
-                        <p className="text-sm text-gray-600 truncate">{member.role}</p>
+                        <p className="text-[10px] text-gray-600 truncate">{member.role}</p>
                       </div>
                       
                       <div className="relative">
@@ -1116,7 +1117,7 @@ const StaffList: React.FC = () => {
                                   handleEdit(member);
                                   setActionMenuStaffId(null);
                                 }}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                               >
                                 Edit Profile
                               </button>
@@ -1125,20 +1126,20 @@ const StaffList: React.FC = () => {
                                   handleToggleStatus(member.id, member.status);
                                   setActionMenuStaffId(null);
                                 }}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                               >
                                 {member.status === 1 ? 'Deactivate' : 'Activate'}
                               </button>
                               <Link
                                 to={`/upload-document?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                                 onClick={() => setActionMenuStaffId(null)}
                               >
                                 Upload Documents
                               </Link>
                               <Link
                                 to={`/employee-documents?staff_id=${member.id}&staff_name=${encodeURIComponent(member.name)}`}
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block px-3 py-1.5 text-[10px] text-gray-700 hover:bg-gray-100"
                                 onClick={() => setActionMenuStaffId(null)}
                               >
                                 View Documents
@@ -1151,35 +1152,35 @@ const StaffList: React.FC = () => {
                     
                     {/* Details */}
                     <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-[10px]">
                         <span className="text-gray-600">Employee #:</span>
                         <span className="font-medium text-gray-900">{member.empl_no}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-gray-600">Department:</span>
                         <span className="font-medium text-gray-900">{member.department_name || member.department || '-'}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-gray-600">ID Number:</span>
                         <span className="font-medium text-gray-900">{member.id_no}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-gray-600">Gender:</span>
                         <span className="font-medium text-gray-900">{member.gender || '-'}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-gray-600">Business Email:</span>
                         <span className="font-medium text-gray-900 text-right max-w-32 truncate" title={member.business_email || ''}>
                           {member.business_email || '-'}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-gray-600">Dept Email:</span>
                         <span className="font-medium text-gray-900 text-right max-w-32 truncate" title={member.department_email || ''}>
                           {member.department_email || '-'}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-gray-600">Salary:</span>
                         <span className="font-medium text-gray-900 font-mono">
                           {member.salary ? member.salary.toLocaleString() : '-'}
@@ -1189,16 +1190,16 @@ const StaffList: React.FC = () => {
                     
                     {/* Status Badges */}
                     <div className="flex flex-wrap gap-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(member.status)}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadgeColor(member.status)}`}>
                         {member.status === 1 ? 'Active' : 'Inactive'}
                       </span>
                       {member.employment_type && (
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getEmploymentTypeBadgeColor(member.employment_type)}`}>
                           {member.employment_type}
                         </span>
                       )}
                       {member.gender && (
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getGenderBadgeColor(member.gender)}`}>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getGenderBadgeColor(member.gender)}`}>
                           {member.gender}
                         </span>
                       )}
@@ -1218,10 +1219,10 @@ const StaffList: React.FC = () => {
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-sm font-semibold text-gray-900">
                 {isEditMode ? 'Edit Staff Member' : 'Add New Staff Member'}
               </h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-[10px] text-gray-500 mt-1">
                   {isEditMode ? 'Update staff member information' : 'Enter staff member details'}
                 </p>
               </div>
@@ -1293,7 +1294,7 @@ const StaffList: React.FC = () => {
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                    <p className="text-sm text-gray-500 mt-2">Click to upload photo</p>
+                    <p className="text-[10px] text-gray-500 mt-2">Click to upload photo</p>
                   </div>
                 </div>
 
@@ -1302,7 +1303,7 @@ const StaffList: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Full Name - spans both columns */}
                     <div className="col-span-1 md:col-span-2">
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="name" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Full Name *
                       </label>
                       <input
@@ -1312,14 +1313,14 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.name}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="Enter full name"
                       />
                     </div>
 
                     {/* Employee Number */}
                     <div>
-                      <label htmlFor="empl_no" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="empl_no" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Employee Number *
                       </label>
                       <input
@@ -1329,14 +1330,14 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.empl_no}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="EMP001"
                       />
                     </div>
 
                     {/* ID Number */}
                     <div>
-                      <label htmlFor="id_no" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="id_no" className="block text-[10px] font-medium text-gray-700 mb-2">
                         ID Number *
                       </label>
                       <input
@@ -1346,14 +1347,14 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.id_no}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="123456789"
                       />
                     </div>
 
                     {/* Designation */}
                     <div>
-                      <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="designation" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Designation *
                       </label>
                       <input
@@ -1363,14 +1364,14 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.designation || ''}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="e.g., Manager, Supervisor, Officer"
                       />
                     </div>
 
                     {/* Role - Hidden */}
                     <div className="hidden">
-                      <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="role" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Role *
                       </label>
                       <select
@@ -1379,7 +1380,7 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.role}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                       >
                         <option value="">Select a role</option>
                         {departments.map((department) => (
@@ -1392,7 +1393,7 @@ const StaffList: React.FC = () => {
 
                     {/* Department */}
                     <div>
-                      <label htmlFor="department_id" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="department_id" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Department *
                       </label>
                       <select
@@ -1408,7 +1409,7 @@ const StaffList: React.FC = () => {
                             department: selectedDept?.name || ''
                           }));
                         }}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                       >
                         <option value="">Select a department</option>
                         {myDepartments.map((dept) => (
@@ -1421,14 +1422,14 @@ const StaffList: React.FC = () => {
 
                     {/* Employment Type */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-2">
                         Employment Type *
                       </label>
                       <select
                         name="employment_type"
                         value={newStaff.employment_type}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                       >
                         <option value="Consultant">Consultant</option>
                         <option value="Contract">Contract</option>
@@ -1438,14 +1439,14 @@ const StaffList: React.FC = () => {
 
                     {/* Gender */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-2">
                         Gender
                       </label>
                       <select
                         name="gender"
                         value={newStaff.gender}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                       >
                         <option value="">Select gender</option>
                         <option value="Male">Male</option>
@@ -1456,7 +1457,7 @@ const StaffList: React.FC = () => {
 
                     {/* Business Email */}
                     <div>
-                      <label htmlFor="business_email" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="business_email" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Business Email
                       </label>
                       <input
@@ -1465,14 +1466,14 @@ const StaffList: React.FC = () => {
                         id="business_email"
                         value={newStaff.business_email || ''}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="john.doe@company.com"
                       />
                     </div>
 
                     {/* Department Email */}
                     <div>
-                      <label htmlFor="department_email" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="department_email" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Department Email
                       </label>
                       <input
@@ -1481,14 +1482,14 @@ const StaffList: React.FC = () => {
                         id="department_email"
                         value={newStaff.department_email || ''}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="hr@company.com"
                       />
                     </div>
 
                     {/* Salary */}
                     <div>
-                      <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="salary" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Salary
                       </label>
                       <input
@@ -1499,7 +1500,7 @@ const StaffList: React.FC = () => {
                         min="0"
                         value={newStaff.salary || ''}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="50000.00"
                       />
                     </div>
@@ -1532,14 +1533,14 @@ const StaffList: React.FC = () => {
                     });
                     setSelectedFile(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className={`px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
+                  className={`px-4 py-1.5 text-[10px] font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
                     isUploading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -1562,7 +1563,7 @@ const StaffList: React.FC = () => {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-sm font-medium text-gray-900">
                 Create Teams
               </h3>
               <button
@@ -1580,7 +1581,7 @@ const StaffList: React.FC = () => {
             </div>
             <form onSubmit={handleCreateTeam} className="space-y-4">
               <div>
-                <label htmlFor="teamName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="teamName" className="block text-[10px] font-medium text-gray-700">
                   Team Name Prefix
                 </label>
                 <input
@@ -1589,12 +1590,12 @@ const StaffList: React.FC = () => {
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-[10px] px-2 py-1.5"
                   placeholder="e.g., Team"
                 />
               </div>
               
-              <div className="text-sm text-gray-500">
+              <div className="text-[10px] text-gray-500">
                 <p className="font-medium mb-2">Required Roles per Team:</p>
                 <ul className="list-disc pl-5">
                   {REQUIRED_ROLES.map(role => (
@@ -1612,14 +1613,14 @@ const StaffList: React.FC = () => {
                     setIsTeamModalOpen(false);
                     setTeamName('');
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingTeam}
-                  className={`px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700 ${
+                  className={`px-3 py-1.5 text-[10px] font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700 ${
                     isCreatingTeam ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -1638,10 +1639,10 @@ const StaffList: React.FC = () => {
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-sm font-semibold text-gray-900">
                   {expandedPhoto.name}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-[10px] text-gray-500 mt-1">
                   Staff Photo
                 </p>
               </div>
@@ -1669,7 +1670,7 @@ const StaffList: React.FC = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
               <button
                 onClick={() => setExpandedPhoto(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Close
               </button>

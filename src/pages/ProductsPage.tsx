@@ -787,9 +787,9 @@ const ProductsPage: React.FC = () => {
 
         {addModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={() => setAddModalOpen(false)}>
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-auto relative" onClick={e => e.stopPropagation()}>
-              <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl" onClick={() => setAddModalOpen(false)} aria-label="Close">&times;</button>
-              <h2 className="text-lg font-bold mb-4">Add Product</h2>
+            <div className="bg-white rounded-lg shadow-lg p-3 w-full max-w-md mx-auto relative" onClick={e => e.stopPropagation()}>
+              <button className="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-600 text-lg" onClick={() => setAddModalOpen(false)} aria-label="Close">&times;</button>
+              <h2 className="text-xs font-bold mb-3">Add Product</h2>
               <form
                 onSubmit={async e => {
                   e.preventDefault();
@@ -818,28 +818,28 @@ const ProductsPage: React.FC = () => {
                   setAddSubmitting(false);
                 }}
               >
-                <div className="mb-3">
-                  <label className="block text-sm font-medium mb-1">Product Name</label>
+                <div className="mb-2.5">
+                  <label className="block text-xs font-medium mb-1">Product Name</label>
                   <input
-                    className="border rounded px-3 py-2 w-full"
+                    className="border rounded px-2.5 py-1.5 text-xs w-full"
                     value={addForm.product_name}
                     onChange={e => setAddForm(f => ({ ...f, product_name: e.target.value }))}
                     required
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium mb-1">Product Code</label>
+                <div className="mb-2.5">
+                  <label className="block text-xs font-medium mb-1">Product Code</label>
                   <input
-                    className="border rounded px-3 py-2 w-full"
+                    className="border rounded px-2.5 py-1.5 text-xs w-full"
                     value={addForm.product_code}
                     onChange={e => setAddForm(f => ({ ...f, product_code: e.target.value }))}
                     required
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium mb-1">Category</label>
+                <div className="mb-2.5">
+                  <label className="block text-xs font-medium mb-1">Category</label>
                   <select
-                    className="border rounded px-3 py-2 w-full"
+                    className="border rounded px-2.5 py-1.5 text-xs w-full"
                     value={addForm.category_id}
                     onChange={e => setAddForm(f => ({ ...f, category_id: e.target.value }))}
                     required
@@ -851,10 +851,10 @@ const ProductsPage: React.FC = () => {
                   </select>
                 </div>
                 {isAdmin && (
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium mb-1">Cost Price</label>
+                  <div className="mb-2.5">
+                    <label className="block text-xs font-medium mb-1">Cost Price</label>
                     <input
-                      className="border rounded px-3 py-2 w-full"
+                      className="border rounded px-2.5 py-1.5 text-xs w-full"
                       type="number"
                       value={addForm.cost_price}
                       onChange={e => setAddForm(f => ({ ...f, cost_price: e.target.value }))}
@@ -862,19 +862,19 @@ const ProductsPage: React.FC = () => {
                     />
                   </div>
                 )}
-                <div className="mb-3">
-                  <label className="block text-sm font-medium mb-1">Image (optional)</label>
+                <div className="mb-2.5">
+                  <label className="block text-xs font-medium mb-1">Image (optional)</label>
                   <input
-                    className="border rounded px-3 py-2 w-full"
+                    className="border rounded px-2.5 py-1.5 text-xs w-full"
                     type="file"
                     accept="image/*"
                     onChange={e => setAddForm(f => ({ ...f, image: e.target.files?.[0] || null }))}
                   />
                 </div>
-                {addError && <div className="text-red-600 mb-2">{addError}</div>}
+                {addError && <div className="text-red-600 mb-2 text-xs">{addError}</div>}
                 <div className="flex justify-end gap-2">
-                  <button type="button" className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={() => setAddModalOpen(false)}>Cancel</button>
-                  <button type="submit" className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700" disabled={addSubmitting}>{addSubmitting ? 'Adding...' : 'Add Product'}</button>
+                  <button type="button" className="px-3 py-1.5 text-xs rounded bg-gray-200 hover:bg-gray-300" onClick={() => setAddModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="px-3 py-1.5 text-xs rounded bg-green-600 text-white hover:bg-green-700" disabled={addSubmitting}>{addSubmitting ? 'Adding...' : 'Add Product'}</button>
                 </div>
               </form>
             </div>

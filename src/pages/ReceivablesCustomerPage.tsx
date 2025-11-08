@@ -177,8 +177,8 @@ const ReceivablesCustomerPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading customer invoices...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-gray-600 text-xs">Loading customer invoices...</p>
         </div>
       </div>
     );
@@ -186,91 +186,91 @@ const ReceivablesCustomerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-3">
             <Link 
               to="/receivables" 
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+              className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors"
             >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="font-medium">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="font-medium text-xs">
                 {customer ? `Back to Receivables (${customer.name})` : 'Back to Receivables'}
               </span>
             </Link>
           </div>
           
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex items-start gap-4">
-                <div className="h-16 w-16 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <User className="h-8 w-8 text-blue-600" />
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-md bg-blue-50 flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-sm font-bold text-gray-900 mb-1">
                     {customer ? `${customer.name || customer.company_name || 'Unknown Customer'}` : 'Customer Receivables'}
                   </h1>
                    
                   {customer && (
-                    <div className="flex flex-col gap-2 text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Customer ID: {customer.id || customerId}</span>
-                        <span>•</span>
-                        <span>{customer.email || 'No email'}</span>
+                    <div className="flex flex-col gap-1 text-gray-600">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-[10px]">Customer ID: {customer.id || customerId}</span>
+                        <span className="text-[10px]">•</span>
+                        <span className="text-[10px]">{customer.email || 'No email'}</span>
                         {customer.contact && (
                           <>
-                            <span>•</span>
-                            <span>{customer.contact}</span>
+                            <span className="text-[10px]">•</span>
+                            <span className="text-[10px]">{customer.contact}</span>
                           </>
                         )}
                       </div>
                       {customer.address && (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-[9px] text-gray-500">
                           📍 {customer.address}
                         </div>
                       )}
                     </div>
                   )}
                   {!customer && (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-[10px] text-gray-500">
                       Loading customer information... (ID: {customerId})
                     </div>
                   )}
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="text-right">
-                  <div className="text-sm text-gray-500 mb-1">Total Outstanding</div>
-                  <div className="text-3xl font-bold text-red-600">{formatCurrency(totalOutstanding)}</div>
+                  <div className="text-[10px] text-gray-500 mb-0.5">Total Outstanding</div>
+                  <div className="text-xs font-bold text-red-600">{formatCurrency(totalOutstanding)}</div>
                 </div>
                 {user?.role === 'admin' ? (
                   <button
-                    className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-all ${
+                    className={`px-3 py-1.5 rounded-md font-medium text-xs shadow-sm transition-all ${
                       selectedInvoices.length === 0 
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl transform hover:-translate-y-0.5'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                     disabled={selectedInvoices.length === 0}
                     onClick={() => setShowBulkModal(true)}
                   >
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="h-3 w-3" />
                       Bulk Payment
                       {selectedInvoices.length > 0 && (
-                        <span className="bg-white text-blue-600 px-2 py-1 rounded-full text-sm font-bold">
+                        <span className="bg-white text-blue-600 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
                           {selectedInvoices.length}
                         </span>
                       )}
                     </div>
                   </button>
                 ) : (
-                  <div className="px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5" />
+                  <div className="px-3 py-1.5 rounded-md font-medium text-xs bg-gray-100 text-gray-500 border border-gray-200">
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle className="h-3 w-3" />
                       Admin Access Required
-                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                      <span className="text-[9px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
                         Admin Only
                       </span>
                     </div>
@@ -282,8 +282,8 @@ const ReceivablesCustomerPage: React.FC = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 mb-3">
+          <div className="flex flex-col lg:flex-row gap-2.5">
             <div className="flex-1">
               <div className="relative">
                 <input
@@ -291,18 +291,18 @@ const ReceivablesCustomerPage: React.FC = () => {
                   placeholder="Search invoices by number or customer..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
-                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <FileText className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <button
                 onClick={() => setFilterStatus('all')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`px-2.5 py-1.5 rounded-md font-medium text-xs transition-all ${
                   filterStatus === 'all'
-                    ? 'bg-blue-600 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -310,9 +310,9 @@ const ReceivablesCustomerPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setFilterStatus('pending')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`px-2.5 py-1.5 rounded-md font-medium text-xs transition-all ${
                   filterStatus === 'pending'
-                    ? 'bg-blue-600 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -320,9 +320,9 @@ const ReceivablesCustomerPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setFilterStatus('overdue')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`px-2.5 py-1.5 rounded-md font-medium text-xs transition-all ${
                   filterStatus === 'overdue'
-                    ? 'bg-blue-600 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -337,20 +337,20 @@ const ReceivablesCustomerPage: React.FC = () => {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-2 text-red-700">
-              <AlertCircle className="h-5 w-5" />
-              <span className="font-medium">{error}</span>
+          <div className="bg-red-50 border border-red-200 rounded-md p-2.5 mb-3">
+            <div className="flex items-center gap-1.5 text-red-700">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-medium text-xs">{error}</span>
             </div>
           </div>
         )}
 
         {/* Invoices Table */}
         {filteredInvoices.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
-            <p className="text-gray-500">
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-6 text-center">
+            <FileText className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-xs font-medium text-gray-900 mb-1">No invoices found</h3>
+            <p className="text-xs text-gray-500">
               {searchTerm || filterStatus !== 'all' 
                 ? 'Try adjusting your search or filters'
                 : 'No pending invoices found for this customer'
@@ -358,26 +358,26 @@ const ReceivablesCustomerPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4">
+                    <th className="px-3 py-2">
                       <input
                         type="checkbox"
                         checked={selectedInvoices.length === currentInvoices.length && currentInvoices.length > 0}
                         onChange={handleSelectAll}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         aria-label="Select all invoices"
                       />
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Invoice</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Balance</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-semibold text-gray-500 uppercase tracking-wider">Invoice</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-2 text-right text-[9px] font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-3 py-2 text-right text-[9px] font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
+                    <th className="px-3 py-2 text-right text-[9px] font-semibold text-gray-500 uppercase tracking-wider">Balance</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -391,50 +391,50 @@ const ReceivablesCustomerPage: React.FC = () => {
                         className="hover:bg-blue-50 transition-colors cursor-pointer group"
                         onClick={() => navigate(`/sales-orders/${inv.id}`)}
                       >
-                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={selectedInvoices.includes(inv.id)}
                             onChange={() => handleSelectInvoice(inv.id)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             aria-label={`Select invoice ${inv.so_number}`}
                           />
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                              <FileText className="h-5 w-5 text-blue-600" />
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-md bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                              <FileText className="h-3.5 w-3.5 text-blue-600" />
                             </div>
                             <div>
-                              <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                              <div className="font-medium text-xs text-gray-900 group-hover:text-blue-600 transition-colors">
                                 {inv.so_number}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-[10px] text-gray-500">
                                 {inv.customer?.name || inv.customer?.company_name || 'Unknown Customer'}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span className="text-gray-700">{formatDate(inv.order_date)}</span>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-700">{formatDate(inv.order_date)}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                            <status.icon className="h-3 w-3" />
+                        <td className="px-3 py-2">
+                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium ${status.color}`}>
+                            <status.icon className="h-2.5 w-2.5" />
                             {status.label}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-gray-900 font-semibold">{formatCurrency(inv.total_amount)}</span>
+                        <td className="px-3 py-2 text-right">
+                          <span className="text-xs text-gray-900 font-semibold">{formatCurrency(inv.total_amount)}</span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-green-600 font-medium">{formatCurrency(inv.amount_paid || 0)}</span>
+                        <td className="px-3 py-2 text-right">
+                          <span className="text-xs text-green-600 font-medium">{formatCurrency(inv.amount_paid || 0)}</span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        <td className="px-3 py-2 text-right">
+                          <span className={`text-xs font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                             {formatCurrency(balance)}
                           </span>
                         </td>
@@ -447,46 +447,46 @@ const ReceivablesCustomerPage: React.FC = () => {
             
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+              <div className="bg-gray-50 px-3 py-2 border-t border-gray-200">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm text-gray-600">Show:</label>
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[10px] text-gray-600">Show:</label>
                       <select
                         value={itemsPerPage}
                         onChange={(e) => {
                           setItemsPerPage(Number(e.target.value));
                           setCurrentPage(1);
                         }}
-                        className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="border border-gray-300 rounded-md px-2 py-0.5 text-[10px] focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value={5}>5</option>
                         <option value={10}>10</option>
                         <option value={20}>20</option>
                         <option value={50}>50</option>
                       </select>
-                      <span className="text-sm text-gray-600">per page</span>
+                      <span className="text-[10px] text-gray-600">per page</span>
                     </div>
                     
-                    <div className="text-sm text-gray-600">
+                    <div className="text-[10px] text-gray-600">
                       Showing {startIndex + 1}-{Math.min(endIndex, filteredInvoices.length)} of {filteredInvoices.length} invoices
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-1 rounded-md transition-colors ${
                         currentPage === 1
                           ? 'text-gray-400 cursor-not-allowed'
                           : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
                       }`}
                     >
-                      <ChevronLeft className="h-5 w-5" />
+                      <ChevronLeft className="h-3.5 w-3.5" />
                     </button>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5">
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
                         // Show first page, last page, current page, and pages around current
                         if (
@@ -498,7 +498,7 @@ const ReceivablesCustomerPage: React.FC = () => {
                             <button
                               key={page}
                               onClick={() => setCurrentPage(page)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
                                 page === currentPage
                                   ? 'bg-blue-600 text-white'
                                   : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
@@ -511,7 +511,7 @@ const ReceivablesCustomerPage: React.FC = () => {
                           page === currentPage - 2 ||
                           page === currentPage + 2
                         ) {
-                          return <span key={page} className="px-2 text-gray-400">...</span>;
+                          return <span key={page} className="px-1.5 text-gray-400 text-[10px]">...</span>;
                         }
                         return null;
                       })}
@@ -520,13 +520,13 @@ const ReceivablesCustomerPage: React.FC = () => {
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-1 rounded-md transition-colors ${
                         currentPage === totalPages
                           ? 'text-gray-400 cursor-not-allowed'
                           : 'text-gray-600 hover:bg-gray-200 hover:text-gray-800'
                       }`}
                     >
-                      <ChevronRight className="h-5 w-5" />
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -534,9 +534,9 @@ const ReceivablesCustomerPage: React.FC = () => {
             )}
             
             {/* Summary Footer */}
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div className="bg-gray-50 px-3 py-2 border-t border-gray-200">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+                <div className="text-[10px] text-gray-600">
                   {selectedInvoices.length > 0 && (
                     <span className="font-medium">
                       {selectedInvoices.length} invoice(s) selected • 
@@ -544,7 +544,7 @@ const ReceivablesCustomerPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-[10px] text-gray-600">
                   Page {currentPage} of {totalPages} • {filteredInvoices.length} invoices
                 </div>
               </div>
@@ -658,43 +658,43 @@ const BulkPaymentModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-md shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-2 text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold">Bulk Payment Assignment</h2>
-              <span className="bg-yellow-400 text-blue-900 px-2 py-1 rounded-full text-xs font-bold">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs font-bold">Bulk Payment Assignment</h2>
+              <span className="bg-yellow-400 text-blue-900 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
                 Admin Only
               </span>
             </div>
             <button 
-              className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              className="text-white hover:text-gray-200 transition-colors p-0.5 rounded-full hover:bg-white hover:bg-opacity-20"
               onClick={onClose}
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p className="text-blue-100 text-sm mt-1">
+          <p className="text-blue-100 text-[10px] mt-1">
             {invoices.length} invoice(s) selected • Total: {formatCurrency(total)}
           </p>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="p-3 overflow-y-auto max-h-[60vh]">
           {/* Invoice List */}
-          <div className="space-y-4 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-3">Invoice Details</h3>
+          <div className="space-y-2.5 mb-3">
+            <h3 className="font-semibold text-xs text-gray-900 mb-2">Invoice Details</h3>
             {invoices.map(inv => {
               const balance = inv.total_amount - (inv.amount_paid || 0);
               return (
-                <div key={inv.id} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
+                <div key={inv.id} className="bg-gray-50 rounded-md p-2.5">
+                  <div className="flex items-center justify-between mb-2">
                     <div>
-                      <div className="font-semibold text-gray-900">{inv.so_number}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="font-semibold text-xs text-gray-900">{inv.so_number}</div>
+                      <div className="text-[10px] text-gray-500">
                         Balance: <span className="font-medium">{formatCurrency(balance)}</span>
                       </div>
                     </div>
@@ -706,15 +706,15 @@ const BulkPaymentModal: React.FC<{
                         step="0.01"
                         value={amounts[inv.id] || ''}
                         onChange={e => handleChange(inv.id, e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-2 w-32 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="border border-gray-300 rounded-md px-2 py-1 w-24 text-right text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0.00"
                         disabled={loading}
                       />
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                       style={{ width: `${((amounts[inv.id] || 0) / balance) * 100}%` }}
                     ></div>
                   </div>
@@ -724,21 +724,21 @@ const BulkPaymentModal: React.FC<{
           </div>
 
           {/* Payment Details Form */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Date</label>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">Payment Date</label>
               <input 
                 type="date" 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent" 
                 value={paymentDate} 
                 onChange={e => setPaymentDate(e.target.value)} 
                 disabled={loading} 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">Payment Method</label>
               <select 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent" 
                 value={paymentMethod} 
                 onChange={e => setPaymentMethod(e.target.value)} 
                 disabled={loading}
@@ -749,9 +749,9 @@ const BulkPaymentModal: React.FC<{
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Receiving Account</label>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">Receiving Account</label>
               <select 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent" 
                 value={accountId} 
                 onChange={e => setAccountId(e.target.value)} 
                 disabled={loading}
@@ -763,10 +763,10 @@ const BulkPaymentModal: React.FC<{
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Reference</label>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">Reference</label>
               <input 
                 type="text" 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent" 
                 value={reference} 
                 onChange={e => setReference(e.target.value)} 
                 placeholder="Payment reference"
@@ -774,10 +774,10 @@ const BulkPaymentModal: React.FC<{
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">Notes</label>
               <input 
                 type="text" 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent" 
                 value={notes} 
                 onChange={e => setNotes(e.target.value)} 
                 placeholder="Payment notes"
@@ -787,46 +787,46 @@ const BulkPaymentModal: React.FC<{
           </div>
 
           {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-red-700">
-                <AlertCircle className="h-5 w-5" />
-                <span className="font-medium">{error}</span>
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-md p-2">
+              <div className="flex items-center gap-1.5 text-red-700">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span className="font-medium text-xs">{error}</span>
               </div>
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-semibold text-gray-900">Total Payment:</span>
-            <span className="text-2xl font-bold text-blue-600">{formatCurrency(total)}</span>
+        <div className="bg-gray-50 px-3 py-2 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-gray-900">Total Payment:</span>
+            <span className="text-xs font-bold text-blue-600">{formatCurrency(total)}</span>
           </div>
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-2">
             <button 
-              className="px-6 py-3 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-colors" 
+              className="px-3 py-1.5 rounded-md bg-gray-200 text-gray-700 font-medium text-xs hover:bg-gray-300 transition-colors" 
               onClick={onClose} 
               disabled={loading}
             >
               Cancel
             </button>
             <button
-              className={`px-6 py-3 rounded-lg font-semibold shadow-lg transition-all ${
+              className={`px-3 py-1.5 rounded-md font-medium text-xs shadow-sm transition-all ${
                 total <= 0 || !accountId || loading
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl transform hover:-translate-y-0.5'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
               onClick={handleSubmit}
               disabled={total <= 0 || !accountId || loading}
             >
               {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="flex items-center gap-1.5">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                   Processing...
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="h-3 w-3" />
                   Submit Payment
                 </div>
               )}

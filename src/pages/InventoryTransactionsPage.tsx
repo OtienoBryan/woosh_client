@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { inventoryTransactionsService } from '../services/financialService';
-import { productsService } from '../services/financialService';
-import axios from 'axios';
+import { inventoryTransactionsService, productsService } from '../services/financialService';
+import { storeService } from '../services/storeService';
 
 interface InventoryTransaction {
   id: number;
@@ -90,24 +89,25 @@ const InventoryTransactionsPage: React.FC = () => {
 
   const fetchStores = async () => {
     try {
-      // Directly fetch stores since there is no storeService
-      const response = await axios.get('/api/financial/stores');
-      if (response.data.success && response.data.data) {
-        setStores(response.data.data);
+      const response = await storeService.getAllStores();
+      if (response.success && response.data) {
+        setStores(response.data);
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error fetching stores:', err);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
       <div className="w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Inventory Transactions</h1>
-        <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
+        <h1 className="text-sm font-bold text-gray-900 mb-4">Inventory Transactions</h1>
+        <div className="mb-3 flex flex-col md:flex-row md:items-center gap-3">
           <div className="flex items-center gap-2">
-            <label htmlFor="product-select" className="text-sm font-medium text-gray-700">Product:</label>
+            <label htmlFor="product-select" className="text-[10px] font-medium text-gray-700">Product:</label>
             <select
               id="product-select"
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className="border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               value={selectedProduct}
               onChange={e => setSelectedProduct(e.target.value)}
             >
@@ -118,10 +118,10 @@ const InventoryTransactionsPage: React.FC = () => {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="store-select" className="text-sm font-medium text-gray-700">Store:</label>
+            <label htmlFor="store-select" className="text-[10px] font-medium text-gray-700">Store:</label>
             <select
               id="store-select"
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className="border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               value={selectedStore}
               onChange={e => setSelectedStore(e.target.value)}
             >
@@ -132,42 +132,42 @@ const InventoryTransactionsPage: React.FC = () => {
             </select>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center items-center h-24">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             </div>
           ) : error ? (
             <div className="text-red-600 text-center">
-              <div className="mb-2">{error}</div>
-              <button onClick={fetchTransactions} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Retry</button>
+              <div className="mb-2 text-xs">{error}</div>
+              <button onClick={fetchTransactions} className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 text-xs">Retry</button>
             </div>
           ) : transactions.length === 0 ? (
-            <div className="text-gray-500 text-center">No inventory transactions found.</div>
+            <div className="text-gray-500 text-center text-xs py-4">No inventory transactions found.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date Received</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-green-700 uppercase">Amount In</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-red-700 uppercase">Amount Out</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-indigo-700 uppercase bg-indigo-50">Balance</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Store</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Date Received</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th className="px-3 py-2 text-right text-[9px] font-medium text-green-700 uppercase tracking-wider">Amount In</th>
+                    <th className="px-3 py-2 text-right text-[9px] font-medium text-red-700 uppercase tracking-wider">Amount Out</th>
+                    <th className="px-3 py-2 text-right text-[9px] font-medium text-indigo-700 uppercase tracking-wider bg-indigo-50">Balance</th>
+                    <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Store</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {transactions.map(tx => (
-                    <tr key={tx.id}>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.date_received ? new Date(tx.date_received).toLocaleString() : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.product_name || '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.reference || '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-green-700 text-right font-medium">{tx.amount_in ? tx.amount_in.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-red-700 text-right font-medium">{tx.amount_out ? tx.amount_out.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-indigo-900 font-bold text-right bg-indigo-50">{tx.balance.toLocaleString()}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{tx.store_name || '-'}</td>
+                    <tr key={tx.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{tx.date_received ? new Date(tx.date_received).toLocaleString() : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{tx.product_name || '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{tx.reference || '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-green-700 text-right font-medium">{tx.amount_in ? tx.amount_in.toLocaleString() : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-red-700 text-right font-medium">{tx.amount_out ? tx.amount_out.toLocaleString() : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-indigo-900 font-bold text-right bg-indigo-50">{tx.balance.toLocaleString()}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700">{tx.store_name || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -176,17 +176,17 @@ const InventoryTransactionsPage: React.FC = () => {
           )}
         </div>
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-6">
+          <div className="flex justify-center items-center gap-2 mt-3">
             <button
-              className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+              className="px-2.5 py-1 rounded border bg-white disabled:opacity-50 text-xs hover:bg-gray-50 transition-colors"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               Previous
             </button>
-            <span className="text-sm">Page {page} of {totalPages}</span>
+            <span className="text-[10px] text-gray-600">Page {page} of {totalPages}</span>
             <button
-              className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+              className="px-2.5 py-1 rounded border bg-white disabled:opacity-50 text-xs hover:bg-gray-50 transition-colors"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >

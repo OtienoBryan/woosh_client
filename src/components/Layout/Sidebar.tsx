@@ -1,7 +1,7 @@
 import React, { Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dialog, Transition } from '@headlessui/react';
-import { XIcon, HomeIcon, UsersIcon, CogIcon, ShieldIcon, BoxIcon, ImageIcon, InfoIcon, GroupIcon, Tally4Icon, BellIcon, FileTextIcon, BarChart3, MessageCircleIcon, DollarSign, Clock, MapIcon, TrendingUp } from 'lucide-react';
+import { XIcon, HomeIcon, UsersIcon, CogIcon, ShieldIcon, BoxIcon, ImageIcon, InfoIcon, GroupIcon, Tally4Icon, BellIcon, FileTextIcon, BarChart3, MessageCircleIcon, DollarSign, Clock, MapIcon, TrendingUp, Zap } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
@@ -27,6 +27,12 @@ const navigation = [
     name: 'Chat Room',
     href: '/chat-room',
     icon: MessageCircleIcon,
+    roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr', 'executive']
+  },
+  {
+    name: 'Instant Chat',
+    href: '/instant-chat',
+    icon: Zap,
     roles: ['admin', 'manager', 'accountant', 'user', 'stock', 'sales', 'hr', 'executive']
   },
   {

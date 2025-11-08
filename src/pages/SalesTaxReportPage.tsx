@@ -17,6 +17,7 @@ import {
   Receipt,
   FileText as TaxIcon
 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 interface SalesTaxEntry {
   journal_entry_id: number;
@@ -72,6 +73,7 @@ const SalesTaxReportPage: React.FC = () => {
     if (startDate && endDate) {
       fetchSalesTaxReport();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchSalesTaxReport = async () => {
@@ -83,7 +85,7 @@ const SalesTaxReportPage: React.FC = () => {
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
       
-      const response = await axios.get(`/api/financial/reports/sales-tax?${params}`);
+      const response = await axios.get(`${API_BASE_URL}/financial/reports/sales-tax?${params}`);
       
       if (response.data.success) {
         setReportData(response.data.data);
@@ -108,12 +110,16 @@ const SalesTaxReportPage: React.FC = () => {
     console.log('Export Excel functionality to be implemented');
   };
 
-  const filteredEntries = reportData?.entries.filter(entry => 
-    entry.entry_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.journal_description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.line_description.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredEntries = reportData?.entries.filter(entry => {
+    if (!entry) return false;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (entry.entry_number || '').toLowerCase().includes(searchLower) ||
+      (entry.reference || '').toLowerCase().includes(searchLower) ||
+      (entry.journal_description || '').toLowerCase().includes(searchLower) ||
+      (entry.line_description || '').toLowerCase().includes(searchLower)
+    );
+  }) || [];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {

@@ -353,42 +353,78 @@ const ProfitLossReportPage: React.FC = () => {
   const exportToCSV = () => {
     if (!reportData) return;
 
-    const csvContent = [
+    // Helper function to escape CSV values
+    const escapeCSV = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Helper function to format numbers for CSV (no commas, just decimals)
+    const formatNumberForCSV = (amount: number): string => {
+      if (amount === null || amount === undefined || isNaN(amount)) {
+        return '0.00';
+      }
+      return amount.toFixed(2);
+    };
+
+    const rows: string[][] = [
       ['Profit and Loss Report', getPeriodLabel()],
       [''],
       ['Revenue'],
-      ['Sales Revenue', number_format(reportData.revenue.sales_revenue)],
-      ['Other Income', number_format(reportData.revenue.other_income)],
-      ['Total Revenue', number_format(reportData.revenue.total_revenue)],
+      ['Sales Revenue', formatNumberForCSV(reportData.revenue.sales_revenue)],
+      ['Other Income', formatNumberForCSV(reportData.revenue.other_income)],
+      ['Total Revenue', formatNumberForCSV(reportData.revenue.total_revenue)],
       [''],
-      ['Cost of Goods Sold', number_format(reportData.expenses.cost_of_goods_sold)],
-      ['Gross Profit', number_format(reportData.gross_profit)],
+      ['Cost of Goods Sold', formatNumberForCSV(reportData.expenses.cost_of_goods_sold)],
+      ['Gross Profit', formatNumberForCSV(reportData.gross_profit)],
       ['Gross Margin', formatPercentage(reportData.gross_margin)],
       [''],
       ['Operating Expenses'],
-      // Operating expenses breakdown
-      ...reportData.expenses.operating_expenses_breakdown.map(exp => 
-        [exp.account_name, number_format(exp.balance)]
-      ),
-      ['Total Operating Expenses', number_format(reportData.expenses.total_operating_expenses)],
-      [''],
-      ['Net Profit', number_format(reportData.net_profit)],
-      ['Net Margin', formatPercentage(reportData.net_margin)]
-    ].map(row => row.join(',')).join('\n');
+    ];
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    // Add operating expenses breakdown with account codes (as shown on page)
+    if (reportData.expenses.operating_expenses_breakdown && reportData.expenses.operating_expenses_breakdown.length > 0) {
+      reportData.expenses.operating_expenses_breakdown.forEach(exp => {
+        rows.push([`${exp.account_name} (${exp.account_code})`, formatNumberForCSV(exp.balance)]);
+      });
+    }
+
+    rows.push(
+      ['Total Operating Expenses', formatNumberForCSV(reportData.expenses.total_operating_expenses)],
+      [''],
+      ['Total Expenses', formatNumberForCSV(reportData.expenses.total_expenses)],
+      [''],
+      ['Net Profit', formatNumberForCSV(reportData.net_profit)],
+      ['Net Margin', formatPercentage(reportData.net_margin)]
+    );
+
+    // Convert to CSV format with proper escaping
+    const csvContent = rows
+      .map(row => row.map(escapeCSV).join(','))
+      .join('\n');
+
+    // Add BOM for Excel compatibility
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `profit-loss-report-${getPeriodLabel().toLowerCase().replace(/\s+/g, '-')}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -398,32 +434,32 @@ const ProfitLossReportPage: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Profit & Loss Report</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-lg font-bold text-gray-900">Profit & Loss Report</h1>
+              <p className="text-xs text-gray-600 mt-0.5">
                 Financial performance analysis
                 {enableComparison && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    <TrendingUp className="w-3 h-3 mr-1" />
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
+                    <TrendingUp className="w-2.5 h-2.5 mr-1" />
                     Comparison Mode
                   </span>
                 )}
               </p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button
                 onClick={() => setShowComparisonModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                className="bg-blue-600 text-white px-3 py-1.5 text-xs rounded-lg hover:bg-blue-700 flex items-center"
               >
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className="w-3 h-3 mr-1.5" />
                 Compare with Previous Month
               </button>
               <button
                 onClick={exportToCSV}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+                className="bg-green-600 text-white px-3 py-1.5 text-xs rounded-lg hover:bg-green-700 flex items-center"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3 h-3 mr-1.5" />
                 Export CSV
               </button>
             </div>
@@ -432,15 +468,15 @@ const ProfitLossReportPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center space-x-4 flex-wrap">
-            <Filter className="w-5 h-5 text-gray-500" />
-            <label className="text-sm font-medium text-gray-700">Period:</label>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <div className="flex items-center space-x-3 flex-wrap">
+            <Filter className="w-3 h-3 text-gray-500" />
+            <label className="text-xs font-medium text-gray-700">Period:</label>
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="current_month">Current Month</option>
               <option value="last_month">Last Month</option>
@@ -455,27 +491,27 @@ const ProfitLossReportPage: React.FC = () => {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-gray-500">to</span>
+                <span className="text-xs text-gray-500">to</span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
 
-            <div className="flex items-center space-x-2 ml-4">
+            <div className="flex items-center space-x-2 ml-3">
               <input
                 type="checkbox"
                 id="enableComparison"
                 checked={enableComparison}
                 onChange={(e) => setEnableComparison(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label htmlFor="enableComparison" className="text-sm font-medium text-gray-700">
+              <label htmlFor="enableComparison" className="text-xs font-medium text-gray-700">
                 Compare with Previous Period
               </label>
             </div>
@@ -483,63 +519,63 @@ const ProfitLossReportPage: React.FC = () => {
         </div>
 
         {error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 text-xs rounded mb-4">
             {error}
           </div>
         ) : reportData ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="bg-white rounded-lg shadow p-3">
                 <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  <div className="p-1.5 bg-green-100 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-600">Total Revenue</p>
+                    <p className="text-base font-bold text-gray-900">
                       {number_format(reportData.revenue.total_revenue)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-3">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-blue-600" />
+                  <div className="p-1.5 bg-blue-100 rounded-lg">
+                    <DollarSign className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Gross Profit</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-600">Gross Profit</p>
+                    <p className="text-base font-bold text-gray-900">
                       {number_format(reportData.gross_profit)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-3">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <TrendingDown className="w-6 h-6 text-red-600" />
+                  <div className="p-1.5 bg-red-100 rounded-lg">
+                    <TrendingDown className="w-4 h-4 text-red-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-600">Total Expenses</p>
+                    <p className="text-base font-bold text-gray-900">
                       {number_format(reportData.expenses.total_expenses)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-3">
                 <div className="flex items-center">
-                  <div className={`p-2 rounded-lg ${reportData.net_profit >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                    <DollarSign className={`w-6 h-6 ${reportData.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  <div className={`p-1.5 rounded-lg ${reportData.net_profit >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                    <DollarSign className={`w-4 h-4 ${reportData.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Net Profit</p>
-                    <p className={`text-2xl font-bold ${reportData.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-600">Net Profit</p>
+                    <p className={`text-base font-bold ${reportData.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {number_format(reportData.net_profit)}
                     </p>
                   </div>
@@ -550,95 +586,95 @@ const ProfitLossReportPage: React.FC = () => {
 
             {/* Detailed Report */}
             <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Profit & Loss Statement - {getPeriodLabel()}</h3>
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900">Profit & Loss Statement - {getPeriodLabel()}</h3>
               </div>
-              <div className="p-6">
-                <div className="space-y-6">
+              <div className="p-4">
+                <div className="space-y-4">
                   {/* Revenue Section */}
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Revenue</h4>
-                    <div className="space-y-3">
+                    <h4 className="text-xs font-medium text-gray-900 mb-2">Revenue</h4>
+                    <div className="space-y-2">
                       <div 
-                        className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                        className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-1.5 rounded-md transition-colors"
                         onClick={() => setShowSalesRevenueModal(true)}
                         title="Click to view detailed breakdown"
                       >
-                        <span className="text-gray-600">Sales Revenue</span>
-                        <span className="font-medium text-green-600 hover:text-green-800">{number_format(reportData.revenue.sales_revenue)}</span>
+                        <span className="text-xs text-gray-600">Sales Revenue</span>
+                        <span className="text-xs font-medium text-green-600 hover:text-green-800">{number_format(reportData.revenue.sales_revenue)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Other Income</span>
-                        <span className="font-medium">{number_format(reportData.revenue.other_income)}</span>
+                        <span className="text-xs text-gray-600">Other Income</span>
+                        <span className="text-xs font-medium">{number_format(reportData.revenue.other_income)}</span>
                       </div>
-                      <div className="flex justify-between items-center border-t pt-3">
-                        <span className="font-semibold text-gray-900">Total Revenue</span>
-                        <span className="font-bold text-gray-900">{number_format(reportData.revenue.total_revenue)}</span>
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="text-xs font-semibold text-gray-900">Total Revenue</span>
+                        <span className="text-xs font-bold text-gray-900">{number_format(reportData.revenue.total_revenue)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Cost of Goods Sold */}
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Cost of Goods Sold</h4>
+                    <h4 className="text-xs font-medium text-gray-900 mb-2">Cost of Goods Sold</h4>
                     <div 
-                      className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                      className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-1.5 rounded-md transition-colors"
                       onClick={() => setShowCOGSModal(true)}
                       title="Click to view detailed breakdown"
                     >
-                      <span className="text-gray-600">Cost of Goods Sold</span>
-                      <span className="font-medium text-blue-600 hover:text-blue-800">{number_format(reportData.expenses.cost_of_goods_sold)}</span>
+                      <span className="text-xs text-gray-600">Cost of Goods Sold</span>
+                      <span className="text-xs font-medium text-blue-600 hover:text-blue-800">{number_format(reportData.expenses.cost_of_goods_sold)}</span>
                     </div>
                   </div>
 
                   {/* Gross Profit */}
-                  <div className="border-t pt-4">
+                  <div className="border-t pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Gross Profit</span>
-                      <span className="font-bold text-gray-900">{number_format(reportData.gross_profit)}</span>
+                      <span className="text-xs font-semibold text-gray-900">Gross Profit</span>
+                      <span className="text-xs font-bold text-gray-900">{number_format(reportData.gross_profit)}</span>
                     </div>
                     <div 
-                      className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                      className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-50 p-1.5 rounded-md transition-colors"
                       onClick={() => setShowGrossMarginModal(true)}
                       title="Click to view detailed breakdown"
                     >
-                      <span className="text-sm text-gray-500">Gross Margin</span>
-                      <span className="text-sm font-medium text-gray-500 hover:text-gray-700">{formatPercentage(reportData.gross_margin)}</span>
+                      <span className="text-[10px] text-gray-500">Gross Margin</span>
+                      <span className="text-[10px] font-medium text-gray-500 hover:text-gray-700">{formatPercentage(reportData.gross_margin)}</span>
                     </div>
                   </div>
 
                   {/* Operating Expenses */}
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Operating Expenses</h4>
-                    <div className="space-y-3">
+                    <h4 className="text-xs font-medium text-gray-900 mb-2">Operating Expenses</h4>
+                    <div className="space-y-2">
                       {reportData.expenses.operating_expenses_breakdown && reportData.expenses.operating_expenses_breakdown.length > 0 ? (
                         reportData.expenses.operating_expenses_breakdown.map((exp) => (
                           <div key={exp.account_code} className="flex justify-between items-center">
-                            <span className="text-gray-600">{exp.account_name} ({exp.account_code})</span>
-                            <span className="font-medium">{number_format(exp.balance)}</span>
+                            <span className="text-xs text-gray-600">{exp.account_name} ({exp.account_code})</span>
+                            <span className="text-xs font-medium">{number_format(exp.balance)}</span>
                           </div>
                         ))
                       ) : (
-                        <div className="text-gray-500">No operating expenses found.</div>
+                        <div className="text-xs text-gray-500">No operating expenses found.</div>
                       )}
-                      <div className="flex justify-between items-center border-t pt-3">
-                        <span className="font-semibold text-gray-900">Total Operating Expenses</span>
-                        <span className="font-bold text-gray-900">{number_format(reportData.expenses.total_operating_expenses)}</span>
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="text-xs font-semibold text-gray-900">Total Operating Expenses</span>
+                        <span className="text-xs font-bold text-gray-900">{number_format(reportData.expenses.total_operating_expenses)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Net Profit */}
-                  <div className="border-t pt-4">
+                  <div className="border-t pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-lg text-gray-900">Net Profit</span>
-                      <span className={`font-bold text-lg ${reportData.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className="text-xs font-bold text-gray-900">Net Profit</span>
+                      <span className={`text-xs font-bold ${reportData.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {number_format(reportData.net_profit)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm text-gray-500">Net Margin</span>
-                      <span className={`text-sm font-medium ${reportData.net_margin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className="text-[10px] text-gray-500">Net Margin</span>
+                      <span className={`text-[10px] font-medium ${reportData.net_margin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatPercentage(reportData.net_margin)}
                       </span>
                     </div>

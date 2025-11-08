@@ -108,7 +108,7 @@ const CustomerOrdersPage: React.FC = () => {
 
   // Pagination state
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
   // Handle URL parameters for filtering
@@ -208,9 +208,12 @@ const CustomerOrdersPage: React.FC = () => {
       const response = await productsService.getAll();
       if (response.success && response.data) {
         setProducts(response.data);
+        return response.data;
       }
+      return [];
     } catch (err) {
       console.error('Error fetching products:', err);
+      return [];
     }
   }, []);
 
@@ -371,31 +374,46 @@ const CustomerOrdersPage: React.FC = () => {
   };
 
   const startEditing = async () => {
-    if (user?.role !== 'admin') {
-      setError('Only users with admin role can edit orders');
+    if (user?.role !== 'admin' && user?.role !== 'executive') {
+      setError('Only users with admin or executive role can edit orders');
       return;
     }
     
     if (!selectedOrder) return;
     
-    // Lazy load products only when editing starts
-    if (products.length === 0) {
-      await fetchProducts();
+    // Lazy load products only when editing starts - get them directly
+    let productsToUse = products;
+    if (productsToUse.length === 0) {
+      productsToUse = await fetchProducts();
     }
     
     setEditForm({
       expected_delivery_date: selectedOrder.expected_delivery_date || '',
       notes: selectedOrder.notes || '',
       status: selectedOrder.status || 'draft',
-      items: selectedOrder.items?.map(item => ({
-        id: item.id,
-        product_id: item.product_id,
-        product_name: item.product?.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-        tax_type: (item as any).tax_type || '16%'
-      })) || []
+      items: selectedOrder.items?.map(item => {
+        // Try multiple ways to get product name
+        let productName = '';
+        if (item.product?.product_name) {
+          productName = item.product.product_name;
+        } else if ((item as any).product_name) {
+          productName = (item as any).product_name;
+        } else if (item.product_id && productsToUse.length > 0) {
+          // Look up product name from products array
+          const product = productsToUse.find(p => p.id === item.product_id);
+          productName = product?.product_name || '';
+        }
+        
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          product_name: productName,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          tax_type: (item as any).tax_type || '16%'
+        };
+      }) || []
     });
     setIsEditing(true);
     setSuccessMessage('');
@@ -408,8 +426,8 @@ const CustomerOrdersPage: React.FC = () => {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user?.role !== 'admin') {
-      setError('Only users with admin role can edit orders');
+    if (user?.role !== 'admin' && user?.role !== 'executive') {
+      setError('Only users with admin or executive role can edit orders');
       return;
     }
     
@@ -569,8 +587,8 @@ const CustomerOrdersPage: React.FC = () => {
   });
 
   const convertToInvoice = async () => {
-    if (user?.role !== 'admin') {
-      setError('Only users with admin role can convert orders to invoices');
+    if (user?.role !== 'admin' && user?.role !== 'executive') {
+      setError('Only users with admin or executive role can convert orders to invoices');
       return;
     }
     
@@ -942,10 +960,10 @@ const CustomerOrdersPage: React.FC = () => {
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center">
               <ShoppingCart className="h-6 w-6 text-blue-600 mr-2" />
-              <h1 className="text-lg font-bold text-gray-900">Customer Orders</h1>
+              <h1 className="text-sm font-bold text-gray-900">Customer Orders</h1>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-500">
+              <span className="text-[10px] text-gray-500">
                 {filteredOrders.length} orders
               </span>
               <button
@@ -975,149 +993,172 @@ const CustomerOrdersPage: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">
           {/* Active Filters Indicator */}
           {(searchTerm || myStatusFilter !== '0' || startDate || endDate || riderFilter) && (
-            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5">
-                  <Filter className="h-3.5 w-3.5 text-blue-600" />
-                  <span className="text-xs font-medium text-blue-800">Active Filters:</span>
-                  <div className="flex flex-wrap gap-1.5">
+            <div className="mb-2.5 p-2 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center justify-between flex-wrap gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Filter className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                  <span className="text-[10px] font-medium text-blue-800">Active:</span>
+                  <div className="flex flex-wrap gap-1">
                     {searchTerm && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
-                        Search: "{searchTerm}"
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-blue-100 text-blue-800">
+                        "{searchTerm}"
                       </span>
                     )}
-                    {myStatusFilter !== 'all' && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
-                        Status: {myStatusFilter === 'all' ? 'All Orders' : getMyStatusText(parseInt(myStatusFilter))}
+                    {myStatusFilter !== '0' && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-blue-100 text-blue-800">
+                        {getMyStatusText(parseInt(myStatusFilter))}
                       </span>
                     )}
                     {riderFilter && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-800">
-                        Rider: {riders.find(r => r.id === riderFilter)?.name || `ID: ${riderFilter}`}
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-orange-100 text-orange-800">
+                        {riders.find(r => r.id === riderFilter)?.name || `Rider ${riderFilter}`}
                       </span>
                     )}
-                    {startDate && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
+                    {startDate && endDate && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-blue-100 text-blue-800">
+                        {formatDate(startDate)} - {formatDate(endDate)}
+                      </span>
+                    )}
+                    {(startDate && !endDate) && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-blue-100 text-blue-800">
                         From: {formatDate(startDate)}
                       </span>
                     )}
-                    {endDate && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
+                    {(!startDate && endDate) && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-blue-100 text-blue-800">
                         To: {formatDate(endDate)}
                       </span>
                     )}
                   </div>
                 </div>
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setMyStatusFilter('0');
+                    setStartDate('');
+                    setEndDate('');
+                    setRiderFilter(null);
+                    setPage(1);
+                  }}
+                  className="text-[9px] text-blue-700 hover:text-blue-900 font-medium underline"
+                >
+                  Clear all
+                </button>
               </div>
             </div>
           )}
           
-          <div className="flex flex-col md:flex-row gap-3">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by order number or customer..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+          {/* Main Filter Row */}
+          <div className="space-y-2.5">
+            {/* Search and Action Buttons Row */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              {/* Search */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search order number or customer..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-2.5 py-1.5 text-[10px] border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Date Range - Compact */}
+              <div className="flex gap-2">
+                <div className="w-32">
+                  <input
+                    type="date"
+                    id="startDate"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-2 py-1.5 text-[10px] border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Start"
+                  />
+                </div>
+                <div className="w-32">
+                  <input
+                    type="date"
+                    id="endDate"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-2 py-1.5 text-[10px] border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="End"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setMyStatusFilter('0');
+                    setStartDate('');
+                    setEndDate('');
+                    setRiderFilter(null);
+                    setPage(1);
+                  }}
+                  className="px-2.5 py-1.5 text-[10px] bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-400 transition-colors border border-gray-300"
+                  title="Clear all filters"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={fetchAllData}
+                  className="px-2.5 py-1.5 text-[10px] bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-400 transition-colors"
+                  title="Refresh data"
+                >
+                  Refresh
+                </button>
               </div>
             </div>
 
-            {/* Status Filter - Segmented Buttons */}
-            <div className="flex flex-wrap gap-1.5 items-center">
+            {/* Status Filter - Compact Segmented Buttons */}
+            <div className="flex flex-wrap gap-1 items-center">
+              <span className="text-[10px] font-medium text-gray-600 mr-1">Status:</span>
               {[
-                { value: 'all', label: 'All' },
                 { value: '0', label: 'New' },
                 { value: '1', label: 'Approved' },
                 { value: '2', label: 'In Transit' },
                 { value: '3', label: 'Complete' },
                 { value: '4', label: 'Cancelled' },
                 { value: '5', label: 'Declined' },
-                { value: '6', label: 'Returned to Stock' },
+                { value: '6', label: 'Returned' },
               ].map(opt => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => { setMyStatusFilter(opt.value); setPage(1); }}
-                  className={`px-2 py-1 text-xs rounded border flex items-center gap-1.5 ${getFilterClasses(opt.value, myStatusFilter === opt.value).btn}`}
+                  className={`px-1.5 py-1 text-[9px] rounded border flex items-center gap-1 ${getFilterClasses(opt.value, myStatusFilter === opt.value).btn}`}
+                  title={`${opt.label} (${statusCounts[opt.value] || 0})`}
                 >
-                  {opt.label}
-                  <span className={`inline-flex items-center justify-center min-w-[1.2rem] h-4 px-1.5 rounded-full text-[10px] ${getFilterClasses(opt.value, myStatusFilter === opt.value).pill}`}>
+                  <span>{opt.label}</span>
+                  <span className={`inline-flex items-center justify-center min-w-[1rem] h-3.5 px-1 rounded-full text-[9px] font-medium ${getFilterClasses(opt.value, myStatusFilter === opt.value).pill}`}>
                     {statusCounts[opt.value] || 0}
                   </span>
                 </button>
               ))}
             </div>
-
-            {/* Date Range Filter */}
-            <div className="md:w-40">
-              <label htmlFor="startDate" className="block text-xs font-medium text-gray-700 mb-0.5">
-                Start Date
-              </label>
-              <input
-                type="date"
-                id="startDate"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="md:w-40">
-              <label htmlFor="endDate" className="block text-xs font-medium text-gray-700 mb-0.5">
-                End Date
-              </label>
-              <input
-                type="date"
-                id="endDate"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Clear Filters Button */}
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setMyStatusFilter('all');
-                setStartDate('');
-                setEndDate('');
-                setRiderFilter(null);
-                setPage(1);
-              }}
-              className="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-            >
-              Clear Filters
-            </button>
-
-            {/* Refresh Button */}
-            <button
-              onClick={fetchAllData}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            >
-              Refresh
-            </button>
           </div>
         </div>
 
         {/* Orders Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-4 py-2 border-b border-gray-200">
-            <h3 className="text-base font-medium text-gray-900">Customer Orders</h3>
+            <h3 className="text-xs font-medium text-gray-900">Customer Orders</h3>
           </div>
           
           {filteredOrders.length === 0 ? (
             <div className="text-center py-8">
               <ShoppingCart className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-base font-medium text-gray-900 mb-1">No orders found</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="text-xs font-medium text-gray-900 mb-1">No orders found</h3>
+              <p className="text-[10px] text-gray-500">
                 {searchTerm || myStatusFilter !== 'all' || startDate || endDate || riderFilter ? 'Try adjusting your search terms, status filter, rider filter, or date range.' : 'No orders available.'}
               </p>
             </div>
@@ -1126,34 +1167,31 @@ const CustomerOrdersPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Order Details
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Customer
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Balance
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Sales Rep
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Approval Status
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                       Assigned Rider
                     </th>
-                    <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider w-32">
                       Actions
                     </th>
                   </tr>
@@ -1163,16 +1201,12 @@ const CustomerOrdersPage: React.FC = () => {
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-7 w-7">
-                            <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center">
-                              <ShoppingCart className="h-3.5 w-3.5 text-blue-600" />
-                            </div>
-                          </div>
+                           
                           <div className="ml-2">
-                            <div className="text-xs font-medium text-gray-900">
+                            <div className="text-[10px] font-medium text-gray-900">
                               {order.so_number}
                             </div>
-                            <div className="text-[10px] text-gray-500">
+                            <div className="text-[9px] text-gray-500">
                               {order.items?.length || 0} items
                             </div>
                           </div>
@@ -1180,40 +1214,30 @@ const CustomerOrdersPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-6 w-6">
-                            <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
-                              <User className="h-3 w-3 text-gray-600" />
-                            </div>
-                          </div>
+                           
                           <div className="ml-2">
-                            <div className="text-xs font-medium text-gray-900">
+                            <div className="text-[10px] font-medium text-gray-900">
                               {order.customer_name || order.customer?.name || 'Unknown'}
                             </div>
-                            <div className="text-[10px] text-gray-500">
-                              {order.customer?.contact || 'No contact'}
-                            </div>
+                            
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="text-xs font-medium text-gray-900">
+                          <div className="text-[10px] font-medium text-gray-900">
                             {order.customer_balance ? formatCurrency(parseFloat(order.customer_balance)) : 'N/A'}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-6 w-6">
-                            <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
-                              <User className="h-3 w-3 text-green-600" />
-                            </div>
-                          </div>
+                          
                           <div className="ml-2">
-                            <div className="text-xs font-medium text-gray-900">
+                            <div className="text-[10px] font-medium text-gray-900">
                               {order.salesrep || order.created_by_user?.full_name || 'Unknown'}
                             </div>
-                            <div className="text-[10px] text-gray-500">
+                            <div className="text-[9px] text-gray-500">
                               Sales Representative
                             </div>
                           </div>
@@ -1221,21 +1245,17 @@ const CustomerOrdersPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Calendar className="h-3 w-3 text-gray-400 mr-1" />
-                          <div className="text-xs text-gray-900">
+                          <div className="text-[10px] text-gray-900">
                             {formatDate(order.order_date)}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="text-xs font-medium text-gray-900">
+                          <div className="text-[10px] font-medium text-gray-900">
                             {formatCurrency(order.total_amount)}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        {getStatusBadge(order.status)}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
@@ -1251,7 +1271,7 @@ const CustomerOrdersPage: React.FC = () => {
                           {getMyStatusText(order.my_status)}
                         </span>
                         {order.my_status === 6 && order.returned_at && (
-                          <div className="mt-1 text-[10px] text-gray-500">
+                          <div className="mt-1 text-[9px] text-gray-500">
                             Returned: {formatDateTime(order.returned_at)}
                             {order.received_by_name && (
                               <span> by {order.received_by_name}</span>
@@ -1264,8 +1284,8 @@ const CustomerOrdersPage: React.FC = () => {
                           <div className="flex items-center">
                             <Truck className="h-3 w-3 text-green-500 mr-1" />
                             <div>
-                              <div className="text-xs font-medium text-gray-900">{order.rider_name}</div>
-                              <div className="text-[10px] text-gray-500">{order.rider_contact}</div>
+                              <div className="text-[10px] font-medium text-gray-900">{order.rider_name}</div>
+                              <div className="text-[9px] text-gray-500">{order.rider_contact}</div>
                                                               {order.assigned_at && (
                                   <div className="text-[10px] text-gray-400">
                                     Assigned: {formatDateTime(order.assigned_at)}
@@ -1274,98 +1294,95 @@ const CustomerOrdersPage: React.FC = () => {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Not assigned</span>
+                          <span className="text-[10px] text-gray-400">Not assigned</span>
                         )}
                       </td>
-                                             <td className="px-4 py-2 whitespace-nowrap text-xs font-medium">
-                         <div className="flex items-center space-x-1.5">
-                           <button
-                             onClick={() => openViewModal(order)}
-                             className="text-blue-600 hover:text-blue-900 flex items-center text-xs"
-                           >
-                             <Eye className="h-3 w-3 mr-0.5" />
-                             View
-                           </button>
-                           {order.my_status === 1 && user?.role === 'stock' && (
-                             <button
-                               onClick={() => openAssignRiderModal(order)}
-                               className="text-green-600 hover:text-green-900 flex items-center bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-xs"
-                             >
-                               <Truck className="h-3 w-3 mr-0.5" />
-                               Assign Rider
-                             </button>
-                           )}
-                           {order.my_status === 2 && (
-                             <button
-                               onClick={() => openCompleteDeliveryModal(order)}
-                               className="text-blue-600 hover:text-blue-900 flex items-center bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded text-xs"
-                             >
-                               <Package className="h-3 w-3 mr-0.5" />
-                               Complete Delivery
-                             </button>
-                           )}
-                           {order.status === 'delivered' && (
-                             <button
-                               onClick={() => openDeliveryDetailsModal(order)}
-                               className="text-green-600 hover:text-green-900 flex items-center bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded text-xs"
-                             >
-                               <Truck className="h-3 w-3 mr-0.5" />
-                               View Delivery Details
-                             </button>
-                           )}
-                           {(order.my_status === 4 || order.my_status === 6) && user?.role === 'stock' && (
-                             order.my_status === 6 ? (
-                               <button
-                                 disabled
-                                 className="text-gray-400 flex items-center bg-gray-100 px-1.5 py-0.5 rounded cursor-not-allowed text-xs"
-                                 title="Products already returned to stock"
-                               >
-                                 <ArrowLeft className="h-3 w-3 mr-0.5" />
-                                 Already Returned
-                               </button>
-                             ) : (
-                               <button
-                                 onClick={() => openReceiveToStockModal(order)}
-                                 className="text-orange-600 hover:text-orange-900 flex items-center bg-orange-50 hover:bg-orange-100 px-1.5 py-0.5 rounded text-xs"
-                               >
-                                 <ArrowLeft className="h-3 w-3 mr-0.5" />
-                                 Receive to Stock
-                               </button>
-                             )
-                           )}
+                      <td className="px-2 py-2 text-[10px] font-medium">
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <button
+                            onClick={() => openViewModal(order)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 flex items-center"
+                            title="View Order"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </button>
+                          {order.my_status === 1 && user?.role === 'stock' && (
+                            <button
+                              onClick={() => openAssignRiderModal(order)}
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 flex items-center"
+                              title="Assign Rider"
+                            >
+                              <Truck className="h-3 w-3" />
+                            </button>
+                          )}
+                          {order.my_status === 2 && (
+                            <button
+                              onClick={() => openCompleteDeliveryModal(order)}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 flex items-center"
+                              title="Complete Delivery"
+                            >
+                              <Package className="h-3 w-3" />
+                            </button>
+                          )}
+                          {order.status === 'delivered' && (
+                            <button
+                              onClick={() => openDeliveryDetailsModal(order)}
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 flex items-center"
+                              title="View Delivery Details"
+                            >
+                              <Truck className="h-3 w-3" />
+                            </button>
+                          )}
+                          {(order.my_status === 4 || order.my_status === 6) && user?.role === 'stock' && (
+                            order.my_status === 6 ? (
+                              <button
+                                disabled
+                                className="text-gray-400 p-1 rounded cursor-not-allowed flex items-center"
+                                title="Products already returned to stock"
+                              >
+                                <ArrowLeft className="h-3 w-3" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openReceiveToStockModal(order)}
+                                className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50 flex items-center"
+                                title="Receive to Stock"
+                              >
+                                <ArrowLeft className="h-3 w-3" />
+                              </button>
+                            )
+                          )}
                           {(order.my_status === 1 || order.my_status === 2 || order.my_status === 3) && (
                             <button
                               onClick={() => navigate(`/sales-orders/${order.id}`)}
-                              className="text-purple-600 hover:text-purple-900 flex items-center bg-purple-50 hover:bg-purple-100 px-1.5 py-0.5 rounded text-xs"
+                              className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50 flex items-center"
+                              title="View Invoice"
                             >
-                              <Package className="h-3 w-3 mr-0.5" />
-                              Invoice
+                              <Package className="h-3 w-3" />
                             </button>
-                            
                           )}
                           {(order.my_status === 1 || order.my_status === 2 || order.my_status === 3) && (
                             <button
                               onClick={() => navigate(`/delivery-note/${order.id}`)}
-                              className="text-purple-600 hover:text-purple-900 flex items-center bg-purple-50 hover:bg-purple-100 px-1.5 py-0.5 rounded text-xs"
+                              className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50 flex items-center"
+                              title="Delivery Note"
                             >
-                              <Package className="h-3 w-3 mr-0.5" />
-                              Delivery Note
+                              <Package className="h-3 w-3" />
                             </button>
-                            
                           )}
-                         </div>
-                       </td>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className="flex items-center justify-between p-2 border-t border-gray-200">
-                <div className="text-xs text-gray-600">Page {page} of {totalPages} • {totalOrders} total orders</div>
+                <div className="text-[10px] text-gray-600">Page {page} of {totalPages} • {totalOrders} total orders</div>
                 <div className="flex items-center gap-1.5">
                   <select
                     className="border border-gray-300 rounded px-2 py-1 text-xs"
                     value={limit}
-                    onChange={(e) => { setPage(1); setLimit(parseInt(e.target.value) || 25); }}
+                    onChange={(e) => { setPage(1); setLimit(parseInt(e.target.value) || 10); }}
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
@@ -1395,42 +1412,42 @@ const CustomerOrdersPage: React.FC = () => {
         {/* View Order Modal */}
         {showViewModal && selectedOrder && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-10 mx-auto p-4 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-xl rounded-lg bg-white">
-              <div className="mt-2">
+            <div className="relative top-5 mx-auto p-3 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-xl rounded-lg bg-white max-h-[90vh] overflow-y-auto">
+              <div className="mt-1">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900">
+                    <h3 className="text-xs font-semibold text-gray-900">
                       {isEditing ? 'Edit Order' : 'View Order'}: {selectedOrder.so_number}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-[9px] text-gray-500 mt-0.5">
                       {isEditing ? 'Edit order details and products' : 'Order Details'}
                     </p>
                   </div>
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center space-x-1">
                     {!isEditing && (
                       <>
-                        {user?.role === 'admin' && (
+                        {(user?.role === 'admin' || user?.role === 'executive') && (
                           <button
                             onClick={startEditing}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="inline-flex items-center px-2 py-1 text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
-                            <Edit className="h-3 w-3 mr-0.5" />
-                            Edit Order
+                            <Edit className="h-2.5 w-2.5 mr-0.5" />
+                            Edit
                           </button>
                         )}
-                        {selectedOrder.status === 'draft' && user?.role === 'admin' && (
+                        {selectedOrder.status === 'draft' && (user?.role === 'admin' || user?.role === 'executive') && (
                           <button
                             onClick={convertToInvoice}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="inline-flex items-center px-2 py-1 text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 rounded hover:bg-green-100 focus:outline-none focus:ring-1 focus:ring-green-500"
                           >
-                            <Save className="h-3 w-3 mr-0.5" />
-                            Convert to Invoice
+                            <Save className="h-2.5 w-2.5 mr-0.5" />
+                            Convert
                           </button>
                         )}
-                        {user?.role !== 'admin' && (
-                          <div className="text-xs text-gray-500 italic">
-                            Only admin users can edit orders or convert to invoices
+                        {user?.role !== 'admin' && user?.role !== 'executive' && (
+                          <div className="text-[9px] text-gray-500 italic">
+                            Only admin and executive users can edit orders or convert to invoices
                           </div>
                         )}
                       </>
@@ -1440,82 +1457,82 @@ const CustomerOrdersPage: React.FC = () => {
                     
                     <button
                       onClick={closeViewModal}
-                      className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                      className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100"
                     >
-                      <X className="h-5 w-5" />
+                      <X className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
                 {/* Success Message */}
                 {successMessage && (
-                  <div className="mb-3 p-3 bg-green-100 border border-green-400 text-green-700 rounded text-xs">
+                  <div className="mb-2 p-2 bg-green-100 border border-green-400 text-green-700 rounded text-[10px]">
                     {successMessage}
                   </div>
                 )}
 
                 {/* Error Message */}
                 {error && (
-                  <div className="mb-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-xs">
+                  <div className="mb-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-[10px]">
                     {error}
                   </div>
                 )}
 
                 {/* Form or Content */}
                 {isEditing ? (
-                  <form onSubmit={handleEditSubmit} className="space-y-8">
+                  <form onSubmit={handleEditSubmit} className="space-y-3">
                     {/* Lock banner when items cannot be edited */}
                     {selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed')) && (
-                      <div className="mb-3 p-3 rounded border border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
+                      <div className="mb-2 p-2 rounded border border-yellow-300 bg-yellow-50 text-yellow-800 text-[10px]">
                         Product items are locked for approved orders. You can still update status, expected delivery date, and notes.
                       </div>
                     )}
                     {/* Order Info */}
-                <div className="p-6 bg-gray-50 rounded-lg mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Order Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-3 bg-gray-50 rounded-lg mb-3">
+                  <h4 className="text-[10px] font-medium text-gray-900 mb-2">Order Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Order Number
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.so_number}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Customer
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.customer_name || selectedOrder.customer?.name || 'Unknown'}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Order Date
                       </label>
                       <input
                         type="text"
                         value={formatDate(selectedOrder.order_date)}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Status
                       </label>
                       {isEditing ? (
                         <select
                           value={editForm.status}
                           onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           <option value="new">New Order</option>
                           <option value="cancelled">Cancel</option>
@@ -1526,12 +1543,12 @@ const CustomerOrdersPage: React.FC = () => {
                           type="text"
                           value={selectedOrder.status || 'draft'}
                           disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                         />
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Expected Delivery Date
                       </label>
                       {isEditing ? (
@@ -1539,82 +1556,82 @@ const CustomerOrdersPage: React.FC = () => {
                           type="date"
                           value={editForm.expected_delivery_date}
                           onChange={(e) => setEditForm({...editForm, expected_delivery_date: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       ) : (
                         <input
                           type="text"
                           value={selectedOrder.expected_delivery_date ? formatDate(selectedOrder.expected_delivery_date) : 'Not set'}
                           disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                         />
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Sales Representative
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.salesrep || selectedOrder.created_by_user?.full_name || 'Unknown'}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Total Amount
                       </label>
                       <input
                         type="text"
                         value={isEditing ? formatCurrency(editForm.items.reduce((sum, item) => sum + item.total_price, 0)) : formatCurrency(selectedOrder.total_amount)}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Approval Status
                       </label>
                       <input
                         type="text"
                         value={getMyStatusText(selectedOrder.my_status)}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Order Notes */}
-                <div className="p-6 bg-yellow-50 rounded-lg mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Order Notes</h4>
+                <div className="p-3 bg-yellow-50 rounded-lg mb-3">
+                  <h4 className="text-[10px] font-medium text-gray-900 mb-2">Order Notes</h4>
                   {isEditing ? (
                     <textarea
                       value={editForm.notes}
                       onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="Add any notes about this order..."
                     />
                   ) : (
-                    <div className="p-3 bg-white rounded border">
+                    <div className="p-2 bg-white rounded border text-xs">
                       {selectedOrder.notes || 'No notes added'}
                     </div>
                   )}
                 </div>
 
                 {/* Order Items */}
-                <div className="p-6 bg-green-50 rounded-lg mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-medium text-gray-900">Order Items</h4>
+                <div className="p-3 bg-green-50 rounded-lg mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[10px] font-medium text-gray-900">Order Items</h4>
                     {isEditing && !(selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) && (
                       <button
                         type="button"
                         onClick={addItem}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-2 py-1 text-[10px] font-medium text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
+                        <Plus className="h-3 w-3 mr-0.5" />
                         Add Product
                       </button>
                     )}
@@ -1622,15 +1639,15 @@ const CustomerOrdersPage: React.FC = () => {
                   
                   {isEditing ? (
                     // Edit Mode - Editable Items
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {/* Pricing Information Note */}
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="p-2 bg-blue-50 border border-blue-200 rounded">
                         <div className="flex items-start">
                           <div className="flex-shrink-0">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1"></div>
                           </div>
-                          <div className="ml-3">
-                            <p className="text-sm text-blue-700">
+                          <div className="ml-2">
+                            <p className="text-[9px] text-blue-700">
                               <strong>Note:</strong> Unit prices shown are exclusive of tax. Tax is calculated and added to each item's total price.
                             </p>
                           </div>
@@ -1638,41 +1655,41 @@ const CustomerOrdersPage: React.FC = () => {
                       </div>
                       
                       {editForm.items.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p>No items in this order.</p>
+                        <div className="text-center py-4 text-gray-500">
+                          <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                          <p className="text-xs">No items in this order.</p>
                           <button
                             type="button"
                             onClick={addItem}
-                            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="mt-2 inline-flex items-center px-2 py-1 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-3 w-3 mr-1" />
                             Add First Product
                           </button>
                         </div>
                       ) : (
                         <>
-                          <div className="border border-gray-200 rounded-md overflow-hidden">
+                          <div className="border border-gray-200 rounded overflow-hidden">
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-50">
                                 <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price (Excl. Tax)</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                  <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 uppercase">Product</th>
+                                  <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 uppercase">Qty</th>
+                                  <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 uppercase">Unit Price</th>
+                                  <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 uppercase">Tax</th>
+                                  <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 uppercase">Total</th>
+                                  <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                           {editForm.items.map((item, index) => (
                                   <tr key={index}>
-                                    <td className="px-4 py-2">
+                                    <td className="px-2 py-1.5">
                                       <div className="relative">
                                         <input
                                           type="text"
                                           value={item.product_name || ''}
-                                          placeholder="Search or type product name..."
+                                          placeholder="Search product..."
                                     onChange={(e) => {
                                       if (selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) return;
                                       setProductSearch(e.target.value);
@@ -1684,11 +1701,11 @@ const CustomerOrdersPage: React.FC = () => {
                                       showDropdown(index, e);
                                     }}
                                     disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          className="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         />
                                       </div>
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className="px-2 py-1.5">
                                       <input
                                         type="number"
                                         min="1"
@@ -1698,10 +1715,10 @@ const CustomerOrdersPage: React.FC = () => {
                                     updateItem(index, 'quantity', parseInt(e.target.value) || 1);
                                   }}
                                   disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
-                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-16 px-1.5 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                       />
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className="px-2 py-1.5">
                                       <input
                                         type="number"
                                         min="0"
@@ -1712,10 +1729,10 @@ const CustomerOrdersPage: React.FC = () => {
                                     updateItem(index, 'unit_price', parseFloat(e.target.value) || 0);
                                   }}
                                   disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
-                                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-20 px-1.5 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                       />
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className="px-2 py-1.5">
                                   <select
                                     value={item.tax_type || '16%'}
                                     onChange={(e) => {
@@ -1723,24 +1740,24 @@ const CustomerOrdersPage: React.FC = () => {
                                       updateItem(index, 'tax_type', e.target.value);
                                     }}
                                     disabled={selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))}
-                                    className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="px-1.5 py-1 text-[9px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   >
                                         <option value="16%">16%</option>
-                                        <option value="zero_rated">Zero Rated</option>
-                                        <option value="exempted">Exempted</option>
+                                        <option value="zero_rated">Zero</option>
+                                        <option value="exempted">Exempt</option>
                                       </select>
                                     </td>
-                                    <td className="px-4 py-2 text-sm text-gray-900">
+                                    <td className="px-2 py-1.5 text-[10px] text-gray-900">
                                       {formatCurrency(item.total_price)}
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className="px-2 py-1.5">
                                 {!(selectedOrder && (selectedOrder.my_status !== undefined ? selectedOrder.my_status >= 1 : (selectedOrder.status === 'confirmed'))) && (
                                   <button
                                     type="button"
                                     onClick={() => removeItem(index)}
                                     className="text-red-600 hover:text-red-800"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3 w-3" />
                                   </button>
                                 )}
                                     </td>
@@ -1749,9 +1766,9 @@ const CustomerOrdersPage: React.FC = () => {
                               </tbody>
                             </table>
                           </div>
-                          <div className="flex justify-end items-center pt-4 border-t border-gray-200">
-                            <div className="text-right space-y-1">
-                              <div className="text-sm text-gray-600">
+                          <div className="flex justify-end items-center pt-2 border-t border-gray-200">
+                            <div className="text-right space-y-0.5">
+                              <div className="text-[10px] text-gray-600">
                                 Subtotal: {
                                   (() => {
                                     let net = 0;
@@ -1764,7 +1781,7 @@ const CustomerOrdersPage: React.FC = () => {
                                   })()
                                 }
                               </div>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-[10px] text-gray-600">
                                 Tax: {
                                   (() => {
                                     let tax = 0;
@@ -1778,7 +1795,7 @@ const CustomerOrdersPage: React.FC = () => {
                                   })()
                                 }
                               </div>
-                              <div className="text-lg font-bold text-gray-900">
+                              <div className="text-[10px] font-bold text-gray-900">
                                 Total: {formatCurrency(editForm.items.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0))}
                               </div>
                             </div>
@@ -1788,15 +1805,15 @@ const CustomerOrdersPage: React.FC = () => {
                     </div>
                   ) : (
                     // View Mode - Read-only Items
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {/* Pricing Information Note */}
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="p-2 bg-blue-50 border border-blue-200 rounded">
                         <div className="flex items-start">
                           <div className="flex-shrink-0">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1"></div>
                           </div>
-                          <div className="ml-3">
-                            <p className="text-sm text-blue-700">
+                          <div className="ml-2">
+                            <p className="text-[9px] text-blue-700">
                               <strong>Note:</strong> Unit prices shown are exclusive of tax. Tax is calculated and added to each item's total price.
                             </p>
                           </div>
@@ -1805,36 +1822,42 @@ const CustomerOrdersPage: React.FC = () => {
                       
                       {selectedOrder.items && selectedOrder.items.length > 0 ? (
                         <>
-                          {selectedOrder.items.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900">
-                                  {item.product?.product_name || `Product ${item.product_id}`}
+                          {selectedOrder.items.map((item, index) => {
+                            // Try multiple ways to get product name
+                            const productName = item.product?.product_name || (item as any).product_name || `Product ${item.product_id}`;
+                            const productCode = item.product?.product_code || (item as any).product_code || 'No Code';
+                            
+                            return (
+                              <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                                <div className="flex-1">
+                                  <div className="font-medium text-xs text-gray-900">
+                                    {productName}
+                                  </div>
+                                  <div className="text-[10px] text-gray-500">
+                                    Code: {productCode} | 
+                                    Qty: {item.quantity} | 
+                                    Price: {formatCurrency(item.unit_price)} (excl. tax)
+                                  </div>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  Code: {item.product?.product_code || 'No Code'} | 
-                                  Qty: {item.quantity} | 
-                                  Price: {formatCurrency(item.unit_price)} (excl. tax)
+                                <div className="text-right">
+                                  <div className="font-medium text-xs text-gray-900">
+                                    {formatCurrency(item.total_price)}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <div className="font-medium text-gray-900">
-                                  {formatCurrency(item.total_price)}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                            <span className="text-lg font-medium text-gray-900">Total:</span>
-                            <span className="text-lg font-bold text-gray-900">
+                            );
+                          })}
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <span className="text-[10px] font-medium text-gray-900">Total:</span>
+                            <span className="text-[10px] font-bold text-gray-900">
                               {formatCurrency(selectedOrder.items.reduce((sum, item) => sum + item.total_price, 0))}
                             </span>
                           </div>
                         </>
                       ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p>No items in this order.</p>
+                        <div className="text-center py-4 text-gray-500">
+                          <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                          <p className="text-xs">No items in this order.</p>
                         </div>
                       )}
                     </div>
@@ -1842,20 +1865,20 @@ const CustomerOrdersPage: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <div className="flex justify-end space-x-2 pt-3 border-t border-gray-200">
                   {isEditing ? (
                     <>
                       <button
                         type="button"
                         onClick={cancelEditing}
-                        className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                        className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-3 py-1.5 text-[10px] font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {submitting ? 'Saving...' : 'Save Changes'}
                       </button>
@@ -1864,7 +1887,7 @@ const CustomerOrdersPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={closeViewModal}
-                      className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                      className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                     >
                       Close
                     </button>
@@ -1874,202 +1897,189 @@ const CustomerOrdersPage: React.FC = () => {
             ) : (
               <>
                 {/* Order Info */}
-                <div className="p-6 bg-gray-50 rounded-lg mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Order Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-3 bg-gray-50 rounded-lg mb-3">
+                  <h4 className="text-[10px] font-medium text-gray-900 mb-2">Order Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Order Number
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.so_number}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Customer
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.customer_name || selectedOrder.customer?.name || 'Unknown'}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Order Date
                       </label>
                       <input
                         type="text"
                         value={formatDate(selectedOrder.order_date)}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Status
                       </label>
                       <input
                         type="text"
                                                   value={selectedOrder.status || 'draft'}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Expected Delivery Date
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.expected_delivery_date ? formatDate(selectedOrder.expected_delivery_date) : 'Not set'}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Sales Representative
                       </label>
                       <input
                         type="text"
                         value={selectedOrder.salesrep || selectedOrder.created_by_user?.full_name || 'Unknown'}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Total Amount
                       </label>
                       <input
                         type="text"
                         value={formatCurrency(selectedOrder.total_amount)}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-1">
                         Approval Status
                       </label>
                       <input
                         type="text"
                         value={getMyStatusText(selectedOrder.my_status)}
                         disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Order Notes */}
-                <div className="p-6 bg-yellow-50 rounded-lg mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Order Notes</h4>
-                  <div className="p-3 bg-white rounded border">
+                <div className="p-3 bg-yellow-50 rounded-lg mb-3">
+                  <h4 className="text-[10px] font-medium text-gray-900 mb-2">Order Notes</h4>
+                  <div className="p-2 bg-white rounded border text-xs">
                     {selectedOrder.notes || 'No notes added'}
                   </div>
                 </div>
 
                 {/* Order Items */}
-                <div className="p-6 bg-green-50 rounded-lg mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Order Items</h4>
-                  <div className="space-y-4">
+                <div className="p-3 bg-green-50 rounded-lg mb-3">
+                  <h4 className="text-[10px] font-medium text-gray-900 mb-2">Order Items</h4>
+                  <div className="space-y-2">
                     {selectedOrder.items && selectedOrder.items.length > 0 ? (
                       <>
-                        {selectedOrder.items.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900">
-                                {item.product?.product_name || `Product ${item.product_id}`}
+                        {selectedOrder.items.map((item, index) => {
+                          // Try multiple ways to get product name
+                          const productName = item.product?.product_name || (item as any).product_name || `Product ${item.product_id}`;
+                          const productCode = item.product?.product_code || (item as any).product_code || 'No Code';
+                          
+                          return (
+                            <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                              <div className="flex-1">
+                                <div className="font-medium text-xs text-gray-900">
+                                  {productName}
+                                </div>
+                                <div className="text-[10px] text-gray-500">
+                                  Code: {productCode} | 
+                                  Qty: {item.quantity} | 
+                                  Price: {formatCurrency(item.unit_price)} (excl. tax)
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-500">
-                                Code: {item.product?.product_code || 'No Code'} | 
-                                Qty: {item.quantity} | 
-                                Price: {formatCurrency(item.unit_price)} (excl. tax)
+                              <div className="text-right">
+                                <div className="font-medium text-xs text-gray-900">
+                                  {formatCurrency(item.total_price)}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="font-medium text-gray-900">
-                                {formatCurrency(item.total_price)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                          <span className="text-lg font-medium text-gray-900">Total:</span>
-                          <span className="text-lg font-bold text-gray-900">
+                          );
+                        })}
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                          <span className="text-[10px] font-medium text-gray-900">Total:</span>
+                          <span className="text-[10px] font-bold text-gray-900">
                             {formatCurrency(selectedOrder.items.reduce((sum, item) => sum + item.total_price, 0))}
                           </span>
                         </div>
                       </>
                     ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>No items in this order.</p>
+                      <div className="text-center py-4 text-gray-500">
+                        <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-xs">No items in this order.</p>
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Action Buttons - View Mode */}
+                <div className="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                  <div className="flex space-x-2">
+                    {selectedOrder.my_status === 1 && user?.role === 'stock' && (
+                      <button
+                        type="button"
+                        onClick={() => openAssignRiderModal(selectedOrder)}
+                        className="px-3 py-1.5 text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 rounded hover:bg-green-100 focus:outline-none focus:ring-1 focus:ring-green-500 transition-colors flex items-center"
+                      >
+                        <Truck className="h-3 w-3 mr-1" />
+                        Assign Rider
+                      </button>
+                    )}
+                    {selectedOrder.my_status === 4 && (user?.role === 'stock' || user?.role === 'admin') && (
+                      <button
+                        type="button"
+                        onClick={() => openReceiveToStockModal(selectedOrder)}
+                        className="px-3 py-1.5 text-[10px] font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded hover:bg-orange-100 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-colors flex items-center"
+                      >
+                        <ArrowLeft className="h-3 w-3 mr-1" />
+                        Receive to Stock
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={closeViewModal}
+                      className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
               </>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={cancelEditing}
-                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {submitting ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </>
-              ) : (
-                <div className="flex space-x-4">
-                  {selectedOrder.my_status === 1 && user?.role === 'stock' && (
-                    <button
-                      type="button"
-                      onClick={() => openAssignRiderModal(selectedOrder)}
-                      className="px-6 py-3 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center"
-                    >
-                      <Truck className="h-4 w-4 mr-2" />
-                      Assign Rider
-                    </button>
-                  )}
-                  {selectedOrder.my_status === 4 && (user?.role === 'stock' || user?.role === 'admin') && (
-                    <button
-                      type="button"
-                      onClick={() => openReceiveToStockModal(selectedOrder)}
-                      className="px-6 py-3 text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors flex items-center"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Receive to Stock
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={closeViewModal}
-                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -2386,10 +2396,10 @@ const CustomerOrdersPage: React.FC = () => {
 
                   {/* Store Selection */}
                   <div className="p-6 bg-blue-50 rounded-lg">
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Select Store</h4>
+                    <h4 className="text-xs font-medium text-gray-900 mb-4">Select Store</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           Store *
                         </label>
                         <select
@@ -2407,7 +2417,7 @@ const CustomerOrdersPage: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           Notes
                         </label>
                         <textarea
@@ -2424,7 +2434,7 @@ const CustomerOrdersPage: React.FC = () => {
                   {/* Products to Receive */}
                   <div className="p-6 bg-green-50 rounded-lg">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-medium text-gray-900">Products to Receive</h4>
+                      <h4 className="text-xs font-medium text-gray-900">Products to Receive</h4>
                       <button
                         type="button"
                         onClick={resetToOriginalQuantities}
@@ -2516,10 +2526,10 @@ const CustomerOrdersPage: React.FC = () => {
                           </div>
                           <div className="flex justify-end items-center pt-4 border-t border-gray-200">
                             <div className="text-right space-y-1">
-                              <div className="text-sm text-gray-600">
+                              <div className="text-xs text-gray-600">
                                 Total Items: {receiveForm.items.reduce((sum, item) => sum + item.quantity, 0)}
                               </div>
-                              <div className="text-lg font-bold text-gray-900">
+                              <div className="text-xs font-bold text-gray-900">
                                 Total Value: {formatCurrency(receiveForm.items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0))}
                               </div>
                             </div>
@@ -2570,7 +2580,7 @@ const CustomerOrdersPage: React.FC = () => {
               <div className="space-y-6">
                 {/* Order Information */}
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Order Information</h3>
+                  <h3 className="text-xs font-semibold text-gray-900 mb-3">Order Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Order Number</label>
@@ -2593,7 +2603,7 @@ const CustomerOrdersPage: React.FC = () => {
 
                 {/* Delivery Information */}
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivery Information</h3>
+                  <h3 className="text-xs font-semibold text-gray-900 mb-3">Delivery Information</h3>
                   <div className="space-y-3">
                     {deliveryDetailsOrder.rider_name && (
                       <div>
@@ -2622,7 +2632,7 @@ const CustomerOrdersPage: React.FC = () => {
                 {/* Delivery Notes */}
                 {deliveryDetailsOrder.delivery_notes && (
                   <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivery Notes</h3>
+                    <h3 className="text-xs font-semibold text-gray-900 mb-3">Delivery Notes</h3>
                     <div className="bg-white p-3 rounded border">
                       <p className="text-sm text-gray-900 whitespace-pre-wrap">{deliveryDetailsOrder.delivery_notes}</p>
                     </div>
@@ -2632,7 +2642,7 @@ const CustomerOrdersPage: React.FC = () => {
                 {/* Delivery Image */}
                 {deliveryDetailsOrder.delivery_image && (
                   <div className="bg-purple-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivery Image</h3>
+                    <h3 className="text-xs font-semibold text-gray-900 mb-3">Delivery Image</h3>
                     <div className="bg-white p-3 rounded border">
                       <img 
                         src={deliveryDetailsOrder.delivery_image.startsWith('http') 
@@ -2663,7 +2673,7 @@ const CustomerOrdersPage: React.FC = () => {
                 {/* Order Items */}
                 {deliveryDetailsOrder.items && deliveryDetailsOrder.items.length > 0 && (
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Delivered Items</h3>
+                    <h3 className="text-xs font-semibold text-gray-900 mb-3">Delivered Items</h3>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-100">

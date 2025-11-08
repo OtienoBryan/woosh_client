@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import api from '../services/api';
 
 interface LeaveRequest {
   id: number;
@@ -20,10 +21,8 @@ const LeaveRequestsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/leave-requests');
-        if (!res.ok) throw new Error('Failed to fetch leave requests');
-        const data = await res.json();
-        setLeaveRequests(data);
+        const response = await api.get('/leave-requests');
+        setLeaveRequests(response.data);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch leave requests');
       } finally {

@@ -29,6 +29,7 @@ import CreateCustomerOrderPage from './pages/CreateCustomerOrderPage';
 import CustomerOrdersPage from './pages/CustomerOrdersPage';
 import ReceiveItemsPage from './pages/ReceiveItemsPage';
 import StoreInventoryPage from './pages/StoreInventoryPage';
+import UpdateStockQuantityPage from './pages/UpdateStockQuantityPage';
 import PayablesPage from './pages/PayablesPage';
 import CreateInvoicePage from './pages/CreateInvoicePage';
 import InvoiceListPage from './pages/InvoiceListPage';
@@ -88,6 +89,7 @@ import MyAccountPage from './pages/MyAccountPage';
 import LeaveRequestsPage from './pages/LeaveRequestsPage';
 import DocumentListPage from './pages/DocumentListPage';
 import ChatRoomPage from './pages/ChatRoomPage';
+import InstantChatPage from './pages/InstantChatPage';
 import AttendanceHistoryPage from './pages/AttendanceHistoryPage';
 import EmployeeWarningsPage from './pages/EmployeeWarningsPage';
 import ExpiringContractsPage from './pages/ExpiringContractsPage';
@@ -129,6 +131,7 @@ import ReceiveAssetPurchaseOrderPage from './pages/ReceiveAssetPurchaseOrderPage
 import PostFaultyProductsPage from './pages/PostFaultyProductsPage';
 import ViewFaultyReportsPage from './pages/ViewFaultyReportsPage';
 import InventoryStaffDashboardPage from './pages/InventoryStaffDashboardPage';
+import OverallStockPage from './pages/OverallStockPage';
 import MerchandisePage from './pages/MerchandisePage';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import UploadDocumentPage from './pages/UploadDocumentPage';
@@ -250,6 +253,7 @@ const App = () => {
             <Route path="/leave-requests" element={<LeaveRequestsPage />} />
             <Route path="/document-list" element={<DocumentListPage />} />
             <Route path="/chat-room" element={<ChatRoomPage />} />
+            <Route path="/instant-chat" element={<InstantChatPage />} />
             <Route path="/attendance-history" element={<AttendanceHistoryPage />} />
             <Route path="/dashboard/employee-warnings" element={<EmployeeWarningsPage />} />
             <Route path="/dashboard/expiring-contracts" element={<ExpiringContractsPage />} />
@@ -319,6 +323,7 @@ const App = () => {
             <Route path="/suppliers/:supplierId/ledger" element={<SupplierLedgerPage />} />
             <Route path="/receive-items/:purchaseOrderId" element={<ReceiveItemsPage />} />
             <Route path="/store-inventory" element={<StoreInventoryPage />} />
+            <Route path="/update-stock-quantity" element={<UpdateStockQuantityPage />} />
             <Route path="/opening-quantities" element={<OpeningQuantitiesPage />} />
             <Route 
               path="/inventory-staff-dashboard" 
@@ -327,6 +332,10 @@ const App = () => {
                   <InventoryStaffDashboardPage />
                 </RoleBasedRoute>
               } 
+            />
+            <Route 
+              path="/overall-stock" 
+              element={<OverallStockPage />} 
             />
             <Route 
               path="/merchandise" 

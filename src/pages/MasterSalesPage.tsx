@@ -363,9 +363,9 @@ const MasterSalesPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-600 font-medium">Loading master sales data...</p>
-          <p className="mt-2 text-sm text-gray-500">Please wait while we fetch your sales information</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+          <p className="mt-3 text-xs text-gray-600 font-medium">Loading master sales data...</p>
+          <p className="mt-1 text-[10px] text-gray-500">Please wait while we fetch your sales information</p>
         </div>
       </div>
     );
@@ -375,14 +375,14 @@ const MasterSalesPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-10 h-10 text-red-600" />
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <X className="w-6 h-6 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-sm font-bold text-gray-900 mb-1">Error Loading Data</h2>
+          <p className="text-xs text-gray-600 mb-3">{error}</p>
           <button
             onClick={fetchSalesData}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+            className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium text-xs"
           >
             Try Again
           </button>
@@ -393,22 +393,22 @@ const MasterSalesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
         {/* Enhanced Header Section */}
-        <div className="mb-6">
+        <div className="mb-3">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-sm font-bold text-gray-900 mb-1">
                 Master {viewType === 'sales' ? 'Sales' : 'Quantities'} Report
               </h1>
                
             </div>
-            <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row gap-2">
+            <div className="mt-2 lg:mt-0 flex flex-col sm:flex-row gap-1.5">
               {/* View Type Toggle */}
-              <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+              <div className="flex items-center gap-1 bg-white rounded-md border border-gray-200 p-0.5">
                 <button
                   onClick={() => setViewType('sales')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                     viewType === 'sales'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -418,7 +418,7 @@ const MasterSalesPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setViewType('quantity')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                     viewType === 'quantity'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -430,16 +430,16 @@ const MasterSalesPage: React.FC = () => {
               
               <button
                 onClick={() => setShowFilterModal(true)}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md font-medium transition-all duration-200 ${
                   activeFilters > 0
                     ? 'bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200'
                     : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <Filter className="h-4 w-4" />
+                <Filter className="h-3 w-3" />
                 Filters
                 {activeFilters > 0 && (
-                  <span className="ml-1 bg-orange-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="ml-1 bg-orange-500 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                     {activeFilters}
                   </span>
                 )}
@@ -447,16 +447,16 @@ const MasterSalesPage: React.FC = () => {
               <button
                 onClick={exportToCSV}
                 disabled={exporting || sortedData.length === 0}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {exporting ? (
                   <>
-                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
                     Exporting...
                   </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4" />
+                    <Download className="h-3 w-3" />
                     Export CSV
                   </>
                 )}
@@ -466,15 +466,15 @@ const MasterSalesPage: React.FC = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center">
                
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+              <div className="ml-2">
+                <p className="text-[10px] font-medium text-gray-600">
                   {viewType === 'sales' ? 'Total Sales' : 'Total Quantities'}
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xs font-bold text-gray-900">
                   {viewType === 'sales' ? formatCurrency(totalValue) : totalValue.toLocaleString()}
                 </p>
               </div>
@@ -523,34 +523,34 @@ const MasterSalesPage: React.FC = () => {
         </div>
 
         {/* Enhanced Search Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 mb-3">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="flex-1">
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                  <Search className="h-3 w-3 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                  className="block w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                   placeholder="Search clients by name..."
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <BarChart3 className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+              <BarChart3 className="h-3 w-3" />
               <span>{sortedData.length} of {salesData.length} clients</span>
             </div>
           </div>
         </div>
 
         {/* Enhanced Sales Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-semibold text-gray-900">Sales Data</h2>
-            <p className="text-sm text-gray-600 mt-1">Monthly breakdown for all clients</p>
+        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-xs font-semibold text-gray-900">Sales Data</h2>
+            <p className="text-[10px] text-gray-600 mt-0.5">Monthly breakdown for all clients</p>
           </div>
           
           <div className="overflow-x-auto">
@@ -559,15 +559,15 @@ const MasterSalesPage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th 
-                      className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                      className="px-3 py-2 text-left text-[9px] font-semibold text-gray-900 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 cursor-pointer hover:bg-gray-100 transition-colors duration-150"
                       onClick={() => handleSort('client_name')}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                       Client Name
                         {sortColumn === 'client_name' ? (
-                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                          sortDirection === 'asc' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
                         ) : (
-                          <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                          <ArrowUpDown className="h-2.5 w-2.5 text-gray-400" />
                         )}
                       </div>
                     </th>
@@ -576,30 +576,30 @@ const MasterSalesPage: React.FC = () => {
                       return (
                         <th 
                           key={month} 
-                          className="px-4 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                          className="px-2 py-2 text-right text-[9px] font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
                           onClick={() => handleSort(monthKey)}
                         >
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                         {month}
                             {sortColumn === monthKey ? (
-                              sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                              sortDirection === 'asc' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
                             ) : (
-                              <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                              <ArrowUpDown className="h-2.5 w-2.5 text-gray-400" />
                             )}
                           </div>
                       </th>
                       );
                     })}
                     <th 
-                      className="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors duration-150"
+                      className="px-3 py-2 text-right text-[9px] font-semibold text-gray-900 uppercase tracking-wider bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors duration-150"
                       onClick={() => handleSort('total')}
                     >
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                       Total
                         {sortColumn === 'total' ? (
-                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                          sortDirection === 'asc' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
                         ) : (
-                          <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                          <ArrowUpDown className="h-2.5 w-2.5 text-gray-400" />
                         )}
                       </div>
                     </th>
@@ -608,20 +608,20 @@ const MasterSalesPage: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentData.length === 0 ? (
                     <tr>
-                      <td colSpan={14} className="px-6 py-12 text-center">
+                      <td colSpan={14} className="px-3 py-6 text-center">
                         <div className="text-gray-500">
-                          <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p className="text-lg font-medium">No sales data found</p>
-                          <p className="text-sm">Try adjusting your filters or search criteria</p>
+                          <BarChart3 className="h-8 w-8 mx-auto mb-3 text-gray-300" />
+                          <p className="text-xs font-medium">No sales data found</p>
+                          <p className="text-[10px]">Try adjusting your filters or search criteria</p>
                         </div>
                       </td>
                     </tr>
                   ) : (
                     currentData.map((client, index) => (
                       <tr key={client.client_id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10">
+                        <td className="whitespace-nowrap px-3 py-2 text-xs font-medium text-gray-900 sticky left-0 bg-inherit z-10">
                           <div className="flex items-center">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
                             {client.client_name}
                           </div>
                         </td>
@@ -630,7 +630,7 @@ const MasterSalesPage: React.FC = () => {
                           return (
                             <td 
                               key={month} 
-                              className={`whitespace-nowrap px-4 py-4 text-sm text-right text-gray-900 ${
+                              className={`whitespace-nowrap px-2 py-2 text-xs text-right text-gray-900 ${
                                 monthValue > 0 ? 'cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150' : ''
                               }`}
                               onClick={() => handleCellClick(client, month)}
@@ -640,7 +640,7 @@ const MasterSalesPage: React.FC = () => {
                           );
                         })}
                         <td 
-                          className={`whitespace-nowrap px-6 py-4 text-sm font-semibold text-right text-blue-900 bg-blue-50 ${
+                          className={`whitespace-nowrap px-3 py-2 text-xs font-semibold text-right text-blue-900 bg-blue-50 ${
                             parseFloat(String(client.total)) > 0 ? 'cursor-pointer hover:bg-blue-100 transition-colors duration-150' : ''
                           }`}
                           onClick={() => {
@@ -674,9 +674,9 @@ const MasterSalesPage: React.FC = () => {
                  {sortedData.length > 0 && (
                    <tfoot className="bg-gray-100">
                      <tr>
-                       <td className="px-6 py-4 text-sm font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
+                       <td className="px-3 py-2 text-xs font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
                          <div className="flex items-center">
-                           <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                           <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                            Grand Total
                          </div>
                        </td>
@@ -686,12 +686,12 @@ const MasterSalesPage: React.FC = () => {
                            return sum + (parseFloat(String(monthValue)) || 0);
                          }, 0);
                          return (
-                           <td key={month} className="px-4 py-4 text-sm font-bold text-right text-gray-900">
+                           <td key={month} className="px-2 py-2 text-xs font-bold text-right text-gray-900">
                              {viewType === 'sales' ? formatCurrency(monthTotal) : monthTotal.toLocaleString()}
                            </td>
                          );
                        })}
-                       <td className="px-6 py-4 text-sm font-bold text-right text-green-900 bg-green-100">
+                       <td className="px-3 py-2 text-xs font-bold text-right text-green-900 bg-green-100">
                          {viewType === 'sales' ? formatCurrency(sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0)) : sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0).toLocaleString()}
                        </td>
                      </tr>
@@ -704,16 +704,16 @@ const MasterSalesPage: React.FC = () => {
 
         {/* Enhanced Pagination Controls */}
         {totalItems > 0 && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="mt-3 bg-white rounded-md shadow-sm border border-gray-200 p-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
               {/* Items per page and info */}
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Show</span>
+              <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-700">Show</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => handleItemsPerPageChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="border border-gray-300 rounded-md px-2 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
@@ -721,9 +721,9 @@ const MasterSalesPage: React.FC = () => {
                     <option value={100}>100</option>
                     <option value="all">View All</option>
                   </select>
-                  <span className="text-sm text-gray-700">entries per page</span>
+                  <span className="text-[10px] text-gray-700">entries per page</span>
                 </div>
-                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                <div className="text-[10px] text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
                   {itemsPerPage === 'all' 
                     ? `Showing all ${totalItems} results`
                     : `Showing ${startIndex} to ${endIndex} of ${totalItems} results`
@@ -733,24 +733,24 @@ const MasterSalesPage: React.FC = () => {
 
               {/* Enhanced Pagination buttons - hide when viewing all */}
               {itemsPerPage !== 'all' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3 w-3" />
                   Previous
                 </button>
 
                 {/* Page numbers */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   {getPageNumbers().map((page, index) => (
                     <button
                       key={index}
                       onClick={() => typeof page === 'number' ? handlePageChange(page) : null}
                       disabled={page === '...'}
-                      className={`px-3 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
+                      className={`px-2 py-0.5 text-[10px] font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors duration-200 ${
                         page === currentPage
                           ? 'bg-blue-600 text-white border border-blue-600'
                           : page === '...'
@@ -766,10 +766,10 @@ const MasterSalesPage: React.FC = () => {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 >
                   Next
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3 w-3" />
                 </button>
               </div>
               )}
@@ -780,36 +780,36 @@ const MasterSalesPage: React.FC = () => {
         {/* Enhanced Filter Modal */}
         {showFilterModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-md shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
               {/* Modal Header */}
-              <div className="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Filter Options</h2>
-                    <p className="text-gray-600 mt-1">Customize your sales data view</p>
+                    <h2 className="text-xs font-bold text-gray-900">Filter Options</h2>
+                    <p className="text-[10px] text-gray-600 mt-0.5">Customize your sales data view</p>
                   </div>
                   <button
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                     onClick={() => setShowFilterModal(false)}
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
               {/* Modal Body */}
-              <div className="px-8 py-6 max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="px-3 py-3 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {/* Year */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-blue-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3 text-blue-600" />
                       Year
                     </h3>
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(Number(e.target.value))}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                      className="block w-full px-2.5 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                     >
                       {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -818,39 +818,39 @@ const MasterSalesPage: React.FC = () => {
                   </div>
 
                   {/* Date Range */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-green-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3 text-green-600" />
                       Date Range
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <input
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                        className="block w-full px-2.5 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                         placeholder="Start Date"
                       />
                       <input
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                        className="block w-full px-2.5 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                         placeholder="End Date"
                       />
                     </div>
                   </div>
 
                   {/* Category Group */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-purple-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <BarChart3 className="h-3 w-3 text-purple-600" />
                       Category Group
                     </h3>
                     <select
                       value={selectedCategoryGroup}
                       onChange={(e) => setSelectedCategoryGroup(e.target.value)}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                      className="block w-full px-2.5 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                     >
                       <option value="">All Categories</option>
                       <option value="vapes">Vapes</option>
@@ -859,15 +859,15 @@ const MasterSalesPage: React.FC = () => {
                   </div>
 
                   {/* Client Status */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-orange-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <Users className="h-3 w-3 text-orange-600" />
                       Client Status
                     </h3>
                     <select
                       value={clientStatus}
                       onChange={(e) => setClientStatus(e.target.value)}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                      className="block w-full px-2.5 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                     >
                       <option value="">All Clients</option>
                       <option value="active">Active Clients</option>
@@ -876,14 +876,14 @@ const MasterSalesPage: React.FC = () => {
                   </div>
 
                   {/* SKUs */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-indigo-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <BarChart3 className="h-3 w-3 text-indigo-600" />
                       SKUs
                     </h3>
-                    <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 bg-gray-50">
                       {categories.map(category => (
-                        <label key={category.id} className="flex items-center mb-3 cursor-pointer hover:bg-white p-2 rounded transition-colors duration-150">
+                        <label key={category.id} className="flex items-center mb-2 cursor-pointer hover:bg-white p-1.5 rounded transition-colors duration-150">
                           <input
                             type="checkbox"
                             checked={selectedCategories.includes(category.id)}
@@ -894,29 +894,29 @@ const MasterSalesPage: React.FC = () => {
                                 setSelectedCategories(selectedCategories.filter(id => id !== category.id));
                               }
                             }}
-                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="mr-2 h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
-                          <span className="text-sm text-gray-700">{category.name}</span>
+                          <span className="text-xs text-gray-700">{category.name}</span>
                         </label>
                       ))}
                     </div>
                     <button
                       onClick={() => setSelectedCategories([])}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
                     >
                       Clear All
                     </button>
                   </div>
 
                   {/* Sales Reps */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-teal-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <Users className="h-3 w-3 text-teal-600" />
                       Sales Representatives
                     </h3>
-                    <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 bg-gray-50">
                       {salesReps.map(salesRep => (
-                        <label key={salesRep.id} className="flex items-center mb-3 cursor-pointer hover:bg-white p-2 rounded transition-colors duration-150">
+                        <label key={salesRep.id} className="flex items-center mb-2 cursor-pointer hover:bg-white p-1.5 rounded transition-colors duration-150">
                           <input
                             type="checkbox"
                             checked={selectedSalesReps.includes(salesRep.id)}
@@ -927,15 +927,15 @@ const MasterSalesPage: React.FC = () => {
                                 setSelectedSalesReps(selectedSalesReps.filter(id => id !== salesRep.id));
                               }
                             }}
-                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="mr-2 h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
-                          <span className="text-sm text-gray-700">{salesRep.name}</span>
+                          <span className="text-xs text-gray-700">{salesRep.name}</span>
                         </label>
                       ))}
                     </div>
                     <button
                       onClick={() => setSelectedSalesReps([])}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
                     >
                       Clear All
                     </button>
@@ -944,7 +944,7 @@ const MasterSalesPage: React.FC = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="px-8 py-6 border-t border-gray-200 bg-gray-50">
+              <div className="px-3 py-2 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center">
                   <button
                     onClick={() => {
@@ -956,13 +956,13 @@ const MasterSalesPage: React.FC = () => {
                       setSelectedCategories([]);
                       setSelectedSalesReps([]);
                     }}
-                    className="px-6 py-3 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 border border-red-300 transition-colors duration-200 font-medium"
+                    className="px-3 py-1.5 rounded-md bg-red-100 text-red-700 hover:bg-red-200 border border-red-300 transition-colors duration-200 font-medium text-xs"
                   >
                     Clear All Filters
                   </button>
                   <button
                     onClick={() => setShowFilterModal(false)}
-                    className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
+                    className="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-xs"
                   >
                     Apply Filters
                   </button>
@@ -983,89 +983,89 @@ const MasterSalesPage: React.FC = () => {
           });
           return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden">
+            <div className="bg-white rounded-md shadow-2xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden">
               {/* Modal Header */}
-              <div className="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-xs font-bold text-gray-900">
                       Sales Details - {selectedClient?.name}
                     </h2>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-[10px] text-gray-600 mt-0.5">
                       {selectedMonth === 'total' 
                         ? `All Sales for ${selectedYear}` 
                         : `${monthLabels[months.indexOf(selectedMonth)]} ${selectedYear}`}
                     </p>
-                    <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+                    <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-500">
                       <span className="flex items-center gap-1">
-                        <BarChart3 className="h-4 w-4" />
+                        <BarChart3 className="h-3 w-3" />
                         {salesDetails.length} order items
                       </span>
                       <span className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
+                        <DollarSign className="h-3 w-3" />
                         Total: {formatCurrency(salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0))}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={exportModalToCSV}
                       disabled={salesDetails.length === 0}
-                      className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors duration-200 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors duration-200 font-medium text-xs flex items-center gap-1 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3 h-3" />
                       Export CSV
                     </button>
                     <button
-                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                       onClick={() => setShowSalesDetailModal(false)}
                     >
-                      <X className="w-6 h-6" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               </div>
               
               {/* Modal Body */}
-              <div className="px-8 py-6 max-h-[75vh] overflow-y-auto">
+              <div className="px-3 py-3 max-h-[75vh] overflow-y-auto">
                 {loadingDetails ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-                    <span className="ml-4 text-gray-600">Loading sales details...</span>
+                  <div className="flex items-center justify-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+                    <span className="ml-3 text-xs text-gray-600">Loading sales details...</span>
                   </div>
                 ) : salesDetails.length === 0 ? (
-                  <div className="text-center py-12">
-                    <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg font-medium text-gray-500">No sales details found</p>
-                    <p className="text-sm text-gray-400">No individual sales records for this client and month</p>
+                  <div className="text-center py-6">
+                    <BarChart3 className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                    <p className="text-xs font-medium text-gray-500">No sales details found</p>
+                    <p className="text-[10px] text-gray-400">No individual sales records for this client and month</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Order #
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Product
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Category
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-right text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Qty
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-right text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Unit Price
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-right text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Line Total
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Sales Rep
                           </th>
                         </tr>
@@ -1073,28 +1073,28 @@ const MasterSalesPage: React.FC = () => {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {salesDetails.map((detail, index) => (
                           <tr key={`${detail.order_id}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-blue-600">
                               #{detail.order_number || detail.order_id}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                               {new Date(detail.order_date).toLocaleDateString()}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                               <div className="font-medium">{detail.product_name}</div>
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                               {detail.category_name || 'N/A'}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 text-right">
                               {detail.quantity}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 text-right">
                               {formatCurrency(parseFloat(String(detail.unit_price)) || 0)}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900 text-right">
                               {formatCurrency(parseFloat(String(detail.line_total)) || 0)}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                               {detail.sales_rep_name || 'N/A'}
                             </td>
                           </tr>
@@ -1102,13 +1102,13 @@ const MasterSalesPage: React.FC = () => {
                       </tbody>
                       <tfoot className="bg-gray-100">
                         <tr>
-                          <td colSpan={6} className="px-4 py-4 text-sm font-bold text-gray-900 text-right">
+                          <td colSpan={6} className="px-3 py-2 text-xs font-bold text-gray-900 text-right">
                             Grand Total:
                           </td>
-                          <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">
+                          <td className="px-3 py-2 text-xs font-bold text-gray-900 text-right">
                             {formatCurrency(salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0))}
                           </td>
-                          <td className="px-4 py-4"></td>
+                          <td className="px-3 py-2"></td>
                         </tr>
                       </tfoot>
                     </table>
@@ -1117,11 +1117,11 @@ const MasterSalesPage: React.FC = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="px-8 py-6 border-t border-gray-200 bg-gray-50">
+              <div className="px-3 py-2 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-end">
                   <button
                     onClick={() => setShowSalesDetailModal(false)}
-                    className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 font-medium"
+                    className="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 font-medium text-xs"
                   >
                     Close
                   </button>
