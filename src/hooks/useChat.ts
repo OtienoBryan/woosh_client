@@ -73,6 +73,23 @@ export const useStaff = () => {
   });
 };
 
+// Custom hook for room members
+export const useRoomMembers = (roomId: number | null) => {
+  return useQuery({
+    queryKey: ['room-members', roomId],
+    queryFn: async (): Promise<Staff[]> => {
+      if (!roomId) return [];
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/chat/rooms/${roomId}/members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return res.data.members || [];
+    },
+    enabled: !!roomId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
 // Custom hook for sending messages
 export const useSendMessage = () => {
   const queryClient = useQueryClient();

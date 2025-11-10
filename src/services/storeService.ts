@@ -14,6 +14,7 @@ export interface StockSummaryData {
     product_name: string;
     product_code: string;
     category?: string;
+    reorder_level?: number;
     store_quantities: { [storeId: number]: number };
   }[];
 }

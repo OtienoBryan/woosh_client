@@ -35,7 +35,6 @@ interface JourneyPlan {
   routeId?: number;
   user_name?: string;
   client_name?: string;
-  client_company_name?: string;
   route_name?: string;
 }
 
@@ -381,7 +380,7 @@ const JourneyPlanPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
+                        {plan.client_name || `Client ID: ${plan.clientId}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">

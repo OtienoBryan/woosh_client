@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { storeService } from '../services/storeService';
-import { productsService } from '../services/financialService';
+import { productsService, categoriesService } from '../services/financialService';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import jsPDF from 'jspdf';
@@ -35,8 +35,11 @@ const StockTakePage: React.FC = () => {
   useEffect(() => {
     if (selectedStore) {
       fetchInventory(selectedStore);
+      // Reset category filter when store changes
+      setSelectedCategory('all');
     } else {
       setInventory([]);
+      setSelectedCategory('all');
     }
   }, [selectedStore]);
 
@@ -50,9 +53,8 @@ const StockTakePage: React.FC = () => {
   };
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/financial/categories');
-      const data = await res.json();
-      if (data.success) setCategories(data.data || []);
+      const res = await categoriesService.getAll();
+      if (res.success) setCategories(res.data || []);
     } catch {
       setCategories([]);
     }
@@ -63,6 +65,11 @@ const StockTakePage: React.FC = () => {
       return inventory;
     }
     return inventory.filter(item => {
+      // Check if item has category directly (from StoreInventory)
+      if (item.category === selectedCategory) {
+        return true;
+      }
+      // Otherwise, check product category
       const product = products.find(p => p.id === item.product_id);
       return product && product.category === selectedCategory;
     });
@@ -227,36 +234,40 @@ const StockTakePage: React.FC = () => {
           )}
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Stock Take</h1>
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select Store</label>
-          <select
-            className="border rounded px-3 py-2"
-            value={selectedStore}
-            onChange={e => setSelectedStore(Number(e.target.value) || '')}
-          >
-            <option value="">Select a store</option>
-            {stores.map((s: any) => (
-              <option key={s.id} value={s.id}>{s.store_name}</option>
-            ))}
-          </select>
-        </div>
-        {selectedStore && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
-            <select
-              className="border rounded px-3 py-2"
-              value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              {categories.map((category: any) => (
-                <option key={category.id} value={category.name}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Store</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={selectedStore}
+                onChange={e => setSelectedStore(Number(e.target.value) || '')}
+              >
+                <option value="">Select a store</option>
+                {stores.map((s: any) => (
+                  <option key={s.id} value={s.id}>{s.store_name}</option>
+                ))}
+              </select>
+            </div>
+            {selectedStore && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map((category: any) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-        )}
+        </div>
         {selectedStore && (
           <form onSubmit={handleSubmit}>
             {/* Filter Indicators */}
@@ -277,40 +288,60 @@ const StockTakePage: React.FC = () => {
                     : 'No inventory found for this store.'}
                 </div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">System Qty</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Counted Qty</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Difference</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Count</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {getFilteredInventory().map((item: any) => {
-                      const counted = counts[item.product_id] !== undefined ? Number(counts[item.product_id]) : item.quantity;
-                      const diff = counted - item.quantity;
-                      const product = products.find((p: any) => p.id === item.product_id);
-                      return (
-                        <tr key={item.product_id}>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{product ? product.product_name : item.product_id}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm">
-                            <input
-                              type="number"
-                              className="border rounded px-2 py-1 w-24"
-                              value={counts[item.product_id] ?? item.quantity}
-                              onChange={e => handleCountChange(item.product_id, e.target.value)}
-                            />
-                          </td>
-                          <td className={`px-4 py-2 whitespace-nowrap text-sm font-semibold ${diff === 0 ? 'text-gray-700' : diff > 0 ? 'text-green-700' : 'text-red-700'}`}>{diff}</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300"></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Showing <span className="font-semibold text-gray-900">{getFilteredInventory().length}</span> of{' '}
+                      <span className="font-semibold text-gray-900">{inventory.length}</span> items
+                      {selectedCategory !== 'all' && (
+                        <span className="ml-2 text-blue-600">(filtered by: {selectedCategory})</span>
+                      )}
+                    </div>
+                  </div>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">System Qty</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Counted Qty</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difference</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getFilteredInventory().map((item: any) => {
+                        const counted = counts[item.product_id] !== undefined ? Number(counts[item.product_id]) : item.quantity;
+                        const diff = counted - item.quantity;
+                        const product = products.find((p: any) => p.id === item.product_id);
+                        const itemCategory = item.category || product?.category || 'Uncategorized';
+                        return (
+                          <tr key={item.product_id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{product ? product.product_name : item.product_id}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {itemCategory}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                              <input
+                                type="number"
+                                className="border border-gray-300 rounded-lg px-3 py-1 w-24 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={counts[item.product_id] ?? item.quantity}
+                                onChange={e => handleCountChange(item.product_id, e.target.value)}
+                              />
+                            </td>
+                            <td className={`px-4 py-3 whitespace-nowrap text-sm font-semibold ${diff === 0 ? 'text-gray-700' : diff > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                              {diff > 0 ? `+${diff}` : diff}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 border border-gray-300"></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
             <button

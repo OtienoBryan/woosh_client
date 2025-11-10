@@ -20,7 +20,6 @@ interface JourneyPlan {
   routeId?: number;
   user_name?: string;
   client_name?: string;
-  client_company_name?: string;
   route_name?: string;
 }
 
@@ -73,7 +72,6 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
         const matches = (
           (plan.user_name && plan.user_name.toLowerCase().includes(searchLower)) ||
           (plan.client_name && plan.client_name.toLowerCase().includes(searchLower)) ||
-          (plan.client_company_name && plan.client_company_name.toLowerCase().includes(searchLower)) ||
           (plan.route_name && plan.route_name.toLowerCase().includes(searchLower)) ||
           plan.id.toString().includes(searchTerm)
         );
@@ -266,7 +264,7 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
                                <div className="flex items-center gap-2">
                                  <Building className="h-4 w-4 text-green-500" />
                                  <span className="font-medium text-gray-900">
-                                   {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
+                                   {plan.client_name || `Client ID: ${plan.clientId}`}
                                  </span>
                                </div>
                                <div className="flex items-center gap-2">

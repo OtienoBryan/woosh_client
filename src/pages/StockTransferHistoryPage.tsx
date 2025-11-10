@@ -39,7 +39,7 @@ const StockTransferHistoryPage: React.FC = () => {
   });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(7);
   const [showModal, setShowModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [stats, setStats] = useState({
@@ -59,7 +59,7 @@ const StockTransferHistoryPage: React.FC = () => {
   useEffect(() => {
     fetchHistory();
     // eslint-disable-next-line
-  }, [filters, page]);
+  }, [filters, page, pageSize]);
 
   const fetchStores = async () => {
     const res = await axios.get('/api/financial/stores');
@@ -91,8 +91,31 @@ const StockTransferHistoryPage: React.FC = () => {
         if (res.pagination && res.pagination.totalPages) setTotalPages(res.pagination.totalPages);
         else setTotalPages(1);
         
-        // Calculate stats
-        calculateStats(res.data);
+        // Use server-calculated stats if available (more accurate for filtered data)
+        if (res.stats) {
+          let uniqueStores = res.stats.uniqueStores || 0;
+          
+          // If uniqueStores is 0 but we have data, calculate from current page data
+          // (This happens when search filter is used - server doesn't calculate unique stores for performance)
+          if (uniqueStores === 0 && res.data.length > 0) {
+            const storesSet = new Set();
+            res.data.forEach((item: any) => {
+              if (item.from_store_id) storesSet.add(item.from_store_id);
+              if (item.to_store_id) storesSet.add(item.to_store_id);
+            });
+            uniqueStores = storesSet.size;
+          }
+          
+          setStats({
+            totalTransfers: res.stats.totalTransfers || res.pagination?.total || res.data.length,
+            totalQuantity: res.stats.totalQuantity || 0,
+            uniqueProducts: res.stats.uniqueProducts || 0,
+            uniqueStores: uniqueStores
+          });
+        } else {
+          // Fallback to client-side calculation
+          calculateStats(res.data);
+        }
       } else {
         setHistory([]);
         setTotalPages(1);
@@ -102,6 +125,7 @@ const StockTransferHistoryPage: React.FC = () => {
       setError('Failed to fetch transfer history');
       setHistory([]);
       setTotalPages(1);
+      setStats({ totalTransfers: 0, totalQuantity: 0, uniqueProducts: 0, uniqueStores: 0 });
     } finally {
       setLoading(false);
     }
@@ -132,7 +156,7 @@ const StockTransferHistoryPage: React.FC = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters({ ...filters, search: e.target.value });
-    setPage(1);
+    setPage(1); // Reset to first page when search changes
   };
 
   const clearFilters = () => {
@@ -205,13 +229,13 @@ const StockTransferHistoryPage: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={exportToCSV}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-lg font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <Download className="h-4 w-4" />
                 Export CSV
               </button>
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={() => setShowModal(true)}
               >
                 <Plus className="h-4 w-4" />
@@ -222,70 +246,70 @@ const StockTransferHistoryPage: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <ArrowRight className="h-6 w-6 text-blue-600" />
+                <ArrowRight className="h-5 w-5 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Transfers</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalTransfers}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Total Transfers</p>
+                <p className="text-xl font-bold text-gray-900">{stats.totalTransfers.toLocaleString()}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <Package className="h-6 w-6 text-green-600" />
+                <Package className="h-5 w-5 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Quantity</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalQuantity.toLocaleString()}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Total Quantity</p>
+                <p className="text-xl font-bold text-gray-900">{stats.totalQuantity.toLocaleString()}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <Package className="h-6 w-6 text-purple-600" />
+                <Package className="h-5 w-5 text-purple-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Products</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.uniqueProducts}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Products</p>
+                <p className="text-xl font-bold text-gray-900">{stats.uniqueProducts}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="p-2 bg-orange-100 rounded-lg">
-                <Store className="h-6 w-6 text-orange-600" />
+                <Store className="h-5 w-5 text-orange-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Stores</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.uniqueStores}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Stores</p>
+                <p className="text-xl font-bold text-gray-900">{stats.uniqueStores}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-end">
             {/* Search Bar */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search Transfers</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Search Transfers</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by reference, notes, or product name..."
                   value={filters.search}
                   onChange={handleSearchChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -293,7 +317,7 @@ const StockTransferHistoryPage: React.FC = () => {
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-lg font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               <Filter className="h-4 w-4" />
               {showFilters ? 'Hide Filters' : 'Show Filters'}
@@ -303,7 +327,7 @@ const StockTransferHistoryPage: React.FC = () => {
             {(filters.from_store_id || filters.to_store_id || filters.product_id || filters.start_date || filters.end_date || filters.search) && (
               <button
                 onClick={clearFilters}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800"
               >
                 Clear All
               </button>
@@ -312,15 +336,15 @@ const StockTransferHistoryPage: React.FC = () => {
 
           {/* Advanced Filters */}
           {showFilters && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">From Store</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">From Store</label>
                   <select 
                     name="from_store_id" 
                     value={filters.from_store_id} 
                     onChange={handleFilterChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">All Stores</option>
                     {stores.map((s: any) => (
@@ -330,12 +354,12 @@ const StockTransferHistoryPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">To Store</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">To Store</label>
                   <select 
                     name="to_store_id" 
                     value={filters.to_store_id} 
                     onChange={handleFilterChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">All Stores</option>
                     {stores.map((s: any) => (
@@ -345,12 +369,12 @@ const StockTransferHistoryPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Product</label>
                   <select 
                     name="product_id" 
                     value={filters.product_id} 
                     onChange={handleFilterChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">All Products</option>
                     {products.map((p: any) => (
@@ -360,29 +384,29 @@ const StockTransferHistoryPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input 
                       type="date" 
                       name="start_date" 
                       value={filters.start_date} 
                       onChange={handleDateChange} 
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input 
                       type="date" 
                       name="end_date" 
                       value={filters.end_date} 
                       onChange={handleDateChange} 
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                     />
                   </div>
                 </div>
@@ -413,48 +437,48 @@ const StockTransferHistoryPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
                         Date & Time
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Store className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <Store className="h-3.5 w-3.5" />
                         From Store
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <ArrowRight className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <ArrowRight className="h-3.5 w-3.5" />
                         To Store
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <Package className="h-3.5 w-3.5" />
                         Product
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Quantity
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
                         Staff
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5" />
                         Reference
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
                         Notes
                       </div>
                     </th>
@@ -468,43 +492,48 @@ const StockTransferHistoryPage: React.FC = () => {
                         index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                       }`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 font-medium">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-900 font-medium">
                           {formatDate(transfer.transfer_date)}
                         </div>
                         <div className="text-xs text-gray-500">
                           {formatTime(transfer.transfer_date)}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">
                           {transfer.from_store_name}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">
                           {transfer.to_store_name}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="text-xs font-medium text-gray-900">
                           {transfer.product_name}
                         </div>
+                        {transfer.product_code && (
+                          <div className="text-xs text-gray-500">
+                            {transfer.product_code}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {transfer.quantity.toLocaleString()}
+                      <td className="px-4 py-2 whitespace-nowrap text-right">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {transfer.quantity?.toLocaleString() || '0'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {transfer.staff_name}
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-900">
+                          {transfer.staff_name || '-'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <div className="text-xs text-gray-900">
                           {transfer.reference ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
                               {transfer.reference}
                             </span>
                           ) : (
@@ -512,10 +541,10 @@ const StockTransferHistoryPage: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                      <td className="px-4 py-2">
+                        <div className="text-xs text-gray-900 max-w-xs truncate">
                           {transfer.notes ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800" title={transfer.notes}>
                               {transfer.notes}
                             </span>
                           ) : (
@@ -530,14 +559,14 @@ const StockTransferHistoryPage: React.FC = () => {
             </div>
             
             {/* Table Summary */}
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-600">
                 <span>
-                  Showing {history.length} transfer{history.length !== 1 ? 's' : ''} 
+                  Showing {history.length} of {stats.totalTransfers} transfer{stats.totalTransfers !== 1 ? 's' : ''} 
                   {totalPages > 1 && ` (Page ${page} of ${totalPages})`}
                 </span>
-                <span className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
+                <span className="flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
                   Total Quantity: <span className="font-semibold text-gray-900">{stats.totalQuantity.toLocaleString()}</span>
                 </span>
               </div>
@@ -547,60 +576,80 @@ const StockTransferHistoryPage: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Showing page {page} of {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(1)}
-                disabled={page === 1}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
-                  if (pageNum > totalPages) return null;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPage(pageNum)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        pageNum === page
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+          <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-gray-600">
+                Page <span className="font-semibold text-gray-900">{page}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
+                {' '}({stats.totalTransfers} total transfers)
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                  title="First page"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
               
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPage(totalPages)}
-                disabled={page === totalPages}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      // Show all pages if 5 or fewer
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      // Show first 5 pages
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      // Show last 5 pages
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      // Show pages around current page
+                      pageNum = page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          pageNum === page
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+              
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                  title="Next page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPage(totalPages)}
+                  disabled={page === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                  title="Last page"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -406,503 +406,217 @@ const AttendanceHistoryPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-[10px] text-gray-600">Loading...</span>
-          </div>
+      <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-center items-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header */}
-        <div className="mb-4">
-          <div className="bg-white rounded-lg shadow border border-gray-200 px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-base font-bold text-gray-900">Attendance History</h1>
-                <p className="mt-0.5 text-[10px] text-gray-500">
-                  Track and manage employee attendance records (showing today's records by default)
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="inline-flex items-center px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <FiChevronLeft className="w-3 h-3 mr-1.5" />
-                  Back
-                </button>
-                <button
-                  onClick={openAddModal}
-                  className="inline-flex items-center px-2.5 py-1 text-[10px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <FiPlus className="w-3 h-3 mr-1.5" />
-                  Add Record
-                </button>
-                <button
-                  onClick={exportToCSV}
-                  className="inline-flex items-center px-2.5 py-1 text-[10px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <FiDownload className="w-3 h-3 mr-1.5" />
-                  Export CSV
-                </button>
-              </div>
+    <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Attendance History</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Track and manage employee attendance records (showing today's records by default)
+            </p>
+          </div>
+                    <div className="flex items-center space-x-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <FiChevronLeft className="w-4 h-4 mr-2" />
+              Back
+            </button>
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <FiPlus className="w-4 h-4 mr-2" />
+              Add Record
+            </button>
+            <button
+              onClick={exportToCSV}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+            >
+              <FiDownload className="w-4 h-4 mr-2" />
+              Export CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FiUsers className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Records</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
             </div>
           </div>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
-            <div className="flex items-center">
-              <div className="p-1.5 bg-blue-100 rounded-lg">
-                <FiUsers className="w-3.5 h-3.5 text-blue-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-[10px] font-medium text-gray-600">Total Records</p>
-                <p className="text-sm font-semibold text-gray-900">{stats.total}</p>
-              </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <FiCheck className="w-6 h-6 text-green-600" />
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
-            <div className="flex items-center">
-              <div className="p-1.5 bg-green-100 rounded-lg">
-                <FiCheck className="w-3.5 h-3.5 text-green-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-[10px] font-medium text-gray-600">Present</p>
-                <p className="text-sm font-semibold text-gray-900">{stats.present}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
-            <div className="flex items-center">
-              <div className="p-1.5 bg-red-100 rounded-lg">
-                <FiX className="w-3.5 h-3.5 text-red-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-[10px] font-medium text-gray-600">Absent</p>
-                <p className="text-sm font-semibold text-gray-900">{stats.absent}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
-            <div className="flex items-center">
-              <div className="p-1.5 bg-yellow-100 rounded-lg">
-                <FiAlertCircle className="w-3.5 h-3.5 text-yellow-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-[10px] font-medium text-gray-600">Late Arrivals</p>
-                <p className="text-sm font-semibold text-gray-900">{stats.late}</p>
-              </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Present</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.present}</p>
             </div>
           </div>
         </div>
-
-        {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow border border-gray-200 mb-4">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-              {/* Search */}
-              <div className="relative flex-1 max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                  <FiSearch className="w-3.5 h-3.5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search by name, department, or role..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-8 pr-3 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                />
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center space-x-2">
-                {/* Filters Toggle */}
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-lg text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                >
-                  <FiFilter className="w-3 h-3 mr-1.5" />
-                  Filters
-                  {(startDate || endDate || staffId || department) && (
-                    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">
-                      Active
-                    </span>
-                  )}
-                </button>
-
-                {/* Refresh */}
-                <button
-                  onClick={() => window.location.reload()}
-                  className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-lg text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                >
-                  <FiRefreshCw className="w-3 h-3 mr-1.5" />
-                  Refresh
-                </button>
-              </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <FiX className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Absent</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.absent}</p>
             </div>
           </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <FiAlertCircle className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Late Arrivals</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.late}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="mt-3 pt-3 border-t border-gray-200 px-4 pb-3">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Start Date</label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                      />
-                      {startDate === new Date().toISOString().slice(0, 10) && (
-                        <span className="absolute right-1.5 top-1/2 transform -translate-y-1/2 text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
-                          Today
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-700 mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Employee</label>
-                    <select
-                      value={staffId}
-                      onChange={(e) => setStaffId(e.target.value)}
-                      className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                    >
-                      <option value="">All Employees</option>
-                      {staffList.map((staff) => (
-                        <option key={staff.id} value={staff.id}>
-                          {staff.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-700 mb-1">Department</label>
-                    <select
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                    >
-                      <option value="">All Departments</option>
-                      {getDepartments().map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <button
-                      onClick={clearFilters}
-                      className="w-full px-2.5 py-1 border border-gray-300 rounded-lg text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
-                </div>
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiSearch className="w-5 h-5 text-gray-400" />
               </div>
+              <input
+                type="text"
+                placeholder="Search by name, department, or role..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Filters Toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <FiFilter className="w-4 h-4 mr-2" />
+                Filters
+                {(startDate || endDate || staffId || department) && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                    Active
+                  </span>
+                )}
+              </button>
+
+              {/* Refresh */}
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <FiRefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </button>
+            </div>
+      </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <div className="relative">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            {startDate === new Date().toISOString().slice(0, 10) && (
+              <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                Today
+              </span>
             )}
           </div>
         </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-4">
-            <div className="flex items-center">
-              <div className="text-[10px] text-red-600 font-medium">Error:</div>
-              <div className="text-[10px] text-red-700 ml-2">{error}</div>
-              <button
-                onClick={() => setError(null)}
-                className="ml-auto text-red-500 hover:text-red-700 text-sm"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th 
-                    scope="col" 
-                    className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => {
-                      setSortBy('name');
-                      setSortOrder(sortBy === 'name' && sortOrder === 'asc' ? 'desc' : 'asc');
-                    }}
+                
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <input
+            type="date"
+            value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+          />
+        </div>
+                
+        <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+          <select
+            value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
-                    <div className="flex items-center">
-                      <FiUser className="w-3 h-3 mr-1.5" />
-                      Employee
-                      {sortBy === 'name' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </div>
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                    Image
-                  </th>
-                  <th 
-                    scope="col" 
-                    className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => {
-                      setSortBy('department');
-                      setSortOrder(sortBy === 'department' && sortOrder === 'asc' ? 'desc' : 'asc');
-                    }}
-                  >
-                    <div className="flex items-center">
-                      Department
-                      {sortBy === 'department' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    scope="col" 
-                    className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => {
-                      setSortBy('date');
-                      setSortOrder(sortBy === 'date' && sortOrder === 'asc' ? 'desc' : 'asc');
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <FiCalendar className="w-3 h-3 mr-1.5" />
-                      Date
-                      {sortBy === 'date' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    scope="col" 
-                    className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => {
-                      setSortBy('checkin');
-                      setSortOrder(sortBy === 'checkin' && sortOrder === 'asc' ? 'desc' : 'asc');
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <FiClock className="w-3 h-3 mr-1.5" />
-                      Check-in
-                      {sortBy === 'checkin' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </div>
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                    Check-out
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                    Time Spent
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                    Corrected
-                  </th>
-                  <th scope="col" className="relative px-3 py-2">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginated.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="px-6 py-8 text-center">
-                      <FiCalendar className="w-8 h-8 mx-auto mb-3 text-gray-300" />
-                      <div className="text-sm font-medium text-gray-500">No attendance records found</div>
-                      <div className="text-[10px] text-gray-500 mt-1">
-                        {searchTerm || startDate || endDate || staffId || department
-                          ? 'Try adjusting your search or filters'
-                          : 'No attendance records available for today'}
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginated.map((record) => {
-                    const checkin = record.checkin_time ? new Date(record.checkin_time) : null;
-                    const checkout = record.checkout_time ? new Date(record.checkout_time) : null;
-                    const timeSpent = calculateTimeSpent(record.checkin_time, record.checkout_time);
-                    
-                    return (
-                      <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-6 w-6">
-                              <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                <FiUser className="h-3 w-3 text-blue-600" />
-                              </div>
-                            </div>
-                            <div className="ml-2">
-                              <div className="text-[10px] font-medium text-gray-900">{record.name}</div>
-                              <div className="text-[10px] text-gray-500">{record.role || 'Employee'}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex-shrink-0 h-8 w-8">
-                            {record.photo_url ? (
-                              <img
-                                src={record.photo_url}
-                                alt={record.name}
-                                className="h-8 w-8 rounded-full object-cover border border-gray-200"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
-                                <FiUser className="h-4 w-4 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-[10px] text-gray-900">{record.department || '-'}</div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-[10px] text-gray-900">
-                            {record.date ? new Date(record.date).toLocaleDateString() : '-'}
-                          </div>
-                          <div className="text-[10px] text-gray-500">
-                            {record.date ? new Date(record.date).toLocaleDateString('en-US', { weekday: 'short' }) : '-'}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-[10px] text-gray-900">
-                            {checkin ? checkin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-[10px] text-gray-900">
-                            {checkout ? checkout.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="text-[10px] text-gray-900">
-                            {timeSpent ? `${timeSpent.hours}h ${timeSpent.minutes}m` : '-'}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getStatusColor(record)}`}>
-                            {getStatusText(record)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {record.corrected ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-800 border border-orange-200">
-                              <FiEdit2 className="w-2.5 h-2.5 mr-1" />
-                              Corrected
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800 border border-green-200">
-                              <FiCheck className="w-2.5 h-2.5 mr-1" />
-                              Original
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-right text-[10px] font-medium">
-                          <button
-                            onClick={() => openEditModal(record)}
-                            className="text-blue-600 hover:text-blue-900 p-0.5 rounded hover:bg-blue-50 transition-colors"
-                            title="Edit attendance record"
-                          >
-                            <FiEdit2 className="w-3 h-3" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="bg-white px-3 py-2 flex items-center justify-between border-t border-gray-200">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="relative inline-flex items-center px-2 py-1 border border-gray-300 text-[10px] font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="ml-2 relative inline-flex items-center px-2 py-1 border border-gray-300 text-[10px] font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] text-gray-700">
-                    Showing <span className="font-medium">{(page - 1) * PAGE_SIZE + 1}</span> to{' '}
-                    <span className="font-medium">{Math.min(page * PAGE_SIZE, filteredAttendance.length)}</span> of{' '}
-                    <span className="font-medium">{filteredAttendance.length}</span> results
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="relative inline-flex items-center px-2 py-1 rounded-l-md border border-gray-300 bg-white text-[10px] font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <FiChevronLeft className="h-3 w-3" />
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum)}
-                        className={`relative inline-flex items-center px-2 py-1 border text-[10px] font-medium transition-colors ${
-                          pageNum === page
-                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
+                    <option value="">All Employees</option>
+                    {staffList.map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.name}
+                      </option>
                     ))}
-                    <button
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
-                      className="relative inline-flex items-center px-2 py-1 rounded-r-md border border-gray-300 bg-white text-[10px] font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <FiChevronRight className="h-3 w-3" />
-                    </button>
-                  </nav>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                  <select
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="">All Departments</option>
+                    {getDepartments().map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+            ))}
+          </select>
+        </div>
+                
+                <div className="flex items-end">
+                  <button
+                    onClick={clearFilters}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Clear Filters
+                  </button>
                 </div>
               </div>
             </div>
@@ -910,85 +624,363 @@ const AttendanceHistoryPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <div className="text-red-600 font-medium">Error:</div>
+            <div className="text-red-700 ml-2">{error}</div>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => {
+                    setSortBy('name');
+                    setSortOrder(sortBy === 'name' && sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                >
+                  <div className="flex items-center">
+                    <FiUser className="w-4 h-4 mr-2" />
+                    Employee
+                    {sortBy === 'name' && (
+                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Image
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => {
+                    setSortBy('department');
+                    setSortOrder(sortBy === 'department' && sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                >
+                  <div className="flex items-center">
+                    Department
+                    {sortBy === 'department' && (
+                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => {
+                    setSortBy('date');
+                    setSortOrder(sortBy === 'date' && sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                >
+                  <div className="flex items-center">
+                    <FiCalendar className="w-4 h-4 mr-2" />
+                    Date
+                    {sortBy === 'date' && (
+                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => {
+                    setSortBy('checkin');
+                    setSortOrder(sortBy === 'checkin' && sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                >
+                  <div className="flex items-center">
+                    <FiClock className="w-4 h-4 mr-2" />
+                    Check-in
+                    {sortBy === 'checkin' && (
+                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+      </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Check-out
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Time Spent
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Corrected
+                </th>
+                <th scope="col" className="relative px-6 py-3">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
+                    <FiCalendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <div className="text-lg font-medium">No attendance records found</div>
+                    <div className="text-sm">
+                      {searchTerm || startDate || endDate || staffId || department
+                        ? 'Try adjusting your search or filters'
+                        : 'No attendance records available for today'}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((record) => {
+                  const checkin = record.checkin_time ? new Date(record.checkin_time) : null;
+                  const checkout = record.checkout_time ? new Date(record.checkout_time) : null;
+                  const timeSpent = calculateTimeSpent(record.checkin_time, record.checkout_time);
+                  
+                  return (
+                    <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <FiUser className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{record.name}</div>
+                            <div className="text-sm text-gray-500">{record.role || 'Employee'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex-shrink-0 h-12 w-12">
+                          {record.photo_url ? (
+                            <img
+                              src={record.photo_url}
+                              alt={record.name}
+                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                              <FiUser className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{record.department || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {record.date ? new Date(record.date).toLocaleDateString() : '-'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {record.date ? new Date(record.date).toLocaleDateString('en-US', { weekday: 'long' }) : '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {checkin ? checkin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {checkout ? checkout.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {timeSpent ? `${timeSpent.hours}h ${timeSpent.minutes}m` : '-'}
+                        </div>
+                      </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(record)}`}>
+                          {getStatusText(record)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {record.corrected ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                            <FiEdit2 className="w-3 h-3 mr-1" />
+                            Corrected
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                            <FiCheck className="w-3 h-3 mr-1" />
+                            Original
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => openEditModal(record)}
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors duration-150"
+                          title="Edit attendance record"
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{(page - 1) * PAGE_SIZE + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(page * PAGE_SIZE, filteredAttendance.length)}</span> of{' '}
+                  <span className="font-medium">{filteredAttendance.length}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiChevronLeft className="h-5 w-5" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        pageNum === page
+                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiChevronRight className="h-5 w-5" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+        </div>
+              )}
+      </div>
+
       {/* Edit Modal */}
       {showEditModal && editingRecord && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Edit Attendance Record</h3>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-screen overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Edit Attendance Record</h3>
               <button
                 onClick={closeEditModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                ×
+                <FiX className="w-6 h-6" />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="px-4 py-4 space-y-3">
+            <form onSubmit={handleEditSubmit} className="px-6 py-6 space-y-4">
               {/* Employee Info (Read-only) */}
-              <div className="bg-gray-50 rounded-lg p-3">
-                <h4 className="text-[10px] font-medium text-gray-700 mb-2">Employee Information</h4>
-                <div className="flex items-center space-x-2">
-                  <div className="flex-shrink-0 h-8 w-8">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Employee Information</h4>
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0 h-10 w-10">
                     {editingRecord.photo_url ? (
                       <img
                         src={editingRecord.photo_url}
                         alt={editingRecord.name}
-                        className="h-8 w-8 rounded-full object-cover border border-gray-200"
+                        className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
-                        <FiUser className="h-4 w-4 text-gray-400" />
+                      <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                        <FiUser className="h-5 w-5 text-gray-400" />
                       </div>
                     )}
                   </div>
                   <div>
-                    <div className="text-[10px] font-medium text-gray-900">{editingRecord.name}</div>
-                    <div className="text-[10px] text-gray-500">{editingRecord.role || 'Employee'} • {editingRecord.department}</div>
+                    <div className="text-sm font-medium text-gray-900">{editingRecord.name}</div>
+                    <div className="text-sm text-gray-500">{editingRecord.role || 'Employee'} • {editingRecord.department}</div>
                   </div>
                 </div>
               </div>
 
               {/* Date */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Date *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                 <input
                   type="date"
                   value={editFormData.date}
                   onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 />
               </div>
 
               {/* Check-in Time */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Check-in Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Time</label>
                 <input
                   type="datetime-local"
                   value={editFormData.checkin_time}
                   onChange={(e) => setEditFormData({ ...editFormData, checkin_time: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
-                <p className="mt-1 text-[10px] text-gray-500">Leave empty if employee was absent</p>
+                <p className="mt-1 text-xs text-gray-500">Leave empty if employee was absent</p>
               </div>
 
               {/* Check-out Time */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Check-out Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Time</label>
                 <input
                   type="datetime-local"
                   value={editFormData.checkout_time}
                   onChange={(e) => setEditFormData({ ...editFormData, checkout_time: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
-                <p className="mt-1 text-[10px] text-gray-500">Leave empty if employee didn't check out</p>
+                <p className="mt-1 text-xs text-gray-500">Leave empty if employee didn't check out</p>
               </div>
 
               {/* Time Spent Preview */}
               {editFormData.checkin_time && (
-                <div className="bg-blue-50 rounded-lg p-2">
-                  <div className="text-[10px] font-medium text-blue-900">Time Spent Preview:</div>
-                  <div className="text-[10px] text-blue-700">
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <div className="text-sm font-medium text-blue-900">Time Spent Preview:</div>
+                  <div className="text-sm text-blue-700">
                     {(() => {
                       const checkin = new Date(editFormData.checkin_time);
                       const checkout = editFormData.checkout_time ? new Date(editFormData.checkout_time) : new Date();
@@ -1002,11 +994,11 @@ const AttendanceHistoryPage: React.FC = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+              <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
                   disabled={editLoading}
                 >
                   Cancel
@@ -1014,16 +1006,16 @@ const AttendanceHistoryPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={editLoading}
-                  className="px-2.5 py-1 text-[10px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
                 >
                   {editLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Updating...
                     </>
                   ) : (
                     <>
-                      <FiSave className="w-3 h-3 mr-1.5" />
+                      <FiSave className="w-4 h-4 mr-2" />
                       Update Record
                     </>
                   )}
@@ -1037,24 +1029,24 @@ const AttendanceHistoryPage: React.FC = () => {
       {/* Add Record Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Add Attendance Record</h3>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-screen overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Add Attendance Record</h3>
               <button
                 onClick={closeAddModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                ×
+                <FiX className="w-6 h-6" />
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="px-4 py-4 space-y-3">
+            <form onSubmit={handleAddSubmit} className="px-6 py-6 space-y-4">
               {/* Staff Selection */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Employee *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee *</label>
                 <select
                   value={addFormData.staff_id}
                   onChange={(e) => setAddFormData({ ...addFormData, staff_id: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 >
                   <option value="">Select Employee</option>
@@ -1066,18 +1058,18 @@ const AttendanceHistoryPage: React.FC = () => {
                 </select>
                 {/* Existing Record Warning */}
                 {existingRecordForDate && (
-                  <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                  <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
                     <div className="flex items-center">
-                      <FiAlertCircle className="w-3 h-3 text-red-500 mr-1.5" />
-                      <div className="text-[10px] text-red-900">
-                        <strong>Record Already Exists:</strong> This employee already has an attendance record for {existingRecordForDate.date ? new Date(existingRecordForDate.date).toLocaleDateString() : 'N/A'}.
+                      <FiAlertCircle className="w-4 h-4 text-red-500 mr-2" />
+                      <div className="text-sm text-red-900">
+                        <strong>Record Already Exists:</strong> This employee already has an attendance record for {new Date(existingRecordForDate.date).toLocaleDateString()}.
                       </div>
                     </div>
-                    <div className="text-[10px] text-red-700 mt-1.5">
+                    <div className="text-xs text-red-700 mt-2">
                       Check-in: {existingRecordForDate.checkin_time ? new Date(existingRecordForDate.checkin_time).toLocaleTimeString() : 'Not recorded'} | 
                       Check-out: {existingRecordForDate.checkout_time ? new Date(existingRecordForDate.checkout_time).toLocaleTimeString() : 'Not recorded'}
                     </div>
-                    <div className="text-[10px] text-red-700 mt-1">
+                    <div className="text-xs text-red-700 mt-1">
                       Please choose a different date or edit the existing record.
                     </div>
                   </div>
@@ -1085,16 +1077,16 @@ const AttendanceHistoryPage: React.FC = () => {
 
                 {/* Monthly Record Count Info */}
                 {addFormData.staff_id && addFormData.date && !existingRecordForDate && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-                    <div className="text-[10px] text-blue-900">
+                  <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                    <div className="text-sm text-blue-900">
                       <strong>Total Records:</strong> {monthlyRecordCount}/2 for this month
                     </div>
                     {monthlyRecordCount >= 2 && (
-                      <div className="text-[10px] text-red-600 mt-1">
+                      <div className="text-sm text-red-600 mt-1">
                         ⚠️ Maximum records reached. Cannot add more records for this employee this month.
                       </div>
                     )}
-                    <div className="text-[10px] text-blue-700 mt-1.5">
+                    <div className="text-xs text-blue-700 mt-2">
                       <strong>Note:</strong> Manually created records are marked as "Corrected" but still count toward the monthly limit.
                     </div>
                   </div>
@@ -1103,45 +1095,45 @@ const AttendanceHistoryPage: React.FC = () => {
 
               {/* Date */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Date *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                 <input
                   type="date"
                   value={addFormData.date}
                   onChange={(e) => setAddFormData({ ...addFormData, date: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                   required
                 />
               </div>
 
               {/* Check-in Time */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Check-in Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Time</label>
                 <input
                   type="datetime-local"
                   value={addFormData.checkin_time}
                   onChange={(e) => setAddFormData({ ...addFormData, checkin_time: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
-                <p className="mt-1 text-[10px] text-gray-500">Leave empty if employee was absent</p>
+                <p className="mt-1 text-xs text-gray-500">Leave empty if employee was absent</p>
               </div>
 
               {/* Check-out Time */}
               <div>
-                <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Check-out Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Time</label>
                 <input
                   type="datetime-local"
                   value={addFormData.checkout_time}
                   onChange={(e) => setAddFormData({ ...addFormData, checkout_time: e.target.value })}
-                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
-                <p className="mt-1 text-[10px] text-gray-500">Leave empty if employee didn't check out</p>
+                <p className="mt-1 text-xs text-gray-500">Leave empty if employee didn't check out</p>
               </div>
 
               {/* Time Spent Preview */}
               {addFormData.checkin_time && (
-                <div className="bg-blue-50 rounded-lg p-2">
-                  <div className="text-[10px] font-medium text-blue-900">Time Spent Preview:</div>
-                  <div className="text-[10px] text-blue-700">
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <div className="text-sm font-medium text-blue-900">Time Spent Preview:</div>
+                  <div className="text-sm text-blue-700">
                     {(() => {
                       const checkin = new Date(addFormData.checkin_time);
                       const checkout = addFormData.checkout_time ? new Date(addFormData.checkout_time) : new Date();
@@ -1155,11 +1147,11 @@ const AttendanceHistoryPage: React.FC = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+              <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={closeAddModal}
-                  className="px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
                   disabled={addLoading}
                 >
                   Cancel
@@ -1167,26 +1159,26 @@ const AttendanceHistoryPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={addLoading || !addFormData.staff_id || !addFormData.date || monthlyRecordCount >= 2 || !!existingRecordForDate}
-                  className="px-2.5 py-1 text-[10px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
                 >
                   {addLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Creating...
                     </>
                   ) : existingRecordForDate ? (
                     <>
-                      <FiX className="w-3 h-3 mr-1.5" />
+                      <FiX className="w-4 h-4 mr-2" />
                       Record Exists
                     </>
                   ) : monthlyRecordCount >= 2 ? (
                     <>
-                      <FiX className="w-3 h-3 mr-1.5" />
+                      <FiX className="w-4 h-4 mr-2" />
                       Monthly Limit Reached
                     </>
                   ) : (
                     <>
-                      <FiPlus className="w-3 h-3 mr-1.5" />
+                      <FiPlus className="w-4 h-4 mr-2" />
                       Create Record (Corrected)
                     </>
                   )}

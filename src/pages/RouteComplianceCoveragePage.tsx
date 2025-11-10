@@ -108,7 +108,6 @@ const RouteComplianceCoveragePage: React.FC = () => {
     const headers = [
       'Date',
       'Client',
-      'Route',
       'Scheduled Time',
       'Status',
       'Check-in Time',
@@ -124,7 +123,6 @@ const RouteComplianceCoveragePage: React.FC = () => {
         day: 'numeric' 
       });
       const clientName = plan.client_name || plan.client_company_name || `Client #${plan.clientId}`;
-      const routeName = plan.route_name || '-';
       const status = (plan.status === 2 || plan.status === 3) ? 'Completed' : 
                      plan.status === 1 ? 'In Progress' : 'Pending';
       const checkIn = plan.checkInTime 
@@ -138,7 +136,6 @@ const RouteComplianceCoveragePage: React.FC = () => {
       return [
         escapeCSV(date),
         escapeCSV(clientName),
-        escapeCSV(routeName),
         escapeCSV(plan.time),
         escapeCSV(status),
         escapeCSV(checkIn),
@@ -252,7 +249,6 @@ const RouteComplianceCoveragePage: React.FC = () => {
             <tr>
               <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Date</th>
               <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Client</th>
-              <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Route</th>
               <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">Time</th>
               <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
@@ -261,13 +257,13 @@ const RouteComplianceCoveragePage: React.FC = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {loading && (
-              <tr><td className="px-3 py-2 text-xs text-gray-500" colSpan={7}>Loading...</td></tr>
+              <tr><td className="px-3 py-2 text-xs text-gray-500" colSpan={6}>Loading...</td></tr>
             )}
             {error && !loading && (
-              <tr><td className="px-3 py-2 text-xs text-red-600" colSpan={7}>{error}</td></tr>
+              <tr><td className="px-3 py-2 text-xs text-red-600" colSpan={6}>{error}</td></tr>
             )}
             {!loading && !error && filteredPlans.length === 0 && (
-              <tr><td className="px-3 py-2 text-xs text-gray-500" colSpan={7}>No journey plans found</td></tr>
+              <tr><td className="px-3 py-2 text-xs text-gray-500" colSpan={6}>No journey plans found</td></tr>
             )}
             {!loading && !error && filteredPlans.map(plan => (
               <tr key={plan.id} className={plan.status === 2 || plan.status === 3 ? 'bg-green-50' : ''}>
@@ -277,7 +273,6 @@ const RouteComplianceCoveragePage: React.FC = () => {
                 <td className="px-3 py-2 text-xs text-gray-900">
                   {plan.client_name || plan.client_company_name || `Client #${plan.clientId}`}
                 </td>
-                <td className="px-3 py-2 text-xs text-gray-600">{plan.route_name || '-'}</td>
                 <td className="px-3 py-2 text-xs text-center text-gray-900">{plan.time}</td>
                 <td className="px-3 py-2 text-xs text-center">
                   <span className={

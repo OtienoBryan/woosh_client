@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { stockTransferService, productsService } from '../services/financialService';
 import { storeService } from '../services/storeService';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowRight, Package, Store, Calendar, FileText, Plus, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react';
 
 interface StockTransferPageProps {
@@ -9,6 +10,7 @@ interface StockTransferPageProps {
 }
 
 const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModal }) => {
+  const { user } = useAuth();
   const [stores, setStores] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [fromStoreInventory, setFromStoreInventory] = useState<any[]>([]);
@@ -17,7 +19,7 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
     from_store_id: '',
     to_store_id: '',
     transfer_date: new Date().toISOString().split('T')[0],
-    staff_id: 1,
+    staff_id: user?.id || 0,
     reference: '',
     notes: '',
     items: [
@@ -32,6 +34,13 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
     fetchStores();
     fetchProducts();
   }, []);
+
+  // Update staff_id when user changes
+  useEffect(() => {
+    if (user?.id) {
+      setForm(prev => ({ ...prev, staff_id: user.id }));
+    }
+  }, [user]);
 
   useEffect(() => {
     if (form.from_store_id) {
@@ -116,16 +125,28 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
     setSuccess(null);
     setLoading(true);
     try {
+      // Ensure staff_id is set from logged-in user before processing
+      const currentStaffId = user?.id || form.staff_id;
+      
+      if (!currentStaffId) {
+        setError('Unable to determine staff ID. Please ensure you are logged in.');
+        setLoading(false);
+        return;
+      }
+
       const data = {
-        ...form,
         from_store_id: Number(form.from_store_id),
         to_store_id: Number(form.to_store_id),
+        transfer_date: form.transfer_date,
+        staff_id: Number(currentStaffId),
+        reference: form.reference || undefined,
+        notes: form.notes || undefined,
         items: form.items
           .filter(item => item.product_id && item.quantity)
           .map(item => ({
             product_id: Number(item.product_id),
-          quantity: Number(item.quantity)
-        }))
+            quantity: Number(item.quantity)
+          }))
       };
 
       if (data.items.length === 0) {
@@ -141,7 +162,7 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
           from_store_id: '',
           to_store_id: '',
           transfer_date: new Date().toISOString().split('T')[0],
-          staff_id: 1,
+          staff_id: user?.id || 0,
           reference: '',
           notes: '',
           items: [{ product_id: '', quantity: '' }]
@@ -429,7 +450,7 @@ const StockTransferPage: React.FC<StockTransferPageProps> = ({ onSuccess, isModa
                   from_store_id: '',
                   to_store_id: '',
                   transfer_date: new Date().toISOString().split('T')[0],
-                  staff_id: 1,
+                  staff_id: user?.id || 0,
                   reference: '',
                   notes: '',
                   items: [{ product_id: '', quantity: '' }]

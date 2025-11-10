@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Pencil, Trash2, Plus, ChevronLeft, Check, X, Wifi, WifiOff, RefreshCw, Send } from 'lucide-react';
+import { Pencil, Trash2, Plus, ChevronLeft, Check, X, Wifi, WifiOff, RefreshCw, Send, Users } from 'lucide-react';
 import { DateTime } from 'luxon';
 import {
   useChatRooms,
   useMessages,
   useStaff,
+  useRoomMembers,
   useSendMessage,
   useCreateGroup,
   useEditMessage,
@@ -120,11 +121,13 @@ const InstantChatPage: React.FC = () => {
   const [toast, setToast] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
 
   // Use React Query hooks
   const { data: rooms = [], isLoading: roomsLoading, error: roomsError, refetch: refetchRooms } = useChatRooms();
   const { data: messages = [], isLoading: messagesLoading, error: messagesError, refetch: refetchMessages } = useMessages(selectedRoom?.id || null);
   const { data: allStaff = [], error: staffError } = useStaff();
+  const { data: roomMembers = [], isLoading: membersLoading } = useRoomMembers(selectedRoom?.id || null);
   const { unreadCounts, markRoomAsRead, getTotalUnreadCount, updateRoomUnreadCount } = useUnreadCounts(user?.id);
   const { isMessageRead, markMessageAsRead, markRoomMessagesAsRead } = useReadMessages(user?.id);
   
@@ -530,9 +533,9 @@ const InstantChatPage: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col ${!selectedRoom ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`flex-1 flex ${!selectedRoom ? 'hidden md:flex' : 'flex'}`}>
         {selectedRoom ? (
-          <>
+          <div className="flex-1 flex flex-col">
             {/* Chat header */}
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 flex items-center justify-between shadow-lg">
               <div className="flex items-center">
@@ -561,153 +564,221 @@ const InstantChatPage: React.FC = () => {
                 </div>
               </div>
               
-              {unreadCounts[selectedRoom.id] > 0 && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={markCurrentRoomAsRead}
-                  className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/30 transition-all backdrop-blur-sm"
+                  onClick={() => setShowMembersPanel(!showMembersPanel)}
+                  className={`bg-white/20 text-white p-2 rounded-lg hover:bg-white/30 transition-all backdrop-blur-sm ${showMembersPanel ? 'bg-white/30' : ''}`}
+                  title={showMembersPanel ? "Hide members" : "Show members"}
                 >
-                  Mark as Read
+                  <Users size={16} />
                 </button>
-              )}
+                {unreadCounts[selectedRoom.id] > 0 && (
+                  <button
+                    onClick={markCurrentRoomAsRead}
+                    className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/30 transition-all backdrop-blur-sm"
+                  >
+                    Mark as Read
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Messages area */}
-            <div className="flex-1 overflow-y-auto p-3 bg-gradient-to-br from-blue-50 to-indigo-50">
-              {messagesLoading ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <RefreshCw className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
-                  <div className="text-xs">Loading messages...</div>
-                </div>
-              ) : messagesError ? (
-                <div className="flex flex-col items-center justify-center h-full text-red-500">
-                  <WifiOff className="w-6 h-6 mb-2" />
-                  <div className="mb-2 text-xs">Failed to load messages</div>
-                  <button 
-                    onClick={handleRetryConnection}
-                    className="text-indigo-600 hover:underline text-xs font-medium"
-                  >
-                    Retry
-                  </button>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <div className="mb-2 text-sm font-medium">No messages yet</div>
-                  <div className="text-xs">Send a message to start the conversation</div>
-                </div>
-              ) : (
-                messages.map((msg: Message, idx: number) => {
-                  let canEditOrDelete = false;
-                  if (msg.sender_id === user?.id) {
-                    canEditOrDelete = messages.slice(idx + 1).every((m: Message) => m.sender_id === user?.id);
-                  }
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`mb-3 flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                      data-message-id={msg.id}
-                    >
-                      <div className={`max-w-xs lg:max-w-md relative ${msg.sender_id === user?.id ? 'ml-auto' : 'mr-auto'}`}>
-                        <div className={`px-3 py-2 rounded-xl shadow-lg ${
-                          msg.sender_id === user?.id 
-                            ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-sm' 
-                            : 'bg-white text-gray-800 rounded-bl-sm'
-                        } ${!isMessageRead(msg) && msg.sender_id !== user?.id ? 'ring-2 ring-indigo-300' : ''}`}>
-                          {msg.sender_id !== user?.id && (
-                            <div className="text-[10px] font-semibold mb-1 flex items-center gap-1.5 text-indigo-600">
-                              <span>{msg.sender_name || 'User'}</span>
-                              {!isMessageRead(msg) && (
-                                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" title="Unread"></span>
+            {/* Messages area and Members panel container */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Messages area */}
+              <div className={`flex-1 flex flex-col ${showMembersPanel ? 'hidden md:flex' : 'flex'}`}>
+                <div className="flex-1 overflow-y-auto p-3 bg-gradient-to-br from-blue-50 to-indigo-50">
+                  {messagesLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                      <RefreshCw className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
+                      <div className="text-xs">Loading messages...</div>
+                    </div>
+                  ) : messagesError ? (
+                    <div className="flex flex-col items-center justify-center h-full text-red-500">
+                      <WifiOff className="w-6 h-6 mb-2" />
+                      <div className="mb-2 text-xs">Failed to load messages</div>
+                      <button 
+                        onClick={handleRetryConnection}
+                        className="text-indigo-600 hover:underline text-xs font-medium"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                      <div className="mb-2 text-sm font-medium">No messages yet</div>
+                      <div className="text-xs">Send a message to start the conversation</div>
+                    </div>
+                  ) : (
+                    messages.map((msg: Message, idx: number) => {
+                      let canEditOrDelete = false;
+                      if (msg.sender_id === user?.id) {
+                        canEditOrDelete = messages.slice(idx + 1).every((m: Message) => m.sender_id === user?.id);
+                      }
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`mb-3 flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                          data-message-id={msg.id}
+                        >
+                          <div className={`max-w-xs lg:max-w-md relative ${msg.sender_id === user?.id ? 'ml-auto' : 'mr-auto'}`}>
+                            <div className={`px-3 py-2 rounded-xl shadow-lg ${
+                              msg.sender_id === user?.id 
+                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-sm' 
+                                : 'bg-white text-gray-800 rounded-bl-sm'
+                            } ${!isMessageRead(msg) && msg.sender_id !== user?.id ? 'ring-2 ring-indigo-300' : ''}`}>
+                              {msg.sender_id !== user?.id && (
+                                <div className="text-[10px] font-semibold mb-1 flex items-center gap-1.5 text-indigo-600">
+                                  <span>{msg.sender_name || 'User'}</span>
+                                  {!isMessageRead(msg) && (
+                                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" title="Unread"></span>
+                                  )}
+                                </div>
                               )}
-                            </div>
-                          )}
-                          {editingMessageId === msg.id ? (
-                            <div className="flex flex-col gap-1.5">
-                              <input
-                                className="border rounded-lg px-2.5 py-1.5 text-xs text-gray-800 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                value={editMessageText}
-                                onChange={e => setEditMessageText(e.target.value)}
-                                autoFocus
-                              />
-                              <div className="flex gap-1.5 justify-end">
-                                <button 
-                                  className="px-2.5 py-1 bg-gray-200 text-gray-800 rounded-lg text-xs flex items-center gap-1 hover:bg-gray-300 transition-all"
-                                  onClick={handleEditMessageCancel}
-                                >
-                                  <X size={12} /> Cancel
-                                </button>
-                                <button 
-                                  className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs flex items-center gap-1 hover:bg-indigo-700 transition-all"
-                                  onClick={() => handleEditMessageSave(msg)}
-                                >
-                                  <Check size={12} /> Save
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="text-xs leading-relaxed">{msg.message}</div>
-                              <div className={`text-[10px] mt-1 flex items-center justify-end gap-1.5 ${
-                                msg.sender_id === user?.id ? 'text-indigo-100' : 'text-gray-500'
-                              }`}>
-                                <span>{msg.sent_at && formatMessageTime(msg.sent_at)}</span>
-                                {msg.sender_id === user?.id && (
-                                  <span className="flex items-center">
-                                    {msg.is_read ? (
-                                      <span className="text-green-300" title="Read">✓✓</span>
-                                    ) : (
-                                      <span className="text-indigo-200" title="Sent">✓</span>
-                                    )}
-                                  </span>
-                                )}
-                                {canEditOrDelete && (
-                                  <div className="flex gap-1">
+                              {editingMessageId === msg.id ? (
+                                <div className="flex flex-col gap-1.5">
+                                  <input
+                                    className="border rounded-lg px-2.5 py-1.5 text-xs text-gray-800 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    value={editMessageText}
+                                    onChange={e => setEditMessageText(e.target.value)}
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-1.5 justify-end">
                                     <button 
-                                      title="Edit" 
-                                      onClick={() => handleEditMessage(msg)} 
-                                      className="p-0.5 hover:bg-indigo-700 rounded-full transition-all"
+                                      className="px-2.5 py-1 bg-gray-200 text-gray-800 rounded-lg text-xs flex items-center gap-1 hover:bg-gray-300 transition-all"
+                                      onClick={handleEditMessageCancel}
                                     >
-                                      <Pencil size={10} />
+                                      <X size={12} /> Cancel
                                     </button>
                                     <button 
-                                      title="Delete" 
-                                      onClick={() => handleDeleteMessage(msg)} 
-                                      className="p-0.5 hover:bg-indigo-700 rounded-full transition-all"
+                                      className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs flex items-center gap-1 hover:bg-indigo-700 transition-all"
+                                      onClick={() => handleEditMessageSave(msg)}
                                     >
-                                      <Trash2 size={10} />
+                                      <Check size={12} /> Save
                                     </button>
                                   </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="text-xs leading-relaxed">{msg.message}</div>
+                                  <div className={`text-[10px] mt-1 flex items-center justify-end gap-1.5 ${
+                                    msg.sender_id === user?.id ? 'text-indigo-100' : 'text-gray-500'
+                                  }`}>
+                                    <span>{msg.sent_at && formatMessageTime(msg.sent_at)}</span>
+                                    {msg.sender_id === user?.id && (
+                                      <span className="flex items-center">
+                                        {msg.is_read ? (
+                                          <span className="text-green-300" title="Read">✓✓</span>
+                                        ) : (
+                                          <span className="text-indigo-200" title="Sent">✓</span>
+                                        )}
+                                      </span>
+                                    )}
+                                    {canEditOrDelete && (
+                                      <div className="flex gap-1">
+                                        <button 
+                                          title="Edit" 
+                                          onClick={() => handleEditMessage(msg)} 
+                                          className="p-0.5 hover:bg-indigo-700 rounded-full transition-all"
+                                        >
+                                          <Pencil size={10} />
+                                        </button>
+                                        <button 
+                                          title="Delete" 
+                                          onClick={() => handleDeleteMessage(msg)} 
+                                          className="p-0.5 hover:bg-indigo-700 rounded-full transition-all"
+                                        >
+                                          <Trash2 size={10} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Message input */}
+                <form onSubmit={handleSend} className="bg-white p-2.5 border-t border-indigo-100 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <input
+                      className="flex-1 border-2 border-indigo-200 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      value={newMessage}
+                      onChange={e => setNewMessage(e.target.value)}
+                      placeholder="Type your message..."
+                    />
+                    <button 
+                      type="submit" 
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-2 rounded-full hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105"
+                      disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Members Panel */}
+              {showMembersPanel && (
+                <div className="w-full md:w-64 bg-white border-l border-indigo-100 flex flex-col">
+                  <div className="p-3 border-b border-indigo-100 bg-gradient-to-r from-blue-500 to-indigo-600">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-white">Members ({roomMembers.length})</h3>
+                      <button
+                        onClick={() => setShowMembersPanel(false)}
+                        className="text-white hover:text-indigo-100 transition-all"
+                        title="Close members"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-3">
+                    {membersLoading ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                        <RefreshCw className="w-5 h-5 animate-spin mb-2 text-indigo-500" />
+                        <div className="text-xs">Loading members...</div>
+                      </div>
+                    ) : roomMembers.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 text-xs">
+                        No members found
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {roomMembers.map((member: any) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center p-2 rounded-lg hover:bg-indigo-50 transition-all"
+                          >
+                            <div className="rounded-full w-8 h-8 flex items-center justify-center mr-2 bg-gradient-to-br from-blue-400 to-indigo-400 text-white text-xs font-semibold">
+                              {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-800 truncate">
+                                {member.name || 'Unknown'}
+                                {member.id === user?.id && (
+                                  <span className="ml-1 text-xs text-indigo-600">(You)</span>
                                 )}
                               </div>
-                            </>
-                          )}
-                        </div>
+                              {member.email && (
+                                <div className="text-xs text-gray-500 truncate">{member.email}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  );
-                })
+                    )}
+                  </div>
+                </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
-
-            {/* Message input */}
-            <form onSubmit={handleSend} className="bg-white p-2.5 border-t border-indigo-100 shadow-lg">
-              <div className="flex items-center gap-2">
-                <input
-                  className="flex-1 border-2 border-indigo-200 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                />
-                <button 
-                  type="submit" 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-2 rounded-full hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-            </form>
-          </>
+          </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
             <div className="max-w-md text-center">

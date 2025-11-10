@@ -35,21 +35,24 @@ const AvailabilityReportPage: React.FC = () => {
   const [salesReps, setSalesReps] = useState<string[]>([]);
   const [searchInput, setSearchInput] = useState('');
   const [allReports, setAllReports] = useState<AvailabilityReport[]>([]);
+  const [allFetchedReports, setAllFetchedReports] = useState<AvailabilityReport[]>([]); // Store all fetched reports for client-side filtering
 
+  // Fetch reports only when filters change (not when search changes)
   useEffect(() => {
     fetchReports();
     fetchFilterData();
-  }, [filters, search]);
+  }, [filters]); // Removed 'search' from dependencies
 
   const fetchReports = async () => {
     try {
       setLoading(true);
       // Fetch a large number of records (1000) to ensure we have enough for grouping
+      // Don't pass search to API - we'll filter client-side
       const response = await availabilityReportService.getAvailabilityReports(
         filters,
         1,
         1000,
-        search
+        '' // Empty search - fetch all matching filter criteria
       );
       
       // Debug: Log first few reports to check category data
@@ -62,7 +65,30 @@ const AvailabilityReportPage: React.FC = () => {
         allKeys: Object.keys(r).filter(k => k.toLowerCase().includes('cat'))
       })));
       
-      setAllReports(response.reports);
+      // Store all fetched reports for client-side filtering
+      setAllFetchedReports(response.reports);
+      // Apply client-side search filter immediately if there's a search term
+      if (search && search.trim()) {
+        const searchLower = search.toLowerCase().trim();
+        const filtered = response.reports.filter(report => {
+          const clientName = (report.clientName || '').toLowerCase();
+          const countryName = (report.countryName || '').toLowerCase();
+          const salesRepName = (report.salesRepName || '').toLowerCase();
+          const comment = (report.comment || '').toLowerCase();
+          const productName = (report.productName || '').toLowerCase();
+          
+          return (
+            clientName.includes(searchLower) ||
+            countryName.includes(searchLower) ||
+            salesRepName.includes(searchLower) ||
+            comment.includes(searchLower) ||
+            productName.includes(searchLower)
+          );
+        });
+        setAllReports(filtered);
+      } else {
+        setAllReports(response.reports);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to fetch availability reports');
@@ -71,6 +97,7 @@ const AvailabilityReportPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   const fetchFilterData = async () => {
     try {
@@ -91,8 +118,10 @@ const AvailabilityReportPage: React.FC = () => {
   };
 
   const handleSearch = () => {
-    setSearch(searchInput);
+    const searchTerm = searchInput.trim();
+    setSearch(searchTerm);
     setPage(1);
+    // Filter is applied automatically via useEffect when searchInput changes
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -127,30 +156,155 @@ const AvailabilityReportPage: React.FC = () => {
     setSearch('');
     setSearchInput('');
     setPage(1);
+    // Reset to show all fetched reports
+    setAllReports(allFetchedReports);
   };
+
+  // Apply client-side filter when searchInput changes (real-time filtering)
+  useEffect(() => {
+    if (allFetchedReports.length > 0) {
+      const searchTerm = searchInput.trim();
+      if (!searchTerm) {
+        // No search term - show all reports
+        setAllReports(allFetchedReports);
+      } else {
+        // Filter reports client-side based on search term
+        const searchLower = searchTerm.toLowerCase();
+        const filtered = allFetchedReports.filter(report => {
+          const clientName = (report.clientName || '').toLowerCase();
+          const countryName = (report.countryName || '').toLowerCase();
+          const salesRepName = (report.salesRepName || '').toLowerCase();
+          const comment = (report.comment || '').toLowerCase();
+          const productName = (report.productName || '').toLowerCase();
+          
+          return (
+            clientName.includes(searchLower) ||
+            countryName.includes(searchLower) ||
+            salesRepName.includes(searchLower) ||
+            comment.includes(searchLower) ||
+            productName.includes(searchLower)
+          );
+        });
+        setAllReports(filtered);
+      }
+    }
+  }, [searchInput, allFetchedReports]);
 
   // Create pivot table structure - outlets as rows, products as columns
   const getPivotTableData = (reportsData: AvailabilityReport[]) => {
     if (!reportsData.length) return { outlets: [], products: [], productMap: new Map() };
 
     // Build product map with category information for sorting
-    const productMap = new Map();
+    // CRITICAL: Each product name should get its category from the productId in the database
+    // Use productId as the source of truth - don't mix categories from different productIds with the same name
+    const productMap = new Map<string, { name: string; categoryName: string; categoryOrder: number; productId?: number }>();
+    
+    // Group reports by productId first to get the authoritative category for each productId
+    const productIdToCategory = new Map<number, { name: string; categoryName: string; categoryOrder: number }>();
+    
+    // First pass: Build authoritative map of productId -> category
+    // This ensures each productId has one canonical category from the database
     reportsData.forEach(r => {
-      const productKey = (r.productName || '').trim();
-      if (productKey && !productMap.has(productKey)) {
-        productMap.set(productKey, {
-          name: productKey,
-          categoryName: r.categoryName || 'Uncategorized',
-          categoryOrder: r.categoryOrder || 999
-        });
+      if (r.productId && r.categoryName) {
+        const productKey = (r.productName || '').trim();
+        if (!productKey) return;
+        
+        // Store the category for this productId (first non-null category wins)
+        if (!productIdToCategory.has(r.productId)) {
+          productIdToCategory.set(r.productId, {
+            name: productKey,
+            categoryName: (r.categoryName || 'Uncategorized').trim(),
+            categoryOrder: r.categoryOrder || 999
+          });
+        }
       }
     });
     
-    // Debug: Log product map
-    console.log('🗺️ Product Map (first 5):', Array.from(productMap.entries()).slice(0, 5).map(([key, value]) => ({
+    // Second pass: For each unique product name, determine its category
+    // Strategy: If a product name appears with only one productId, use that productId's category
+    // If a product name appears with multiple productIds, we need to be careful
+    const productNameToProductIds = new Map<string, Set<number>>();
+    reportsData.forEach(r => {
+      const productKey = (r.productName || '').trim();
+      if (!productKey || !r.productId) return;
+      
+      if (!productNameToProductIds.has(productKey)) {
+        productNameToProductIds.set(productKey, new Set());
+      }
+      productNameToProductIds.get(productKey)!.add(r.productId);
+    });
+    
+    // Third pass: Build the productMap
+    // For each product name, use the category from its productId(s)
+    productNameToProductIds.forEach((productIds, productName) => {
+      // If this product name has only one productId, use that productId's category
+      if (productIds.size === 1) {
+        const productId = Array.from(productIds)[0];
+        if (productIdToCategory.has(productId)) {
+          const productInfo = productIdToCategory.get(productId)!;
+          productMap.set(productName, {
+            name: productName,
+            categoryName: productInfo.categoryName,
+            categoryOrder: productInfo.categoryOrder,
+            productId: productId
+          });
+        } else {
+          // Fallback: find category from reports with this productId
+          const report = reportsData.find(r => r.productId === productId && r.productName?.trim() === productName);
+          if (report) {
+            productMap.set(productName, {
+              name: productName,
+              categoryName: (report.categoryName || 'Uncategorized').trim(),
+              categoryOrder: report.categoryOrder || 999,
+              productId: productId
+            });
+          }
+        }
+      } else {
+        // Multiple productIds for same product name - this shouldn't happen, but handle it
+        // Use the category from the first productId that has a non-"Uncategorized" category
+        let bestCategory: { name: string; categoryName: string; categoryOrder: number; productId: number } | null = null;
+        
+        for (const productId of productIds) {
+          if (productIdToCategory.has(productId)) {
+            const productInfo = productIdToCategory.get(productId)!;
+            // Prefer non-"Uncategorized" categories
+            if (productInfo.categoryName !== 'Uncategorized') {
+              bestCategory = { ...productInfo, productId };
+              break;
+            } else if (!bestCategory) {
+              bestCategory = { ...productInfo, productId };
+            }
+          }
+        }
+        
+        if (bestCategory) {
+          productMap.set(productName, bestCategory);
+        } else {
+          // Last resort: use first report's category
+          const report = reportsData.find(r => r.productName?.trim() === productName);
+          if (report) {
+            productMap.set(productName, {
+              name: productName,
+              categoryName: (report.categoryName || 'Uncategorized').trim(),
+              categoryOrder: report.categoryOrder || 999,
+              productId: report.productId
+            });
+          }
+        }
+      }
+    });
+    
+    // Debug: Log product map with productId info
+    console.log('🗺️ Product Map (first 10):', Array.from(productMap.entries()).slice(0, 10).map(([key, value]) => ({
       product: key,
       category: value.categoryName,
-      order: value.categoryOrder
+      order: value.categoryOrder,
+      productId: value.productId
+    })));
+    console.log('🔍 Product name to IDs mapping:', Array.from(productNameToProductIds.entries()).slice(0, 5).map(([name, ids]) => ({
+      product: name,
+      productIds: Array.from(ids)
     })));
 
     // Get all unique products sorted by category order, then category name, then product name
