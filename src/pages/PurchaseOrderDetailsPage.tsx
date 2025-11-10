@@ -629,7 +629,7 @@ const PurchaseOrderDetailsPage: React.FC = () => {
           </div>
 
           {/* Additional Order Information */}
-          <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="mb-6 grid grid-cols-3 gap-4 hidden">
             <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
               <p className="text-[10px] font-semibold text-gray-600 mb-1">Created By:</p>
               <p className="text-xs font-medium text-gray-900">{purchaseOrder.created_by_user?.full_name || 'N/A'}</p>

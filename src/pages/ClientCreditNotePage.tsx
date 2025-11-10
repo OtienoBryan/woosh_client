@@ -197,7 +197,9 @@ const ClientCreditNotePage: React.FC = () => {
         credit_note_date: creditNoteDate,
         reason: reason || undefined,
         original_invoice_id: selectedInvoices[0].id, // Use first selected invoice as primary
-        items: selectedItems
+        items: selectedItems,
+        scenario_type: 'faulty_no_stock' as const, // Default to scenario 1
+        damage_store_id: null
       };
 
       const response = await creditNoteService.create(creditNoteData);

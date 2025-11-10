@@ -14,6 +14,7 @@ export interface Staff {
   gender?: string;
   business_email?: string;
   department_email?: string;
+  phone_number?: string;
   salary?: number | null;
   status: number;  // 1 for active, 0 for deactivated
   department?: string;
@@ -35,6 +36,7 @@ export interface CreateStaffData {
   gender?: string;
   business_email?: string;
   department_email?: string;
+  phone_number?: string;
   salary?: number | null;
   department?: string;
   department_id?: number;

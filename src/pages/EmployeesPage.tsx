@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import api from '../services/api';
 
 const initialForm = {
   name: '',
@@ -62,10 +63,8 @@ const EmployeesPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/staff');
-      if (!res.ok) throw new Error('Failed to fetch employees');
-      const data = await res.json();
-      setStaff(data);
+      const response = await api.get('/staff');
+      setStaff(response.data);
     } catch (err) {
       setError('Failed to fetch employees.');
     } finally {
@@ -75,10 +74,8 @@ const EmployeesPage: React.FC = () => {
 
   const fetchDepartments = async () => {
     try {
-      const res = await fetch('/api/departments');
-      if (!res.ok) throw new Error('Failed to fetch departments');
-      const data = await res.json();
-      setDepartments(data);
+      const response = await api.get('/departments');
+      setDepartments(response.data);
     } catch (err) {
       setDepartments([]);
     }
@@ -88,10 +85,8 @@ const EmployeesPage: React.FC = () => {
     setEditDocLoading(true);
     setEditDocError('');
     try {
-      const res = await fetch(`/api/staff/${id}/documents`);
-      if (!res.ok) throw new Error('Failed to fetch documents');
-      const data = await res.json();
-      setEditDocuments(data);
+      const response = await api.get(`/staff/${id}/documents`);
+      setEditDocuments(response.data);
     } catch (err) {
       setEditDocError('Failed to fetch documents.');
     } finally {
@@ -103,10 +98,8 @@ const EmployeesPage: React.FC = () => {
     setEditContractLoading(true);
     setEditContractError('');
     try {
-      const res = await fetch(`/api/staff/${id}/contracts`);
-      if (!res.ok) throw new Error('Failed to fetch contracts');
-      const data = await res.json();
-      setEditContracts(data);
+      const response = await api.get(`/staff/${id}/contracts`);
+      setEditContracts(response.data);
     } catch (err) {
       setEditContractError('Failed to fetch contracts.');
     } finally {
@@ -116,10 +109,8 @@ const EmployeesPage: React.FC = () => {
 
   const fetchExpiringContracts = async () => {
     try {
-      const res = await fetch('/api/staff/contracts/expiring');
-      if (!res.ok) throw new Error('Failed to fetch expiring contracts');
-      const data = await res.json();
-      setExpiringContracts(data);
+      const response = await api.get('/staff/contracts/expiring');
+      setExpiringContracts(response.data);
     } catch {}
   };
 
@@ -127,10 +118,8 @@ const EmployeesPage: React.FC = () => {
     setEditWarningLoading(true);
     setEditWarningError('');
     try {
-      const res = await fetch(`/api/staff/${id}/warnings`);
-      if (!res.ok) throw new Error('Failed to fetch warnings');
-      const data = await res.json();
-      setEditWarnings(data);
+      const response = await api.get(`/staff/${id}/warnings`);
+      setEditWarnings(response.data);
     } catch (err) {
       setEditWarningError('Failed to fetch warnings.');
     } finally {
@@ -144,12 +133,7 @@ const EmployeesPage: React.FC = () => {
     setEditWarningLoading(true);
     setEditWarningError('');
     try {
-      const res = await fetch(`/api/staff/${editFormId}/warnings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: newWarning }),
-      });
-      if (!res.ok) throw new Error('Failed to post warning');
+      await api.post(`/staff/${editFormId}/warnings`, { message: newWarning });
       setNewWarning('');
       fetchEditWarnings(editFormId);
     } catch (err) {
@@ -164,7 +148,7 @@ const EmployeesPage: React.FC = () => {
     setEditWarningLoading(true);
     setEditWarningError('');
     try {
-      await fetch(`/api/staff/warnings/${warningId}`, { method: 'DELETE' });
+      await api.delete(`/staff/warnings/${warningId}`);
       if (editFormId) fetchEditWarnings(editFormId);
     } catch (err) {
       setEditWarningError('Failed to delete warning.');
@@ -205,24 +189,19 @@ const EmployeesPage: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          photo_url: 'https://randomuser.me/api/portraits/lego/1.jpg',
-          empl_no: form.staffNumber,
-          id_no: form.staffNumber,
-          role: form.department,
-          phone_number: form.phoneNumber,
-          department: form.department,
-          business_email: form.businessEmail,
-          department_email: form.departmentEmail,
-          salary: form.salary,
-          employment_type: form.employmentType,
-        }),
+      await api.post('/staff', {
+        name: form.name,
+        photo_url: 'https://randomuser.me/api/portraits/lego/1.jpg',
+        empl_no: form.staffNumber,
+        id_no: form.staffNumber,
+        role: form.department,
+        phone_number: form.phoneNumber,
+        department: form.department,
+        business_email: form.businessEmail,
+        department_email: form.departmentEmail,
+        salary: form.salary,
+        employment_type: form.employmentType,
       });
-      if (!response.ok) throw new Error('Failed to add employee');
       closeModal();
       fetchStaff();
     } catch (err) {
@@ -269,24 +248,19 @@ const EmployeesPage: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch(`/api/staff/${editFormId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editForm.name,
-          photo_url: 'https://randomuser.me/api/portraits/lego/1.jpg',
-          empl_no: editForm.staffNumber,
-          id_no: editForm.staffNumber,
-          role: editForm.department,
-          phone_number: editForm.phoneNumber,
-          department: editForm.department,
-          business_email: editForm.businessEmail,
-          department_email: editForm.departmentEmail,
-          salary: editForm.salary,
-          employment_type: editForm.employmentType,
-        }),
+      await api.put(`/staff/${editFormId}`, {
+        name: editForm.name,
+        photo_url: 'https://randomuser.me/api/portraits/lego/1.jpg',
+        empl_no: editForm.staffNumber,
+        id_no: editForm.staffNumber,
+        role: editForm.department,
+        phone_number: editForm.phoneNumber,
+        department: editForm.department,
+        business_email: editForm.businessEmail,
+        department_email: editForm.departmentEmail,
+        salary: editForm.salary,
+        employment_type: editForm.employmentType,
       });
-      if (!response.ok) throw new Error('Failed to update employee');
       closeEditModal();
       fetchStaff();
     } catch (err) {
@@ -320,10 +294,7 @@ const EmployeesPage: React.FC = () => {
   const handleDeactivate = async (id: string) => {
     if (!window.confirm('Are you sure you want to deactivate this employee?')) return;
     try {
-      const response = await fetch(`/api/staff/${id}/deactivate`, {
-        method: 'PATCH',
-      });
-      if (!response.ok) throw new Error('Failed to deactivate employee');
+      await api.patch(`/staff/${id}/deactivate`);
       fetchStaff();
     } catch (err) {
       alert('Failed to deactivate employee.');
@@ -333,7 +304,7 @@ const EmployeesPage: React.FC = () => {
   const handleDeleteDocument = async (docId: number) => {
     if (!window.confirm('Are you sure you want to delete this document?')) return;
     try {
-      await fetch(`/api/staff/documents/${docId}`, { method: 'DELETE' });
+      await api.delete(`/staff/documents/${docId}`);
       if (editFormId) fetchEditDocuments(editFormId);
     } catch (err) {
       alert('Failed to delete document.');
@@ -348,11 +319,9 @@ const EmployeesPage: React.FC = () => {
     setEditContractError('');
     const formData = new FormData(e.currentTarget);
     try {
-      const res = await fetch(`/api/staff/${editFormId}/contracts`, {
-        method: 'POST',
-        body: formData,
+      await api.post(`/staff/${editFormId}/contracts`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (!res.ok) throw new Error('Failed to upload contract');
       fetchEditContracts(editFormId);
       e.currentTarget.reset();
       setContractRenewData(null);
@@ -381,11 +350,9 @@ const EmployeesPage: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     formData.append('renewed_from', contractRenewData.renewed_from);
     try {
-      const res = await fetch(`/api/staff/contracts/${contractRenewData.renewed_from}/renew`, {
-        method: 'POST',
-        body: formData,
+      await api.post(`/staff/contracts/${contractRenewData.renewed_from}/renew`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (!res.ok) throw new Error('Failed to renew contract');
       fetchEditContracts(editFormId);
       setContractRenewData(null);
       setEditContractError('');

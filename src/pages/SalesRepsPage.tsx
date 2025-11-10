@@ -90,149 +90,157 @@ const SalesRepModal: React.FC<SalesRepModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-5 w-full max-w-md">
-        <h2 className="text-lg font-bold mb-3">
-          {salesRep ? 'Edit Sales Rep' : 'Add New Sales Rep'}
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Name *</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Email *</label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Phone Number *</label>
-              <input
-                type="number"
-                required
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Country</label>
-              <select
-                value={formData.country}
-                onChange={e => setFormData({ ...formData, country: e.target.value, region: '' })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select country</option>
-                {countries.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Region</label>
-              <select
-                value={formData.region}
-                onChange={e => setFormData({ ...formData, region: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!formData.country}
-              >
-                <option value="">{formData.country ? 'Select region' : 'Select country first'}</option>
-                {regions.map(r => (
-                  <option key={r.id} value={r.name}>{r.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Route</label>
-              <select
-                value={formData.route_name_update}
-                onChange={e => setFormData({ ...formData, route_name_update: e.target.value })}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select route</option>
-                {routes.map(r => (
-                  <option key={r.id} value={r.name}>{r.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Photo</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setUploading(true);
-                  setUploadError(null);
-                  const formData = new FormData();
-                  formData.append('photo', file);
-                  try {
-                    const res = await fetch('/api/sales/sales-reps/upload-photo', {
-                      method: 'POST',
-                      body: formData,
-                    });
-                    const data = await res.json();
-                    if (data.url) {
-                      setFormData((prev) => ({ ...prev, photoUrl: data.url }));
-                    } else {
-                      setUploadError(data.error || 'Upload failed');
-                    }
-                  } catch (err: any) {
-                    setUploadError(err.message || 'Upload failed');
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-gray-900">
+            {salesRep ? 'Edit Sales Rep' : 'Add New Sales Rep'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Name *</label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Email *</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Phone Number *</label>
+            <input
+              type="tel"
+              required
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Country</label>
+            <select
+              value={formData.country}
+              onChange={e => setFormData({ ...formData, country: e.target.value, region: '' })}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select country</option>
+              {countries.map(c => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Region</label>
+            <select
+              value={formData.region}
+              onChange={e => setFormData({ ...formData, region: e.target.value })}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={!formData.country}
+            >
+              <option value="">{formData.country ? 'Select region' : 'Select country first'}</option>
+              {regions.map(r => (
+                <option key={r.id} value={r.name}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Route</label>
+            <select
+              value={formData.route_name_update}
+              onChange={e => setFormData({ ...formData, route_name_update: e.target.value })}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select route</option>
+              {routes.map(r => (
+                <option key={r.id} value={r.name}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploading(true);
+                setUploadError(null);
+                const formData = new FormData();
+                formData.append('photo', file);
+                try {
+                  const res = await fetch('/api/sales/sales-reps/upload-photo', {
+                    method: 'POST',
+                    body: formData,
+                  });
+                  const data = await res.json();
+                  if (data.url) {
+                    setFormData((prev) => ({ ...prev, photoUrl: data.url }));
+                  } else {
+                    setUploadError(data.error || 'Upload failed');
                   }
-                  setUploading(false);
-                }}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {uploading && <div className="text-blue-600 text-xs mt-1">Uploading...</div>}
-              {uploadError && <div className="text-red-600 text-xs mt-1">{uploadError}</div>}
-              {formData.photoUrl && (
-                <div className="mt-2">
-                  <img src={formData.photoUrl} alt="Preview" className="h-16 w-16 rounded-full object-cover border" />
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700">Status</label>
-              <div className="flex items-center mt-1">
-                <input
-                  type="checkbox"
-                  checked={formData.status === 1}
-                  onChange={e => setFormData({ ...formData, status: e.target.checked ? 1 : 0 })}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  id="status-toggle"
-                />
-                <label htmlFor="status-toggle" className="ml-2 text-xs">
-                  {formData.status === 1 ? 'Active' : 'Inactive'}
-                </label>
+                } catch (err: any) {
+                  setUploadError(err.message || 'Upload failed');
+                }
+                setUploading(false);
+              }}
+              className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {uploading && <div className="text-blue-600 text-[10px] mt-1">Uploading...</div>}
+            {uploadError && <div className="text-red-600 text-[10px] mt-1">{uploadError}</div>}
+            {formData.photoUrl && (
+              <div className="mt-2">
+                <img src={formData.photoUrl} alt="Preview" className="h-12 w-12 rounded-full object-cover border" />
               </div>
+            )}
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-700 mb-1.5">Status</label>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.status === 1}
+                onChange={e => setFormData({ ...formData, status: e.target.checked ? 1 : 0 })}
+                className="h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                id="status-toggle"
+              />
+              <label htmlFor="status-toggle" className="ml-2 text-[10px]">
+                {formData.status === 1 ? 'Active' : 'Inactive'}
+              </label>
             </div>
           </div>
-          <div className="flex justify-end space-x-3 mt-5">
+          <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50"
+              className="px-2.5 py-1 border border-gray-300 rounded-lg text-[10px] text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 disabled:opacity-50"
+              className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {loading ? 'Saving...' : (salesRep ? 'Update' : 'Create')}
             </button>
@@ -306,26 +314,41 @@ const AssignManagersModal: React.FC<{
 
   if (!isOpen || !salesRepId) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-        <h2 className="text-xl font-bold mb-4">Assign Managers</h2>
-        {loading ? <div>Loading...</div> : (
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-gray-900">Assign Managers</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-[10px] text-gray-600">Loading...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-2">
               {allManagers.map(manager => (
-                <div key={manager.id} className="flex items-center gap-4 border-b py-2">
+                <div key={manager.id} className="flex items-center gap-2 border-b border-gray-200 py-2">
                   <input
                     type="checkbox"
                     checked={isAssigned(manager.id)}
                     onChange={() => handleToggle(manager.id)}
-                    className="h-4 w-4"
+                    className="h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="flex-1">{manager.name} <span className="text-xs text-gray-500">({manager.email})</span></span>
+                  <span className="flex-1 text-[10px]">{manager.name} <span className="text-[10px] text-gray-500">({manager.email})</span></span>
                   {isAssigned(manager.id) && (
                     <select
                       value={getType(manager.id)}
                       onChange={e => handleTypeChange(manager.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
+                      className="border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:ring-blue-500 focus:border-blue-500"
                     >
                       {managerTypes.map(type => (
                         <option key={type} value={type}>{type}</option>
@@ -334,11 +357,11 @@ const AssignManagersModal: React.FC<{
                   )}
                 </div>
               ))}
-              {allManagers.length === 0 && <div className="text-gray-500">No managers available.</div>}
+              {allManagers.length === 0 && <div className="text-[10px] text-gray-500 text-center py-4">No managers available.</div>}
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+            <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 mt-4">
+              <button type="button" onClick={onClose} className="px-2.5 py-1 border border-gray-300 rounded-lg text-[10px] text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] hover:bg-blue-700 disabled:opacity-50 transition-colors">{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
         )}
@@ -626,278 +649,318 @@ const SalesRepsPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full py-6 px-4">
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          {selectedCountry === 'Kenya' && (
-            <>
-              <img src="/kenya_flag.jpeg" alt="Kenya Flag" className="h-6 w-auto inline-block align-middle rounded shadow" />
-              Kenya Sales Representatives
-            </>
-          )}
-          {selectedCountry === 'Tanzania' && (
-            <>
-              <img src="/tz_flag.jpeg" alt="Tanzania Flag" className="h-6 w-auto inline-block align-middle rounded shadow" />
-              Tanzania Sales Representatives
-            </>
-          )}
-          {selectedCountry !== 'Kenya' && selectedCountry !== 'Tanzania' && 'Sales Representatives'}
-        </h1>
-        <button
-          onClick={handleCreate}
-          className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs hover:bg-blue-700"
-        >
-          Add Sales Rep
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  {selectedCountry === 'Kenya' && (
+                    <>
+                      <img src="/kenya_flag.jpeg" alt="Kenya Flag" className="h-4 w-auto inline-block align-middle rounded shadow" />
+                      Kenya Sales Representatives
+                    </>
+                  )}
+                  {selectedCountry === 'Tanzania' && (
+                    <>
+                      <img src="/tz_flag.jpeg" alt="Tanzania Flag" className="h-4 w-auto inline-block align-middle rounded shadow" />
+                      Tanzania Sales Representatives
+                    </>
+                  )}
+                  {selectedCountry !== 'Kenya' && selectedCountry !== 'Tanzania' && 'Sales Representatives'}
+                </h1>
+                <p className="mt-1 text-[10px] text-gray-500">
+                  Manage and track sales representatives
+                </p>
+              </div>
+              <button
+                onClick={handleCreate}
+                className="inline-flex items-center px-2.5 py-1 text-[10px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Sales Rep
+              </button>
+            </div>
+          </div>
         </div>
-      )}
-
-      {/* 10. Add the filter button and the filter modal */}
-      <div className="mb-3 flex items-center gap-3 text-xs">
-        <Link
-          to="/overall-attendance"
-          className="bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded shadow hover:bg-blue-200"
-        >
-          Overall Attendance
-        </Link>
-        <Link
-          to="/sales-rep-working-days"
-          className="bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded shadow hover:bg-blue-200"
-        >
-          Sales Rep Working Days
-        </Link>
-        {/* <Link
-          to="/sales-rep-performance"
-          className="bg-purple-100 text-purple-700 font-semibold px-4 py-2 rounded shadow hover:bg-purple-200"
-        >
-          Sales Rep Performance
-        </Link> */}
-        {/* <Link
-          to="/shared-performance"
-          className="bg-pink-100 text-pink-700 font-semibold px-4 py-2 rounded shadow hover:bg-pink-200"
-        >
-          Sales Rep Performance
-        </Link> */}
-        {/* <Link
-          to="/managers-performance"
-          className="bg-green-100 text-green-700 font-semibold px-4 py-2 rounded shadow hover:bg-green-200"
-        >
-          Managers Performance
-        </Link> */}
-        <button
-          onClick={openFilterModal}
-          className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded shadow hover:bg-gray-200"
-        >
-          Filter
-        </button>
-        <button
-          onClick={exportToCSV}
-          className="bg-green-100 text-green-800 px-3 py-1.5 rounded hover:bg-green-200 border border-green-300"
-        >
-          Export to CSV
-        </button>
-        <label htmlFor="records-per-page" className="text-xs font-medium text-gray-700">Show:</label>
-        <select
-          id="records-per-page"
-          className="border border-gray-300 rounded px-2 py-1 text-xs"
-          value={repsPerPage}
-          onChange={e => setRepsPerPage(Number(e.target.value))}
-        >
-          {recordsPerPageOptions.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        <span className="text-xs text-gray-700">per page</span>
       </div>
 
-      {/* Country filter buttons at the top */}
-      <div className="mb-3 flex flex-wrap gap-2 text-xs">
-        <button
-          type="button"
-          className={`px-2.5 py-1 rounded-md border ${selectedCountry === '' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-          onClick={() => setSelectedCountry('')}
-        >
-          All Countries
-        </button>
-        {countries.map(c => (
-          <button
-            key={c.id}
-            type="button"
-            className={`px-2.5 py-1 rounded-md border ${selectedCountry === c.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-            onClick={() => setSelectedCountry(c.name)}
-          >
-            {c.name}
-          </button>
-        ))}
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading sales reps...</p>
-        </div>
-      ) : (
-        <div className="bg-white shadow overflow-x-auto w-full text-xs">
-          <table className="min-w-full w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Photo
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Phone Number
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden">
-                    Route
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200 text-xs">
-                {paginatedSalesReps.map((rep) => (
-                  <tr key={rep.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {rep.photoUrl ? (
-                        <img
-                          src={rep.photoUrl}
-                          alt={rep.name}
-                          className="h-8 w-8 rounded-full object-cover cursor-pointer"
-                          onClick={() => setExpandedPhotoUrl(rep.photoUrl!)}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/40x40?text=' + rep.name.charAt(0);
-                          }}
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-[11px] font-medium text-gray-700">
-                            {rep.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs font-medium text-gray-900">{rep.name}</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-gray-900">{rep.email}</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-gray-900">{rep.phoneNumber}</div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-gray-900">
-                        {rep.country && <span>{rep.country}</span>}
-                        {rep.country && rep.region && <span>, </span>}
-                        {rep.region && <span>{rep.region}</span>}
-                        {!rep.country && !rep.region && <span className="text-gray-400">Not specified</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap hidden">
-                      <div className="text-xs text-gray-900">
-                        {rep.route_name_update || <span className="text-gray-400">Not specified</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-gray-900">
-                        {rep.status === 1 ? (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                        ) : rep.status === 0 ? (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
-                        ) : (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Unknown</span>
-                        )}
-                        <span className="text-xs text-gray-400 ml-1">({rep.status ?? 'undefined'})</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
-                      <div className="flex flex-wrap gap-2">
-                        {/* <Link
-                          to={`/sales-reps/${rep.id}`}
-                          className="bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-indigo-200 transition"
-                        >
-                          View Details
-                        </Link> */}
-                        <button
-                          onClick={() => handleSetTargets(rep)}
-                          className="bg-purple-100 text-purple-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-purple-200 transition"
-                        >
-                          Set Targets
-                        </button>
-                        <button
-                          onClick={() => handleEdit(rep)}
-                          className="bg-blue-100 text-blue-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-blue-200 transition"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(rep.id)}
-                          className="bg-red-100 text-red-700 font-semibold px-2.5 py-1 rounded text-[11px] hover:bg-red-200 transition"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedSalesReps.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                      No sales representatives found for this country.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-4 text-[10px]">
+            {error}
           </div>
         )}
 
-      {/* 11. Add pagination controls below the table */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 my-4">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 rounded border bg-gray-100 text-gray-700 disabled:opacity-50"
+        {/* Quick Actions */}
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <Link
+            to="/overall-attendance"
+            className="inline-flex items-center px-2.5 py-1 text-[10px] bg-blue-100 text-blue-700 font-medium rounded-lg shadow hover:bg-blue-200 transition-colors"
           >
-            Previous
+            Overall Attendance
+          </Link>
+          <Link
+            to="/sales-rep-working-days"
+            className="inline-flex items-center px-2.5 py-1 text-[10px] bg-blue-100 text-blue-700 font-medium rounded-lg shadow hover:bg-blue-200 transition-colors"
+          >
+            Sales Rep Working Days
+          </Link>
+          <button
+            onClick={openFilterModal}
+            className="inline-flex items-center px-2.5 py-1 text-[10px] bg-gray-100 text-gray-800 font-medium rounded-lg shadow hover:bg-gray-200 transition-colors"
+          >
+            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 rounded border ${page === currentPage ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+          <button
+            onClick={exportToCSV}
+            className="inline-flex items-center px-2.5 py-1 text-[10px] bg-green-100 text-green-800 font-medium rounded-lg hover:bg-green-200 border border-green-300 transition-colors"
+          >
+            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+          </button>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <label htmlFor="records-per-page" className="text-[10px] font-medium text-gray-700">Show:</label>
+            <select
+              id="records-per-page"
+              className="border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:ring-blue-500 focus:border-blue-500"
+              value={repsPerPage}
+              onChange={e => setRepsPerPage(Number(e.target.value))}
             >
-              {page}
+              {recordsPerPageOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Country filter buttons */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={`px-2 py-1 rounded-lg border text-[10px] font-medium transition-colors ${
+              selectedCountry === '' 
+                ? 'bg-blue-600 text-white border-blue-600' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+            }`}
+            onClick={() => setSelectedCountry('')}
+          >
+            All Countries
+          </button>
+          {countries.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              className={`px-2 py-1 rounded-lg border text-[10px] font-medium transition-colors ${
+                selectedCountry === c.name 
+                  ? 'bg-blue-600 text-white border-blue-600' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+              }`}
+              onClick={() => setSelectedCountry(c.name)}
+            >
+              {c.name}
             </button>
           ))}
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded border bg-gray-100 text-gray-700 disabled:opacity-50"
-          >
-            Next
-          </button>
         </div>
-      )}
+
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-[10px] text-gray-600">Loading sales reps...</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Photo
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Phone Number
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden">
+                      Route
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedSalesReps.map((rep) => (
+                    <tr key={rep.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {rep.photoUrl ? (
+                          <img
+                            src={rep.photoUrl}
+                            alt={rep.name}
+                            className="h-6 w-6 rounded-full object-cover cursor-pointer"
+                            onClick={() => setExpandedPhotoUrl(rep.photoUrl!)}
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/40x40?text=' + rep.name.charAt(0);
+                            }}
+                          />
+                        ) : (
+                          <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span className="text-[10px] font-medium text-gray-700">
+                              {rep.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-[10px] font-medium text-gray-900">{rep.name}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-[10px] text-gray-900">{rep.email}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-[10px] text-gray-900">{rep.phoneNumber || '-'}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-[10px] text-gray-900">
+                          {rep.country && <span>{rep.country}</span>}
+                          {rep.country && rep.region && <span>, </span>}
+                          {rep.region && <span>{rep.region}</span>}
+                          {!rep.country && !rep.region && <span className="text-gray-400">Not specified</span>}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap hidden">
+                        <div className="text-[10px] text-gray-900">
+                          {rep.route_name_update || <span className="text-gray-400">Not specified</span>}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {rep.status === 1 ? (
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-green-100 text-green-800 border border-green-200">Active</span>
+                        ) : rep.status === 0 ? (
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">Inactive</span>
+                        ) : (
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-gray-100 text-gray-800 border border-gray-200">Unknown</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => handleSetTargets(rep)}
+                            className="px-2 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                          >
+                            Targets
+                          </button>
+                          <button
+                            onClick={() => handleEdit(rep)}
+                            className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(rep.id)}
+                            className="px-2 py-0.5 text-[10px] font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {paginatedSalesReps.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-8 text-center">
+                        <div className="text-[10px] text-gray-500">No sales representatives found.</div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="bg-white rounded-lg shadow border border-gray-200 mt-4">
+            <div className="px-4 py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="text-[10px] text-gray-700">
+                  Showing {((currentPage - 1) * repsPerPage) + 1} to {Math.min(currentPage * repsPerPage, filteredSalesReps.length)} of {filteredSalesReps.length} results
+                  {totalPages > 1 && (
+                    <span className="ml-2 text-gray-500">
+                      (Page {currentPage} of {totalPages})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-2 py-1 text-[10px] font-medium rounded-lg transition-colors ${
+                            pageNum === currentPage 
+                              ? 'bg-blue-600 text-white' 
+                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <SalesRepModal
         isOpen={modalOpen}
@@ -924,114 +987,132 @@ const SalesRepsPage: React.FC = () => {
         loading={targetsLoading}
       />
 
-      {/* 12. Add the modal JSX at the end of the component */}
-      {filterModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Filter Sales Reps</h2>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="status-filter" className="text-sm font-medium text-gray-700">Status:</label>
-                <select
-                  id="status-filter"
-                  value={pendingStatus}
-                  onChange={e => setPendingStatus(e.target.value as '1' | '0' | '')}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {/* Filter Modal */}
+        {filterModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-sm font-bold text-gray-900">Filter Sales Reps</h2>
+                <button
+                  onClick={() => setFilterModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <option value="1">Active</option>
-                  <option value="0">Inactive</option>
-                  <option value="">All</option>
-                </select>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div>
-                <label htmlFor="country-filter" className="text-sm font-medium text-gray-700">Country:</label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  <button
-                    type="button"
-                    className={`px-3 py-1 rounded-md border text-sm ${pendingCountry === '' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-                    onClick={() => {
-                      setPendingCountry('');
-                      setPendingRegion(''); // Reset region when selecting all countries
-                    }}
+              <div className="px-4 py-4 space-y-4">
+                <div>
+                  <label htmlFor="status-filter" className="block text-[10px] font-medium text-gray-700 mb-1.5">Status:</label>
+                  <select
+                    id="status-filter"
+                    value={pendingStatus}
+                    onChange={e => setPendingStatus(e.target.value as '1' | '0' | '')}
+                    className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    All Countries
-                  </button>
-                  {countries.map(c => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`px-3 py-1 rounded-md border text-sm ${pendingCountry === c.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-                    onClick={() => {
-                      setPendingCountry(c.name);
-                      setPendingRegion(''); // Reset region when country changes
-                    }}
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="country-filter" className="block text-[10px] font-medium text-gray-700 mb-1.5">Country:</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded-lg border text-[10px] font-medium transition-colors ${
+                        pendingCountry === '' 
+                          ? 'bg-blue-600 text-white border-blue-600' 
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                      }`}
+                      onClick={() => {
+                        setPendingCountry('');
+                        setPendingRegion('');
+                      }}
+                    >
+                      All Countries
+                    </button>
+                    {countries.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`px-2 py-1 rounded-lg border text-[10px] font-medium transition-colors ${
+                          pendingCountry === c.name 
+                            ? 'bg-blue-600 text-white border-blue-600' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        }`}
+                        onClick={() => {
+                          setPendingCountry(c.name);
+                          setPendingRegion('');
+                        }}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="region-filter" className="block text-[10px] font-medium text-gray-700 mb-1.5">Region:</label>
+                  <select
+                    id="region-filter"
+                    value={pendingRegion}
+                    onChange={e => setPendingRegion(e.target.value)}
+                    className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    disabled={!pendingCountry}
                   >
-                    {c.name}
-                  </button>
-                  ))}
+                    <option value="">All Regions</option>
+                    {regions.map(r => (
+                      <option key={r.id} value={r.name}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="route-filter" className="block text-[10px] font-medium text-gray-700 mb-1.5">Route:</label>
+                  <select
+                    id="route-filter"
+                    value={pendingRoute}
+                    onChange={e => setPendingRoute(e.target.value)}
+                    className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Routes</option>
+                    {routes.map(r => (
+                      <option key={r.id} value={r.name}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="manager-filter" className="block text-[10px] font-medium text-gray-700 mb-1.5">Manager:</label>
+                  <select
+                    id="manager-filter"
+                    value={pendingManager}
+                    onChange={e => setPendingManager(e.target.value)}
+                    className="block w-full border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Managers</option>
+                    {managers.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              <div>
-                <label htmlFor="region-filter" className="text-sm font-medium text-gray-700">Region:</label>
-                <select
-                  id="region-filter"
-                  value={pendingRegion}
-                  onChange={e => setPendingRegion(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!pendingCountry}
+              <div className="flex justify-end space-x-2 px-4 py-3 border-t border-gray-200">
+                <button
+                  onClick={clearFilters}
+                  className="px-2.5 py-1 border border-gray-300 rounded-lg text-[10px] text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <option value="">All Regions</option>
-                  {regions.map(r => (
-                    <option key={r.id} value={r.name}>{r.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="route-filter" className="text-sm font-medium text-gray-700">Route:</label>
-                <select
-                  id="route-filter"
-                  value={pendingRoute}
-                  onChange={e => setPendingRoute(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  Clear
+                </button>
+                <button
+                  onClick={applyFilters}
+                  className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] hover:bg-blue-700 transition-colors"
                 >
-                  <option value="">All Routes</option>
-                  {routes.map(r => (
-                    <option key={r.id} value={r.name}>{r.name}</option>
-                  ))}
-                </select>
+                  Apply
+                </button>
               </div>
-              <div>
-                <label htmlFor="manager-filter" className="text-sm font-medium text-gray-700">Manager:</label>
-                <select
-                  id="manager-filter"
-                  value={pendingManager}
-                  onChange={e => setPendingManager(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Managers</option>
-                  {managers.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Clear
-              </button>
-              <button
-                onClick={applyFilters}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Apply
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Expanded Photo Modal */}
       {expandedPhotoUrl && (

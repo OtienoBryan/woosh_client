@@ -59,6 +59,7 @@ const StaffList: React.FC = () => {
     gender: '',
     business_email: '',
     department_email: '',
+    phone_number: '',
     salary: null,
     department: '',
     department_id: undefined,
@@ -270,6 +271,7 @@ const StaffList: React.FC = () => {
         gender: '',
         business_email: '',
         department_email: '',
+        phone_number: '',
         salary: null,
         department: '',
         department_id: undefined,
@@ -327,6 +329,7 @@ const StaffList: React.FC = () => {
       gender: staff.gender || '',
       business_email: staff.business_email || '',
       department_email: staff.department_email || '',
+      phone_number: staff.phone_number || '',
       salary: staff.salary || null,
       department: staff.department || '',
       department_id: staff.department_id,
@@ -886,6 +889,9 @@ const StaffList: React.FC = () => {
                         ID Number
                       </th>
                       <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                       <th scope="col" className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
@@ -954,6 +960,11 @@ const StaffList: React.FC = () => {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <div className="text-[10px] text-gray-900 font-mono">{member.id_no}</div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900">
+                            {member.phone_number || <span className="text-gray-500">-</span>}
+                          </div>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadgeColor(member.status)}`}>
@@ -1242,6 +1253,7 @@ const StaffList: React.FC = () => {
                     gender: '',
                     business_email: '',
                     department_email: '',
+                    phone_number: '',
                     salary: null,
                     department: '',
                     department_id: undefined,
@@ -1487,6 +1499,22 @@ const StaffList: React.FC = () => {
                       />
                     </div>
 
+                    {/* Phone Number */}
+                    <div>
+                      <label htmlFor="phone_number" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone_number"
+                        id="phone_number"
+                        value={newStaff.phone_number || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="+254 700 000 000"
+                      />
+                    </div>
+
                     {/* Salary */}
                     <div>
                       <label htmlFor="salary" className="block text-[10px] font-medium text-gray-700 mb-2">
@@ -1527,6 +1555,7 @@ const StaffList: React.FC = () => {
                       gender: '',
                       business_email: '',
                       department_email: '',
+                      phone_number: '',
                       salary: null,
                       department: '',
                       department_id: undefined,

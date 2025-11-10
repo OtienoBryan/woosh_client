@@ -32,6 +32,8 @@ export interface CreateCreditNoteForm {
   original_invoice_ids?: number[]; // Support multiple invoices
   original_invoice_id?: number; // Keep for backward compatibility
   items: CreditNoteItem[];
+  scenario_type?: 'faulty_no_stock' | 'faulty_with_stock'; // Scenario type
+  damage_store_id?: number | null; // Store ID for scenario 2 (required for faulty_with_stock)
 }
 
 export interface CreditNote {
@@ -44,6 +46,9 @@ export interface CreditNote {
   original_invoice_id?: number;
   original_invoice_number?: string;
   reason?: string;
+  scenario_type?: 'faulty_no_stock' | 'faulty_with_stock';
+  damage_store_id?: number | null;
+  damage_store_name?: string;
   subtotal: number;
   tax_amount: number;
   total_amount: number;

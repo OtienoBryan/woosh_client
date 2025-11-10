@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FiPlus, FiSearch, FiFilter, FiEdit2, FiTrash2, FiEye, FiAlertTriangle, FiUser, FiCalendar, FiDownload } from 'react-icons/fi';
+import api from '../services/api';
 
 interface Warning {
   id: number;
@@ -62,15 +63,14 @@ const EmployeeWarningsPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/staff');
-      if (!res.ok) throw new Error('Failed to fetch staff');
-      const staffList = await res.json();
+      const staffResponse = await api.get('/staff');
+      const staffList = staffResponse.data;
       let allWarnings: Warning[] = [];
       
       for (const emp of staffList) {
-        const wRes = await fetch(`/api/staff/${emp.id}/warnings`);
-        if (wRes.ok) {
-          const wData = await wRes.json();
+        try {
+          const wResponse = await api.get(`/staff/${emp.id}/warnings`);
+          const wData = wResponse.data;
           allWarnings = allWarnings.concat(wData.map((w: any) => ({ 
             ...w, 
             staff_name: emp.name,
@@ -78,6 +78,8 @@ const EmployeeWarningsPage: React.FC = () => {
             status: w.status || 'active',
             issued_by: w.issued_by || 'System'
           })));
+        } catch (err) {
+          // Skip if warnings fetch fails for this employee
         }
       }
       
@@ -92,10 +94,8 @@ const EmployeeWarningsPage: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const res = await fetch('/api/staff');
-      if (!res.ok) throw new Error('Failed to fetch staff');
-      const data = await res.json();
-      setStaff(data);
+      const response = await api.get('/staff');
+      setStaff(response.data);
     } catch {
       setStaff([]);
     }

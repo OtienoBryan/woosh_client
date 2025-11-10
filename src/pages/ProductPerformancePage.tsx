@@ -46,14 +46,14 @@ const StatsCard: React.FC<{
   };
 
   return (
-    <div className={`${colorClasses[color]} rounded-xl shadow-lg p-6 transition-all duration-200 hover:shadow-xl`}>
+    <div className={`${colorClasses[color]} rounded-xl shadow-lg p-4 transition-all duration-200 hover:shadow-xl`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium opacity-90">{title}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
+          <p className="text-xs font-medium opacity-90">{title}</p>
+          <p className="text-xl font-bold mt-1">{value}</p>
           {subtitle && <p className="text-xs opacity-75 mt-1">{subtitle}</p>}
         </div>
-        <div className="bg-white bg-opacity-20 rounded-lg p-3">
+        <div className="bg-white bg-opacity-20 rounded-lg p-2">
           {icon}
         </div>
       </div>
@@ -411,8 +411,8 @@ const ProductPerformancePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading product performance data...</p>
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-sm">Loading product performance data...</p>
         </div>
       </div>
     );
@@ -422,13 +422,13 @@ const ProductPerformancePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-8 h-8 text-red-500" />
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-5 h-5 text-red-500" />
           </div>
-          <p className="text-red-600 text-lg font-medium">{error}</p>
+          <p className="text-red-600 text-sm font-medium">{error}</p>
           <button
             onClick={() => fetchData(startDate, endDate, productType, country, region)}
-            className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+            className="mt-4 px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
           >
             Try Again
           </button>
@@ -444,23 +444,23 @@ const ProductPerformancePage: React.FC = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-              <h1 className="text-3xl font-bold text-gray-900">Product Performance</h1>
-              <p className="text-gray-600 mt-2">Analyze product sales performance and identify top performers</p>
+              <h1 className="text-2xl font-bold text-gray-900">Product Performance</h1>
+              <p className="text-gray-600 text-sm mt-2">Analyze product sales performance and identify top performers</p>
         </div>
             <div className="flex items-center gap-3">
           <button
                 onClick={exportToCSV}
                 disabled={processedProducts.length === 0}
-                className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
                 Export CSV
           </button>
           <Link
             to="/dashboard/reports/product-performance-graph"
-                className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+                className="px-3 py-1.5 text-sm bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
           >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="w-3.5 h-3.5" />
             View Graph
           </Link>
         </div>
@@ -473,28 +473,28 @@ const ProductPerformancePage: React.FC = () => {
           <StatsCard
             title="Total Products"
             value={stats.totalProducts}
-            icon={<Package className="w-6 h-6" />}
+            icon={<Package className="w-5 h-5" />}
             color="blue"
             subtitle={`${products.length} total in database`}
           />
           <StatsCard
             title="Total Quantity Sold"
             value={stats.totalQuantity.toLocaleString()}
-            icon={<Target className="w-6 h-6" />}
+            icon={<Target className="w-5 h-5" />}
             color="green"
             subtitle="Units sold"
           />
           <StatsCard
             title="Total Sales Value"
             value={stats.totalSalesValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
-            icon={<DollarSign className="w-6 h-6" />}
+            icon={<DollarSign className="w-5 h-5" />}
             color="purple"
             subtitle="Revenue generated"
           />
           <StatsCard
             title="Average Sales Value"
             value={stats.avgSalesValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
-            icon={<TrendingUp className="w-6 h-6" />}
+            icon={<TrendingUp className="w-5 h-5" />}
             color="orange"
             subtitle="Per product"
           />
@@ -505,12 +505,12 @@ const ProductPerformancePage: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={handleModalOpen}
-              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+              className="px-3 py-1.5 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
             >
-              <Filter className="w-4 h-4" />
+              <Filter className="w-3.5 h-3.5" />
               Filter
               {hasActiveFilters && (
-                <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 ml-1">
+                <span className="bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
                   {[
                     startDate !== defaultStartDate ? 'startDate' : null,
                     endDate !== defaultEndDate ? 'endDate' : null,
@@ -527,9 +527,9 @@ const ProductPerformancePage: React.FC = () => {
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
+                className="text-blue-600 hover:text-blue-800 font-medium text-xs flex items-center gap-1"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
                 Clear All
               </button>
             )}
@@ -540,14 +540,14 @@ const ProductPerformancePage: React.FC = () => {
         <div className="mb-6">
           <div className="relative max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="w-5 h-5 text-gray-400" />
+              <Search className="w-4 h-4 text-gray-400" />
             </div>
             <input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="block w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>
@@ -555,49 +555,49 @@ const ProductPerformancePage: React.FC = () => {
         {/* Filter Modal */}
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+            <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
               <button
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl"
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
                 onClick={handleModalClose}
                 aria-label="Close"
               >
                 &times;
               </button>
-              <h2 className="text-lg font-semibold mb-4">Filter Product Performance</h2>
+              <h2 className="text-base font-semibold mb-4">Filter Product Performance</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Calendar className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Calendar className="w-3.5 h-3.5 inline mr-1" />
                     Start Date
                   </label>
                   <input
                     type="date"
                     value={tempStartDate}
                     onChange={e => setTempStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Calendar className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Calendar className="w-3.5 h-3.5 inline mr-1" />
                     End Date
                   </label>
                   <input
                     type="date"
                     value={tempEndDate}
                     onChange={e => setTempEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Tag className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Tag className="w-3.5 h-3.5 inline mr-1" />
                     Product Type
                   </label>
                   <select
                     value={tempProductType}
                     onChange={e => setTempProductType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   >
                     <option value="">All Types</option>
                     <option value="vape">Vapes</option>
@@ -605,14 +605,14 @@ const ProductPerformancePage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <MapPin className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <MapPin className="w-3.5 h-3.5 inline mr-1" />
                     Country
                   </label>
                   <select
                     value={tempCountry}
                     onChange={e => setTempCountry(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   >
                     <option value="">All Countries</option>
                     {countries.map((c: string) => (
@@ -621,14 +621,14 @@ const ProductPerformancePage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <MapPin className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <MapPin className="w-3.5 h-3.5 inline mr-1" />
                     Region
                   </label>
                   <select
                     value={tempRegion}
                     onChange={e => setTempRegion(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   >
                     <option value="">All Regions</option>
                     {regions.map((r: string) => (
@@ -637,14 +637,14 @@ const ProductPerformancePage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <User className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <User className="w-3.5 h-3.5 inline mr-1" />
                     Sales Rep
                   </label>
                   <select
                     value={tempSalesRep}
                     onChange={e => setTempSalesRep(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   >
                     <option value="">All Sales Reps</option>
                     {salesReps.map((rep) => (
@@ -653,8 +653,8 @@ const ProductPerformancePage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <User className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <User className="w-3.5 h-3.5 inline mr-1" />
                     Client
                   </label>
                   <div className="relative client-dropdown-container">
@@ -669,15 +669,15 @@ const ProductPerformancePage: React.FC = () => {
                         }
                       }}
                       onFocus={() => setIsClientDropdownOpen(true)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 pr-8"
+                      className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 pr-8"
                     />
-                    <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Search className="absolute right-2 top-2 h-3.5 w-3.5 text-gray-400" />
                     
                     {/* Dropdown List */}
                     {isClientDropdownOpen && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         <div
-                          className="px-3 py-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50"
+                          className="px-2.5 py-1.5 text-xs text-gray-500 cursor-pointer hover:bg-gray-50"
                           onClick={() => {
                             setTempClient('');
                             setTempClientSearchQuery('');
@@ -689,7 +689,7 @@ const ProductPerformancePage: React.FC = () => {
                         {filteredClientsForModal.map((clientItem) => (
                           <div
                             key={clientItem.id}
-                            className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                            className="px-2.5 py-1.5 text-xs cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                             onClick={() => {
                               setTempClient(clientItem.id.toString());
                               setTempClientSearchQuery(clientItem.name);
@@ -700,7 +700,7 @@ const ProductPerformancePage: React.FC = () => {
                           </div>
                         ))}
                         {filteredClientsForModal.length === 0 && tempClientSearchQuery && (
-                          <div className="px-3 py-2 text-sm text-gray-500">
+                          <div className="px-2.5 py-1.5 text-xs text-gray-500">
                             No clients found matching "{tempClientSearchQuery}"
                           </div>
                         )}
@@ -709,14 +709,14 @@ const ProductPerformancePage: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Tag className="w-4 h-4 inline mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Tag className="w-3.5 h-3.5 inline mr-1" />
                     SKU (Category)
                   </label>
                   <select
                     value={tempSku}
                     onChange={e => setTempSku(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   >
                     <option value="">All SKUs</option>
                     {categories.map((category) => (
@@ -727,13 +727,13 @@ const ProductPerformancePage: React.FC = () => {
               </div>
               <div className="mt-6 flex justify-end gap-2">
                 <button
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                  className="bg-gray-200 text-gray-700 px-3 py-1.5 text-sm rounded hover:bg-gray-300"
                   onClick={handleClearFilters}
                 >
                   Clear All
                 </button>
                 <button
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded hover:bg-blue-700"
                   onClick={handleApplyFilters}
                 >
                   Apply Filters
@@ -745,18 +745,18 @@ const ProductPerformancePage: React.FC = () => {
 
         {/* Products Table */}
         {processedProducts.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 text-gray-400 mx-auto mb-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <div className="w-12 h-12 text-gray-400 mx-auto mb-4">
               <Package className="w-full h-full" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-500 mb-6">
+            <h3 className="text-base font-medium text-gray-900 mb-2">No products found</h3>
+            <p className="text-sm text-gray-500 mb-6">
               {searchQuery || hasActiveFilters ? 'Try adjusting your search or filters' : 'No product performance data available'}
             </p>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 Clear Filters
               </button>
@@ -769,40 +769,40 @@ const ProductPerformancePage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('product_name')}
                     >
                       <div className="flex items-center gap-2">
                       Product Name
                         {sortField === 'product_name' && (
-                          sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                          sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
                         )}
                       </div>
                     </th>
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Category
                     </th>
                     <th 
-                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('total_quantity_sold')}
                     >
                       <div className="flex items-center justify-end gap-2">
                       Quantity Sold
                         {sortField === 'total_quantity_sold' && (
-                          sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                          sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
                         )}
                       </div>
                     </th>
                     <th 
-                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => handleSort('total_sales_value')}
                     >
                       <div className="flex items-center justify-end gap-2">
                         Sales Value (KES)
                         {sortField === 'total_sales_value' && (
-                          sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                          sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
                         )}
                       </div>
                     </th>
@@ -814,19 +814,19 @@ const ProductPerformancePage: React.FC = () => {
                     
                     return (
                       <tr key={product.product_id} className={`hover:bg-gray-50 transition-colors duration-200 ${isTopPerformer ? 'bg-yellow-50' : ''}`}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-2.5 whitespace-nowrap">
                           <div className="flex items-center">
-                            {isTopPerformer && <Award className="w-4 h-4 text-yellow-500 mr-2" />}
-                            <div className="text-sm font-medium text-gray-900">{product.product_name}</div>
+                            {isTopPerformer && <Award className="w-3.5 h-3.5 text-yellow-500 mr-2" />}
+                            <div className="text-xs font-medium text-gray-900">{product.product_name}</div>
                           </div>
                       </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs text-gray-600">
                           {product.category_name || 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-semibold">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-right text-xs text-gray-900 font-semibold">
                         {product.total_quantity_sold.toLocaleString()}
                       </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-semibold">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-right text-xs text-gray-900 font-semibold">
                           {product.total_sales_value.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                       </td>
                     </tr>
@@ -835,16 +835,16 @@ const ProductPerformancePage: React.FC = () => {
                 </tbody>
                 <tfoot>
                   <tr className="bg-blue-50 font-semibold">
-                    <td className="px-6 py-4 text-left text-blue-900">
+                    <td className="px-4 py-2.5 text-left text-xs text-blue-900">
                       Total ({processedProducts.length} products)
                     </td>
-                    <td className="px-6 py-4 text-left text-blue-900">
+                    <td className="px-4 py-2.5 text-left text-xs text-blue-900">
                       -
                     </td>
-                    <td className="px-6 py-4 text-right text-blue-900">
+                    <td className="px-4 py-2.5 text-right text-xs text-blue-900">
                       {stats.totalQuantity.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-right text-blue-900">
+                    <td className="px-4 py-2.5 text-right text-xs text-blue-900">
                       {stats.totalSalesValue.toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                     </td>
                   </tr>

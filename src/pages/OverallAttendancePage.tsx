@@ -464,10 +464,10 @@ const OverallAttendancePage: React.FC = () => {
                   <Activity className="h-6 w-6 text-white" />
                 </div>
             <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  <h1 className="text-base font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                     Overall Attendance
                   </h1>
-                  <p className="mt-1 text-xs text-gray-600">
+                  <p className="mt-1 text-[10px] text-gray-600">
                     Comprehensive sales team performance and client visit tracking
                   </p>
                 </div>
@@ -476,16 +476,16 @@ const OverallAttendancePage: React.FC = () => {
             <div className="flex items-center space-x-3">
               <button
                 onClick={exportToCSV}
-                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-lg shadow-sm text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-3 w-3 mr-1.5" />
                 Export CSV
               </button>
               <button
                 onClick={openFilterModal}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center px-2.5 py-1 border border-transparent rounded-lg shadow-sm text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-3 w-3 mr-1.5" />
                 Filter
               </button>
             </div>
@@ -500,19 +500,19 @@ const OverallAttendancePage: React.FC = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
             </div>
-            <p className="mt-6 text-lg font-medium text-gray-700">Loading attendance data...</p>
-            <p className="mt-2 text-sm text-gray-500">Please wait while we fetch the latest information</p>
+            <p className="mt-6 text-xs font-medium text-gray-700">Loading attendance data...</p>
+            <p className="mt-2 text-[10px] text-gray-500">Please wait while we fetch the latest information</p>
           </div>
         ) : error ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100">
               <div className="text-red-600 text-2xl">⚠️</div>
             </div>
-            <h3 className="mt-6 text-lg font-medium text-red-900">Error Loading Data</h3>
-            <p className="mt-2 text-red-600 max-w-md mx-auto">{error}</p>
+            <h3 className="mt-6 text-xs font-medium text-red-900">Error Loading Data</h3>
+            <p className="mt-2 text-[10px] text-red-600 max-w-md mx-auto">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              className="mt-4 inline-flex items-center px-2.5 py-1 border border-transparent rounded-lg shadow-sm text-[10px] font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               Try Again
             </button>
@@ -597,10 +597,10 @@ const OverallAttendancePage: React.FC = () => {
               <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-sm font-semibold text-gray-900">
                       Daily Attendance Overview
                     </h3>
-                    <p className="mt-1 text-xs text-gray-600">
+                    <p className="mt-1 text-[10px] text-gray-600">
                       Showing {filteredRows.length} days of attendance data
                     </p>
                   </div>
@@ -621,8 +621,8 @@ const OverallAttendancePage: React.FC = () => {
                 {filteredRows.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">📊</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-                    <p className="text-gray-500">No attendance data found for the selected date range.</p>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">No Data Available</h3>
+                    <p className="text-[10px] text-gray-500">No attendance data found for the selected date range.</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -653,10 +653,10 @@ const OverallAttendancePage: React.FC = () => {
                           
                           return (
                             <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-6 py-3 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="ml-3">
-                                  <div className="text-xs font-medium text-gray-900">
+                                  <div className="text-[10px] font-medium text-gray-900">
                                       {formatDate(row.date)}
                                     </div>
                                  
@@ -673,7 +673,7 @@ const OverallAttendancePage: React.FC = () => {
                                     setClientsForDate(clientsForDate);
                                     setClientsModalOpen(true);
                                   }}
-                                className="text-xs font-semibold text-green-600 hover:text-green-800 transition-colors duration-150 cursor-pointer"
+                                className="text-[10px] font-semibold text-green-600 hover:text-green-800 transition-colors duration-150 cursor-pointer"
                                 >
                                   {row.clientsVisited.toLocaleString()} Visits
                                 </button> 
@@ -729,7 +729,7 @@ const OverallAttendancePage: React.FC = () => {
                                      setActiveSalesRepsForDate(repsForDate);
                                      setSalesRepsModalOpen(true);
                                    }}
-                                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors duration-150 cursor-pointer"
+                                  className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors duration-150 cursor-pointer"
                                  >
                                    {row.activeSalesReps.toLocaleString()} Reps
                                  </button>
@@ -791,173 +791,165 @@ const OverallAttendancePage: React.FC = () => {
          )}
        </div>
 
-               {/* Sales Reps Modal - Full Page */}
+               {/* Sales Reps Modal - Redesigned */}
         {salesRepsModalOpen && (
-          <div className="fixed inset-0 bg-white z-[9999] overflow-hidden">
-                         {/* Header */}
-             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-               <div className="flex items-center justify-between p-6">
-                 <div className="flex items-center space-x-3">
-                   <div className="bg-white bg-opacity-20 p-2 rounded-lg">
-                     <Users className="h-6 w-6 text-white" />
-                   </div>
-                   <div>
-                     <h1 className="text-2xl font-bold">
-                       Active Sales Representatives
-                     </h1>
-                     <p className="text-blue-100">
-                       {selectedDate && formatDate(selectedDate)}
-                     </p>
-                   </div>
-                 </div>
-                 <div className="flex items-center space-x-4">
-                   {/* Country Filter */}
-                   <div className="relative">
-                     <select
-                       value={modalCountryFilter}
-                       onChange={(e) => setModalCountryFilter(e.target.value)}
-                       className="bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200"
-                     >
-                       <option value="">All Countries</option>
-                       {countries.map((country) => (
-                         <option key={country.id} value={country.name} className="text-gray-900">
-                           {country.name}
-                         </option>
-                       ))}
-                     </select>
-                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                       <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                       </svg>
-                     </div>
-                   </div>
-                   <button
-                     onClick={() => setSalesRepsModalOpen(false)}
-                     className="text-white hover:text-blue-100 transition-colors duration-150 p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
-                   >
-                     <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                     </svg>
-                   </button>
-                 </div>
-               </div>
-             </div>
-
-                         {/* Content */}
-             <div className="h-full overflow-y-auto bg-gray-50">
-                              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                                   {/* Filtered sales reps based on country selection */}
-                  {filteredModalReps.length === 0 ? (
-                    <div className="text-center py-16">
-                      <div className="bg-white rounded-full p-8 w-32 h-32 mx-auto mb-6 flex items-center justify-center">
-                        <Users className="h-16 w-16 text-gray-400" />
-                      </div>
-                      <h3 className="text-xl font-medium text-gray-900 mb-2">
-                        {modalCountryFilter ? `No Sales Representatives from ${modalCountryFilter}` : 'No Sales Representatives'}
-                      </h3>
-                      <p className="text-gray-500">
-                        {modalCountryFilter ? `No sales representatives found for ${modalCountryFilter} on this date.` : 'No sales representatives found for this date.'}
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-white bg-opacity-20 p-1.5 rounded-lg">
+                      <Users className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold">Active Sales Representatives</h2>
+                      <p className="text-[10px] text-blue-100 mt-0.5">
+                        {selectedDate && formatDate(selectedDate)}
                       </p>
                     </div>
-                  ) : (
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Sales Representative
-                              </th>
-                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Country
-                              </th>
-                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Clients Visited
-                              </th>
-                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Session Start
-                              </th>
-                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Session End
-                              </th>
-                              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Time Spent
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredModalReps.map((rep, index) => (
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {/* Country Filter */}
+                    <div className="relative">
+                      <select
+                        value={modalCountryFilter}
+                        onChange={(e) => setModalCountryFilter(e.target.value)}
+                        className="bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded-lg px-2 py-1 pr-6 text-[10px] focus:outline-none focus:ring-1 focus:ring-white focus:ring-opacity-50"
+                      >
+                        <option value="">All Countries</option>
+                        {countries.map((country) => (
+                          <option key={country.id} value={country.name} className="text-gray-900">
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => setSalesRepsModalOpen(false)}
+                      className="text-white hover:text-blue-100 transition-colors p-1.5 rounded-lg hover:bg-white hover:bg-opacity-20"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+                {filteredModalReps.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="bg-white rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                      <Users className="h-12 w-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">
+                      {modalCountryFilter ? `No Sales Representatives from ${modalCountryFilter}` : 'No Sales Representatives'}
+                    </h3>
+                    <p className="text-[10px] text-gray-500">
+                      {modalCountryFilter ? `No sales representatives found for ${modalCountryFilter} on this date.` : 'No sales representatives found for this date.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Sales Representative
+                            </th>
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Country
+                            </th>
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Clients Visited
+                            </th>
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Session Start
+                            </th>
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Session End
+                            </th>
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Time Spent
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredModalReps.map((rep, index) => (
                             <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-3 py-2 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0">
-                                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-full">
-                                      <Users className="h-4 w-4 text-white" />
+                                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-1.5 rounded-full">
+                                      <Users className="h-3 w-3 text-white" />
                                     </div>
                                   </div>
-                                  <div className="ml-3">
-                                    <div className="text-sm font-medium text-gray-900">{rep.name}</div>
-                                    <div className="text-sm text-gray-500">{rep.email}</div>
+                                  <div className="ml-2">
+                                    <div className="text-[10px] font-medium text-gray-900">{rep.name}</div>
+                                    <div className="text-[10px] text-gray-500">{rep.email}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-blue-100 text-blue-800">
                                   {rep.country || 'N/A'}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-green-600">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className="text-[10px] font-semibold text-green-600">
                                   {rep.clientsVisited}
                                 </div>
-                                <div className="text-xs text-gray-500">visits</div>
+                                <div className="text-[10px] text-gray-500">visits</div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm text-gray-900">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className="text-[10px] text-gray-900">
                                   {rep.sessionStart ? new Date(rep.sessionStart).toLocaleTimeString('en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                   }) : 'N/A'}
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm text-gray-900">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className="text-[10px] text-gray-900">
                                   {rep.sessionEnd ? new Date(rep.sessionEnd).toLocaleTimeString('en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                   }) : 'Active'}
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="text-sm font-semibold text-blue-600">
+                              <td className="px-3 py-2 whitespace-nowrap text-center">
+                                <div className="text-[10px] font-semibold text-blue-600">
                                   {calculateTimeSpent(rep.sessionStart, rep.sessionEnd)}
                                 </div>
                               </td>
                             </tr>
                           ))}
-                                                  </tbody>
-                        </table>
-                      </div>
+                        </tbody>
+                      </table>
                     </div>
-                  )}
+                  </div>
+                )}
               </div>
-            </div>
 
-                         {/* Footer */}
-             <div className="bg-white border-t border-gray-200 px-6 py-4">
-               <div className="flex justify-between items-center">
-                                   <div className="text-sm text-gray-600">
+              {/* Footer */}
+              <div className="bg-white border-t border-gray-200 px-4 py-3 rounded-b-xl">
+                <div className="flex justify-between items-center">
+                  <div className="text-[10px] text-gray-600">
                     Showing {filteredModalReps.length} active sales representatives
                     {modalCountryFilter && ` from ${modalCountryFilter}`}
                   </div>
-                <button
-                  onClick={() => setSalesRepsModalOpen(false)}
-                  className="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-                >
-                  Close
-                </button>
-        </div>
-      </div>
+                  <button
+                    onClick={() => setSalesRepsModalOpen(false)}
+                    className="inline-flex items-center px-2.5 py-1 border border-transparent rounded-lg shadow-sm text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

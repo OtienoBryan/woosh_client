@@ -39,11 +39,18 @@ const JournalEntriesPage: React.FC = () => {
   const [accountId, setAccountId] = useState('');
   const [reference, setReference] = useState('');
   const [description, setDescription] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchAccounts();
     // Don't fetch entries on initial load - require account selection first
   }, []);
+
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+  }, [startDate, endDate, accountId, reference, description]);
 
   const fetchAccounts = async () => {
     try {
@@ -116,40 +123,56 @@ const JournalEntriesPage: React.FC = () => {
     });
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(entries.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEntries = entries.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-8l mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Journal Entries</h1>
+      <div className="max-w-8l mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-lg font-bold text-gray-900">Journal Entries</h1>
           <button
             onClick={fetchEntries}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
             Refresh
           </button>
         </div>
-        <form onSubmit={handleFilter} className="bg-white rounded-lg shadow p-6 mb-6 flex flex-col md:flex-row md:items-end md:space-x-6 space-y-4 md:space-y-0">
+        <form onSubmit={handleFilter} className="bg-white rounded-lg shadow p-3 mb-4 flex flex-col md:flex-row md:items-end md:space-x-3 space-y-3 md:space-y-0">
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <label className="text-xs font-medium text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <label className="text-xs font-medium text-gray-700 mb-1">End Date</label>
             <input
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Account</label>
+            <label className="text-xs font-medium text-gray-700 mb-1">Account</label>
             <select
               value={accountId}
               onChange={e => {
@@ -162,7 +185,7 @@ const JournalEntriesPage: React.FC = () => {
                   setError('Please select an account to view journal entries');
                 }
               }}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select an Account</option>
               {accounts.map(acc => (
@@ -171,95 +194,166 @@ const JournalEntriesPage: React.FC = () => {
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Reference</label>
+            <label className="text-xs font-medium text-gray-700 mb-1">Reference</label>
             <input
               type="text"
               value={reference}
               onChange={e => setReference(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Reference"
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="text-xs font-medium text-gray-700 mb-1">Description</label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Description"
             />
           </div>
           <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-end md:space-x-2">
             <button
               type="submit"
-              className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center px-2.5 py-1 border border-blue-600 rounded-md text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="w-3.5 h-3.5 mr-1.5" />
               Filter
             </button>
             <button
               type="button"
               onClick={handleClear}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              <Search className="w-4 h-4 mr-2" />
+              <Search className="w-3.5 h-3.5 mr-1.5" />
               Clear
             </button>
           </div>
         </form>
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
         ) : !accountId ? (
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-6 py-8 rounded-lg text-center">
-            <div className="text-lg font-medium mb-2">Select an Account</div>
-            <p className="text-sm">Please select an account from the dropdown above to view journal entries for that account.</p>
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-6 rounded-lg text-center">
+            <div className="text-sm font-medium mb-1.5">Select an Account</div>
+            <p className="text-xs">Please select an account from the dropdown above to view journal entries for that account.</p>
           </div>
         ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-4 text-xs">
             {error}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entry #</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Debit</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {entries.length > 0 ? (
-                  entries.map((entry) => (
-                    <tr key={entry.line_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(entry.entry_date)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{entry.entry_number}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{entry.reference}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{entry.account_code} - {entry.account_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{entry.line_description || entry.journal_description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">{entry.debit_amount > 0 ? formatCurrency(entry.debit_amount) : '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 font-medium">{entry.credit_amount > 0 ? formatCurrency(entry.credit_amount) : '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{entry.status}</td>
-                    </tr>
-                  ))
-                ) : (
+          <>
+            <div className="bg-white rounded-lg shadow overflow-x-auto mb-3">
+              <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] text-gray-600">Show:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                    className="border border-gray-300 rounded px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-[10px] text-gray-600">entries</span>
+                </div>
+                <div className="text-[10px] text-gray-600">
+                  Showing {startIndex + 1}-{Math.min(endIndex, entries.length)} of {entries.length} entries
+                </div>
+              </div>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No journal entries found.
-                    </td>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Entry #</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Debit</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Credit</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedEntries.length > 0 ? (
+                    paginatedEntries.map((entry) => (
+                      <tr key={entry.line_id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-gray-900">{formatDate(entry.entry_date)}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-gray-700">{entry.entry_number}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-gray-700">{entry.reference}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-gray-700">{entry.account_code} - {entry.account_name}</td>
+                        <td className="px-3 py-2 text-[10px] text-gray-700">{entry.line_description || entry.journal_description}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-right text-green-600 font-medium">{entry.debit_amount > 0 ? formatCurrency(entry.debit_amount) : '-'}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-right text-red-600 font-medium">{entry.credit_amount > 0 ? formatCurrency(entry.credit_amount) : '-'}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[10px] text-gray-700">{entry.status}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="px-3 py-2 text-center text-[10px] text-gray-500">
+                        No journal entries found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="bg-white rounded-lg shadow px-3 py-2 flex items-center justify-between">
+                <div className="text-[10px] text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-2 py-1 text-[10px] border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-2 py-1 text-[10px] border rounded ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-2 py-1 text-[10px] border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -8,9 +8,8 @@ import {
   DollarSign,
   User,
   Search,
-  Filter,
-  Download,
-  ArrowLeft
+  ArrowLeft,
+  Store
 } from 'lucide-react';
 import { 
   creditNoteService,
@@ -27,6 +26,12 @@ const CreditNotesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterScenario, setFilterScenario] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7;
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -77,8 +82,25 @@ const CreditNotesPage: React.FC = () => {
     
     const matchesStatus = filterStatus === 'all' || creditNote.status === filterStatus;
     
-    return matchesSearch && matchesStatus;
+    const matchesScenario = filterScenario === 'all' || creditNote.scenario_type === filterScenario;
+    
+    const matchesDate = (!startDate || new Date(creditNote.credit_note_date) >= new Date(startDate)) &&
+                        (!endDate || new Date(creditNote.credit_note_date) <= new Date(endDate));
+    
+    return matchesSearch && matchesStatus && matchesScenario && matchesDate;
   });
+
+  // Pagination
+  const displayItemsPerPage = showAll ? filteredCreditNotes.length : itemsPerPage;
+  const totalPages = Math.ceil(filteredCreditNotes.length / displayItemsPerPage);
+  const startIndex = (currentPage - 1) * displayItemsPerPage;
+  const endIndex = showAll ? filteredCreditNotes.length : startIndex + displayItemsPerPage;
+  const paginatedCreditNotes = showAll ? filteredCreditNotes : filteredCreditNotes.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
+    setShowAll(false); // Reset show all when filters change
+  }, [searchTerm, filterStatus, filterScenario, startDate, endDate]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -94,7 +116,25 @@ const CreditNotesPage: React.FC = () => {
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${config.color}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const getScenarioBadge = (scenarioType?: string) => {
+    if (!scenarioType) return null;
+    
+    const scenarioConfig = {
+      faulty_no_stock: { color: 'bg-orange-100 text-orange-800', label: 'Faulty (No Stock)' },
+      faulty_with_stock: { color: 'bg-purple-100 text-purple-800', label: 'Faulty (With Stock)' }
+    };
+    
+    const config = scenarioConfig[scenarioType as keyof typeof scenarioConfig];
+    if (!config) return null;
+    
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${config.color}`}>
         {config.label}
       </span>
     );
@@ -117,68 +157,83 @@ const CreditNotesPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1.5">
                 <button
                   onClick={() => navigate('/credit-notes')}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-3.5 w-3.5" />
                 </button>
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <FileText className="h-6 w-6 text-orange-600" />
+                <div className="p-1 bg-orange-100 rounded-lg">
+                  <FileText className="h-3.5 w-3.5 text-orange-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Credit Note Details</h1>
-                  <p className="text-sm text-gray-500">{selectedCreditNote.credit_note_number}</p>
+                  <h1 className="text-sm font-bold text-gray-900">Credit Note Details</h1>
+                  <p className="text-[10px] text-gray-500">{selectedCreditNote.credit_note_number}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Credit Note Details */}
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white shadow rounded-lg p-3 mb-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Credit Note Information</h3>
-                <dl className="space-y-3">
+                <h3 className="text-xs font-semibold text-gray-900 mb-2">Credit Note Information</h3>
+                <dl className="space-y-1.5">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Credit Note Number</dt>
-                    <dd className="text-sm text-gray-900">{selectedCreditNote.credit_note_number}</dd>
+                    <dt className="text-[10px] font-medium text-gray-500">Credit Note Number</dt>
+                    <dd className="text-[10px] text-gray-900">{selectedCreditNote.credit_note_number}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Date</dt>
-                    <dd className="text-sm text-gray-900">{formatDate(selectedCreditNote.credit_note_date)}</dd>
+                    <dt className="text-[10px] font-medium text-gray-500">Date</dt>
+                    <dd className="text-[10px] text-gray-900">{formatDate(selectedCreditNote.credit_note_date)}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Customer</dt>
-                    <dd className="text-sm text-gray-900">{selectedCreditNote.customer_name}</dd>
+                    <dt className="text-[10px] font-medium text-gray-500">Customer</dt>
+                    <dd className="text-[10px] text-gray-900">{selectedCreditNote.customer_name}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Status</dt>
-                    <dd className="text-sm text-gray-900">{getStatusBadge(selectedCreditNote.status)}</dd>
+                    <dt className="text-[10px] font-medium text-gray-500">Status</dt>
+                    <dd className="text-[10px] text-gray-900">{getStatusBadge(selectedCreditNote.status)}</dd>
                   </div>
+                  {selectedCreditNote.scenario_type && (
+                    <div>
+                      <dt className="text-[10px] font-medium text-gray-500">Scenario</dt>
+                      <dd className="text-[10px] text-gray-900">{getScenarioBadge(selectedCreditNote.scenario_type)}</dd>
+                    </div>
+                  )}
+                  {selectedCreditNote.damage_store_name && (
+                    <div>
+                      <dt className="text-[10px] font-medium text-gray-500">Damage Store</dt>
+                      <dd className="text-[10px] text-gray-900 flex items-center">
+                        <Store className="h-2.5 w-2.5 mr-0.5 text-gray-400" />
+                        {selectedCreditNote.damage_store_name}
+                      </dd>
+                  </div>
+                  )}
                 </dl>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
-                <dl className="space-y-3">
+                <h3 className="text-xs font-semibold text-gray-900 mb-2">Financial Summary</h3>
+                <dl className="space-y-1.5">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Subtotal</dt>
-                    <dd className="text-sm text-gray-900">
+                    <dt className="text-[10px] font-medium text-gray-500">Subtotal</dt>
+                    <dd className="text-[10px] text-gray-900">
                       {Number(selectedCreditNote.subtotal).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Tax Amount</dt>
-                    <dd className="text-sm text-gray-900">
+                    <dt className="text-[10px] font-medium text-gray-500">Tax Amount</dt>
+                    <dd className="text-[10px] text-gray-900">
                       {Number(selectedCreditNote.tax_amount).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Total Amount</dt>
-                    <dd className="text-lg font-semibold text-orange-600">
+                    <dt className="text-[10px] font-medium text-gray-500">Total Amount</dt>
+                    <dd className="text-xs font-semibold text-orange-600">
                       {Number(selectedCreditNote.total_amount).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                     </dd>
                   </div>
@@ -187,64 +242,64 @@ const CreditNotesPage: React.FC = () => {
             </div>
             
             {selectedCreditNote.reason && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Reason</h3>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{selectedCreditNote.reason}</p>
+              <div className="mt-3">
+                <h3 className="text-xs font-semibold text-gray-900 mb-1">Reason</h3>
+                <p className="text-[10px] text-gray-700 bg-gray-50 p-1.5 rounded-lg">{selectedCreditNote.reason}</p>
               </div>
             )}
           </div>
 
           {/* Credit Note Items */}
           {selectedCreditNote.items && selectedCreditNote.items.length > 0 && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Credit Note Items</h3>
+            <div className="bg-white shadow rounded-lg p-3">
+              <h3 className="text-xs font-semibold text-gray-900 mb-2">Credit Note Items</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Product
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Invoice
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Quantity
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Unit Price
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Total
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {selectedCreditNote.items.map((item, index) => (
+                    {selectedCreditNote.items.map((item: any, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {item.product_name || `Product ${item.product_id}`}
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] font-medium text-gray-900">
+                            {item.product_name || item.product?.product_name || `Product ${item.product_id}`}
                           </div>
-                          {item.product_code && (
-                            <div className="text-sm text-gray-500">{item.product_code}</div>
+                          {(item.product_code || item.product?.product_code) && (
+                            <div className="text-[10px] text-gray-500">{item.product_code || item.product?.product_code}</div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {item.invoice_number || `Invoice ${item.invoice_id}`}
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="text-[10px] text-gray-900">
+                            {item.invoice_number || item.so?.so_number || `Invoice ${item.invoice_id}`}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="text-sm text-gray-900">{item.quantity}</div>
+                        <td className="px-3 py-2 whitespace-nowrap text-right">
+                          <div className="text-[10px] text-gray-900">{item.quantity}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="text-sm text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-right">
+                          <div className="text-[10px] text-gray-900">
                             {Number(item.unit_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="text-sm font-medium text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-right">
+                          <div className="text-[10px] font-medium text-gray-900">
                             {Number(item.total_price).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                           </div>
                         </td>
@@ -266,20 +321,20 @@ const CreditNotesPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center space-x-2">
+              <div className="p-1 bg-blue-100 rounded-lg">
+                <FileText className="h-3.5 w-3.5 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Credit Notes</h1>
-                <p className="text-sm text-gray-500">Manage and view all credit notes</p>
+                <h1 className="text-base font-bold text-gray-900">Credit Notes</h1>
+                <p className="text-[10px] text-gray-500">Manage and view all credit notes</p>
               </div>
             </div>
             <Link
               to="/create-credit-note"
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="flex items-center px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3 w-3 mr-1" />
               Create Credit Note
             </Link>
           </div>
@@ -287,38 +342,38 @@ const CreditNotesPage: React.FC = () => {
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700">{error}</p>
+          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-700">{error}</p>
           </div>
         )}
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">
                 Search
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by credit note number, customer..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-7 pr-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">
                 Status
               </label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Statuses</option>
                 <option value="active">Active</option>
@@ -327,37 +382,97 @@ const CreditNotesPage: React.FC = () => {
               </select>
             </div>
 
-            <div className="flex items-end">
+            <div>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                Scenario
+              </label>
+              <select
+                value={filterScenario}
+                onChange={(e) => setFilterScenario(e.target.value)}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Scenarios</option>
+                <option value="faulty_no_stock">Faulty (No Stock)</option>
+                <option value="faulty_with_stock">Faulty (With Stock)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-between">
               <button
                 onClick={fetchCreditNotes}
-                className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="px-2.5 py-1 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 Refresh
               </button>
+            <div className="text-[10px] text-gray-600">
+              Showing {showAll ? filteredCreditNotes.length : startIndex + 1}-{Math.min(endIndex, filteredCreditNotes.length)} of {filteredCreditNotes.length} credit notes
             </div>
           </div>
         </div>
 
         {/* Credit Notes Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
+          <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-900">
               Credit Notes ({filteredCreditNotes.length})
             </h3>
+            {!showAll && filteredCreditNotes.length > itemsPerPage && (
+              <button
+                onClick={() => setShowAll(true)}
+                className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+              >
+                View All
+              </button>
+            )}
+            {showAll && (
+              <button
+                onClick={() => {
+                  setShowAll(false);
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
+              >
+                Show Paginated
+              </button>
+            )}
           </div>
 
           {filteredCreditNotes.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No credit notes found</p>
+            <div className="text-center py-6">
+              <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-xs text-gray-500">No credit notes found</p>
               {searchTerm || filterStatus !== 'all' ? (
-                <p className="text-sm text-gray-400 mt-2">Try adjusting your search or filters</p>
+                <p className="text-[10px] text-gray-400 mt-1">Try adjusting your search or filters</p>
               ) : (
                 <Link
                   to="/create-credit-note"
-                  className="inline-flex items-center mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="inline-flex items-center mt-2 px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-3 w-3 mr-1" />
                   Create Your First Credit Note
                 </Link>
               )}
@@ -367,89 +482,103 @@ const CreditNotesPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Credit Note
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Customer
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Scenario
+                    </th>
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredCreditNotes.map((creditNote) => (
+                  {paginatedCreditNotes.map((creditNote) => (
                     <tr key={creditNote.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FileText className="h-4 w-4 text-blue-600" />
+                          <div className="flex-shrink-0 h-5 w-5 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <FileText className="h-3 w-3 text-blue-600" />
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                          <div className="ml-2">
+                            <div className="text-[10px] font-medium text-gray-900">
                               {creditNote.credit_note_number}
                             </div>
                             {creditNote.original_invoice_number && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-[10px] text-gray-500">
                                 Invoice: {creditNote.original_invoice_number}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <User className="h-4 w-4 text-gray-600" />
+                          <div className="flex-shrink-0 h-5 w-5 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <User className="h-3 w-3 text-gray-600" />
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                          <div className="ml-2">
+                            <div className="text-[10px] font-medium text-gray-900">
                               {creditNote.customer_name || 'N/A'}
                             </div>
                             {creditNote.customer_code && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-[10px] text-gray-500">
                                 {creditNote.customer_code}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-900">
+                          <Calendar className="h-3 w-3 text-gray-400 mr-1" />
+                          <span className="text-[10px] text-gray-900">
                             {formatDate(creditNote.credit_note_date)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="flex flex-col space-y-0.5">
+                          {getScenarioBadge(creditNote.scenario_type)}
+                          {creditNote.damage_store_name && (
+                            <div className="flex items-center text-[10px] text-gray-500">
+                              <Store className="h-2.5 w-2.5 mr-0.5" />
+                              {creditNote.damage_store_name}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                          <span className="text-sm font-medium text-gray-900">
-                            ${creditNote.total_amount.toFixed(2)}
+                          <DollarSign className="h-3 w-3 text-gray-400 mr-0.5" />
+                          <span className="text-[10px] font-medium text-gray-900">
+                            {Number(creditNote.total_amount).toLocaleString(undefined, { style: 'currency', currency: 'KES' })}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         {getStatusBadge(creditNote.status)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
+                      <td className="px-3 py-2 whitespace-nowrap text-[10px] font-medium">
+                        <div className="flex items-center space-x-1">
                           <Link
                             to={`/credit-notes/${creditNote.id}`}
                             className="text-blue-600 hover:text-blue-900 flex items-center"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="h-3 w-3 mr-0.5" />
                             View
                           </Link>
                         </div>
@@ -458,6 +587,31 @@ const CreditNotesPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!showAll && totalPages > 1 && (
+            <div className="px-3 py-2 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-[10px] text-gray-700">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex space-x-1.5">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 border border-gray-300 rounded text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 border border-gray-300 rounded text-[10px] font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

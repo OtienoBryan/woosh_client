@@ -24,6 +24,8 @@ import {
   productsService,
   invoiceService
 } from '../services/financialService';
+import { storeService } from '../services/storeService';
+import { Store } from '../types/financial';
 import { 
   creditNoteService,
   CreditNoteItem,
@@ -55,6 +57,12 @@ const CreateCreditNotePage: React.FC = () => {
   const [items, setItems] = useState<CreditNoteItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [availableProducts, setAvailableProducts] = useState<Map<number, any[]>>(new Map());
+  const [scenarioType, setScenarioType] = useState<'faulty_no_stock' | 'faulty_with_stock'>('faulty_no_stock');
+  const [damageStoreId, setDamageStoreId] = useState<number | null>(null);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [selectedCustomerIndex, setSelectedCustomerIndex] = useState(-1);
 
   useEffect(() => {
     fetchData();
@@ -96,16 +104,24 @@ const CreateCreditNotePage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [customersRes, productsRes] = await Promise.all([
+      const [customersRes, productsRes, storesRes] = await Promise.all([
         customersService.getAll(),
-        productsService.getAll()
+        productsService.getAll(),
+        storeService.getAllStores()
       ]);
 
       if (customersRes.success) {
-        setCustomers(customersRes.data || []);
+        const customersData = customersRes.data || [];
+        console.log('Customers loaded:', customersData.length, customersData);
+        setCustomers(customersData);
+      } else {
+        console.error('Failed to load customers:', customersRes);
       }
       if (productsRes.success) {
         setProducts(productsRes.data || []);
+      }
+      if (storesRes.success) {
+        setStores(storesRes.data || []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch data');
@@ -380,6 +396,33 @@ const CreateCreditNotePage: React.FC = () => {
     return items.reduce((sum, item) => sum + item.total_price, 0);
   };
 
+  // Filter customers based on search
+  const filteredCustomers = customers.filter(customer => {
+    const searchLower = customerSearch.toLowerCase();
+    const name = (customer.name || '').toLowerCase();
+    const companyName = (customer.company_name || '').toLowerCase();
+    const customerCode = (customer.customer_code || '').toLowerCase();
+    const contact = (customer.contact || customer.contact_person || '').toLowerCase();
+    const email = (customer.email || '').toLowerCase();
+    
+    return name.includes(searchLower) ||
+           companyName.includes(searchLower) ||
+           customerCode.includes(searchLower) ||
+           contact.includes(searchLower) ||
+           email.includes(searchLower);
+  });
+
+  // Get selected customer display name
+  const selectedCustomerName = customers.find(c => c.id === parseInt(clientId)) 
+    ? (customers.find(c => c.id === parseInt(clientId))?.name || 
+       customers.find(c => c.id === parseInt(clientId))?.company_name || 
+       customers.find(c => c.id === parseInt(clientId))?.customer_code || 
+       '')
+    : '';
+
+  // Get display customers (filtered or all)
+  const displayCustomers = customerSearch ? filteredCustomers : customers;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -431,6 +474,12 @@ const CreateCreditNotePage: React.FC = () => {
       productInvoiceCombinations.add(combination);
     }
 
+    // Validate scenario 2 requires store
+    if (scenarioType === 'faulty_with_stock' && !damageStoreId) {
+      setError('Store selection is required for expired/damaged/faulty products from stock scenario');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -440,7 +489,9 @@ const CreateCreditNotePage: React.FC = () => {
         credit_note_date: creditNoteDate,
         reason: reason || undefined,
         original_invoice_ids: Array.from(selectedInvoices),
-        items: items
+        items: items,
+        scenario_type: scenarioType,
+        damage_store_id: scenarioType === 'faulty_with_stock' ? damageStoreId : null
       };
 
       const response = await creditNoteService.create(creditNoteData);
@@ -455,6 +506,11 @@ const CreateCreditNotePage: React.FC = () => {
         setItems([]);
         setCustomerInvoices([]);
         setAvailableProducts(new Map());
+        setScenarioType('faulty_no_stock');
+        setDamageStoreId(null);
+        setCustomerSearch('');
+        setShowCustomerDropdown(false);
+        setSelectedCustomerIndex(-1);
       } else {
         setError(response.error || 'Failed to create credit note');
       }
@@ -512,27 +568,151 @@ const CreateCreditNotePage: React.FC = () => {
         )}
 
         {/* Customer Selection */}
-        <div className="mb-8 hidden">
+        <div className="mb-8">
           <label className="block text-base font-medium text-gray-700 mb-3">
             Customer *
           </label>
-          <select
-            value={clientId}
+          <div className="relative w-full max-w-lg">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={clientId ? selectedCustomerName : customerSearch}
             onChange={(e) => {
-              setClientId(e.target.value);
+                setCustomerSearch(e.target.value);
+                setShowCustomerDropdown(true);
+                setSelectedCustomerIndex(-1);
+                if (!e.target.value) {
+                  setClientId('');
               setSelectedInvoices(new Set());
               setItems([]);
-            }}
-            className="w-full max-w-lg px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                }
+              }}
+              onFocus={() => setShowCustomerDropdown(true)}
+              onBlur={() => {
+                // Delay to allow click events on dropdown items
+                setTimeout(() => setShowCustomerDropdown(false), 200);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSelectedCustomerIndex(prev => 
+                    prev < Math.min(displayCustomers.length - 1, 9) ? prev + 1 : prev
+                  );
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSelectedCustomerIndex(prev => prev > 0 ? prev - 1 : -1);
+                } else if (e.key === 'Enter' && selectedCustomerIndex >= 0) {
+                  e.preventDefault();
+                  const customer = displayCustomers[selectedCustomerIndex];
+                  if (customer) {
+                    setClientId(customer.id.toString());
+                    setCustomerSearch(customer.name || customer.company_name || customer.customer_code || '');
+                    setShowCustomerDropdown(false);
+                    setSelectedCustomerIndex(-1);
+                    setSelectedInvoices(new Set());
+                    setItems([]);
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowCustomerDropdown(false);
+                  setSelectedCustomerIndex(-1);
+                }
+              }}
+              placeholder="Search customers by name, code, contact, or email..."
+              className="w-full pl-12 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base text-gray-900 bg-white"
             required
-          >
-            <option value="">Select a customer</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.company_name || customer.customer_code}
-              </option>
-            ))}
-          </select>
+            />
+            {clientId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setClientId('');
+                  setCustomerSearch('');
+                  setShowCustomerDropdown(false);
+                  setSelectedInvoices(new Set());
+                  setItems([]);
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+            
+            {/* Search Results Dropdown */}
+            {showCustomerDropdown && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {customerSearch ? (
+                  // Show filtered results
+                  filteredCustomers.length > 0 ? (
+                    filteredCustomers.slice(0, 10).map((customer, index) => {
+                      const displayName = customer.name || customer.company_name || customer.customer_code || `Customer ${customer.id}`;
+                      return (
+                        <div
+                          key={customer.id}
+                          className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                            index === selectedCustomerIndex ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-100'
+                          }`}
+                          onClick={() => {
+                            setClientId(customer.id.toString());
+                            setCustomerSearch(customer.name || customer.company_name || customer.customer_code || '');
+                            setShowCustomerDropdown(false);
+                            setSelectedCustomerIndex(-1);
+                            setSelectedInvoices(new Set());
+                            setItems([]);
+                          }}
+                        >
+                          <div className="font-medium text-base text-gray-900">{displayName}</div>
+                          {customer.contact || customer.contact_person ? (
+                            <div className="text-sm text-gray-500 mt-1">Contact: {customer.contact || customer.contact_person}</div>
+                          ) : null}
+                          {customer.email ? (
+                            <div className="text-sm text-gray-500">Email: {customer.email}</div>
+                          ) : null}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500">No customers found</div>
+                  )
+                ) : (
+                  // Show first 10 customers when no search
+                  <>
+                    <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 bg-gray-50">
+                      Type to search or select from customers:
+                    </div>
+                    {customers.slice(0, 10).map((customer, index) => {
+                      const displayName = customer.name || customer.company_name || customer.customer_code || `Customer ${customer.id}`;
+                      return (
+                        <div
+                          key={customer.id}
+                          className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                            index === selectedCustomerIndex ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-100'
+                          }`}
+                          onClick={() => {
+                            setClientId(customer.id.toString());
+                            setCustomerSearch(customer.name || customer.company_name || customer.customer_code || '');
+                            setShowCustomerDropdown(false);
+                            setSelectedCustomerIndex(-1);
+                            setSelectedInvoices(new Set());
+                            setItems([]);
+                          }}
+                        >
+                          <div className="font-medium text-base text-gray-900">{displayName}</div>
+                          {customer.contact || customer.contact_person ? (
+                            <div className="text-sm text-gray-500 mt-1">Contact: {customer.contact || customer.contact_person}</div>
+                          ) : null}
+                          {customer.email ? (
+                            <div className="text-sm text-gray-500">Email: {customer.email}</div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           
           {/* Customer Information Display */}
           {clientId && (
@@ -544,7 +724,7 @@ const CreateCreditNotePage: React.FC = () => {
                     <div>
                       <span className="text-gray-500">Customer:</span>
                       <span className="ml-2 font-medium text-gray-900">
-                        {selectedCustomer.company_name || selectedCustomer.customer_code}
+                        {selectedCustomer.name || selectedCustomer.company_name || selectedCustomer.customer_code || `Customer ${selectedCustomer.id}`}
                       </span>
                     </div>
                     <div>
@@ -839,6 +1019,77 @@ const CreateCreditNotePage: React.FC = () => {
                   placeholder="Enter the reason for this credit note..."
                 />
               </div>
+
+              {/* Scenario Selection */}
+              <div>
+                <label className="block text-base font-medium text-gray-700 mb-3">
+                  Credit Note Scenario *
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="scenario"
+                      value="faulty_no_stock"
+                      checked={scenarioType === 'faulty_no_stock'}
+                      onChange={(e) => {
+                        setScenarioType(e.target.value as 'faulty_no_stock');
+                        setDamageStoreId(null);
+                      }}
+                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Scenario 1: Faulty Products (No Stock Return)</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        Dr. Damages/Faulty Account (P&L), Dr. Sales VAT, Cr. Debtors Account
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="scenario"
+                      value="faulty_with_stock"
+                      checked={scenarioType === 'faulty_with_stock'}
+                      onChange={(e) => setScenarioType(e.target.value as 'faulty_with_stock')}
+                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Scenario 2: Expired/Damaged/Faulty Products from Stock</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        Dr. Faulty Account (P&L), Cr. Store (Inventory), Cr. Cost of Sale Account
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Store Selection (Required for Scenario 2) */}
+              {scenarioType === 'faulty_with_stock' && (
+                <div>
+                  <label className="block text-base font-medium text-gray-700 mb-3">
+                    Damage/Faulty Store * <span className="text-red-500">(Required for Scenario 2)</span>
+                  </label>
+                  <select
+                    value={damageStoreId || ''}
+                    onChange={(e) => setDamageStoreId(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    required={scenarioType === 'faulty_with_stock'}
+                  >
+                    <option value="">Select a store for damaged/faulty products</option>
+                    {stores
+                      .filter(store => store.is_active)
+                      .map((store) => (
+                        <option key={store.id} value={store.id}>
+                          {store.store_name} ({store.store_code})
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Products will be returned to this store's inventory. Normal invoicing should have "Delta Warehouse" as mandatory.
+                  </p>
+                </div>
+              )}
 
               {/* Invoice Items Loading Indicator */}
               {loadingInvoiceItems && (
