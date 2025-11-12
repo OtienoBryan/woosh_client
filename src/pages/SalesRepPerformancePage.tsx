@@ -42,8 +42,21 @@ const SalesRepPerformancePage: React.FC = () => {
     fetchSalesReps();
   }, []);
 
+  // Initialize filteredData when performanceData changes
   useEffect(() => {
-    filterData();
+    if (Array.isArray(performanceData)) {
+      if (!searchQuery.trim()) {
+        setFilteredData(performanceData);
+      } else {
+        const query = searchQuery.toLowerCase();
+        const filtered = performanceData.filter(rep =>
+          rep.sales_rep_name && rep.sales_rep_name.toLowerCase().includes(query)
+        );
+        setFilteredData(filtered);
+      }
+    } else {
+      setFilteredData([]);
+    }
     setCurrentPage(1);
   }, [performanceData, searchQuery]);
 
@@ -55,11 +68,14 @@ const SalesRepPerformancePage: React.FC = () => {
       const startDateParam = startDate || undefined;
       const endDateParam = endDate || undefined;
       const countryParam = selectedCountry || undefined;
+      console.log('Fetching performance data with params:', { selectedYear, salesRepIds, startDateParam, endDateParam, viewType, countryParam });
       const data = await salesService.getSalesRepMonthlyPerformance(selectedYear, salesRepIds, startDateParam, endDateParam, viewType, countryParam);
-      setPerformanceData(data);
+      console.log('Fetched performance data:', data);
+      setPerformanceData(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch performance data');
       console.error('Error fetching data:', err);
+      setPerformanceData([]);
     } finally {
       setLoading(false);
     }
@@ -83,18 +99,6 @@ const SalesRepPerformancePage: React.FC = () => {
     }
   };
 
-  const filterData = () => {
-    if (!searchQuery.trim()) {
-      setFilteredData(performanceData);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = performanceData.filter(rep =>
-      rep.sales_rep_name.toLowerCase().includes(query)
-    );
-    setFilteredData(filtered);
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -107,9 +111,9 @@ const SalesRepPerformancePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-600 font-medium">Loading sales rep performance data...</p>
-          <p className="mt-2 text-sm text-gray-500">Please wait while we fetch your performance information</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-xs text-gray-600 font-medium">Loading sales rep performance data...</p>
+          <p className="mt-1 text-[10px] text-gray-500">Please wait while we fetch your performance information</p>
         </div>
       </div>
     );
@@ -119,14 +123,14 @@ const SalesRepPerformancePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-10 h-10 text-red-600" />
+          <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <X className="w-7 h-7 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-sm font-bold text-gray-900 mb-1.5">Error Loading Data</h2>
+          <p className="text-[10px] text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchPerformanceData}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-[10px] font-medium"
           >
             Try Again
           </button>
@@ -359,27 +363,27 @@ const SalesRepPerformancePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Enhanced Header Section */}
-    <div className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+      <div className="w-full px-3 sm:px-4 lg:px-6 py-4">
+        {/* Compact Header Section */}
+        <div className="mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Sales Rep Performance</h1>
-              <p className="text-gray-600">Monthly sales performance by sales representative</p>
+              <h1 className="text-base font-bold text-gray-900 mb-1">Sales Rep Performance</h1>
+              <p className="text-[10px] text-gray-600">Monthly sales performance by sales representative</p>
             </div>
-            <div className="mt-6 lg:mt-0 flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => setShowFilterModal(true)}
-                className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
                   activeFilters > 0
-                    ? 'bg-orange-100 text-orange-700 border-2 border-orange-200 hover:bg-orange-200'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <Filter className="h-5 w-5" />
+                <Filter className="h-3 w-3" />
                 Filters
                 {activeFilters > 0 && (
-                  <span className="ml-2 bg-orange-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                  <span className="ml-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                     {activeFilters}
                   </span>
                 )}
@@ -387,16 +391,16 @@ const SalesRepPerformancePage: React.FC = () => {
               <button
                 onClick={exportToCSV}
                 disabled={exporting || sortedData.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {exporting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
                     Exporting...
                   </>
                 ) : (
                   <>
-                    <Download className="h-5 w-5" />
+                    <Download className="h-3 w-3" />
                     Export CSV
                   </>
                 )}
@@ -406,15 +410,15 @@ const SalesRepPerformancePage: React.FC = () => {
         </div>
 
         {/* Country Filter */}
-        <div className="mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-4">
+        <div className="mb-3">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+            <div className="flex items-center gap-3">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                <label className="block text-[10px] font-medium text-gray-700 mb-1">Country</label>
                 <select
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  className="block w-full px-2.5 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Countries</option>
                   {countries.map((country) => (
@@ -427,17 +431,17 @@ const SalesRepPerformancePage: React.FC = () => {
         </div>
 
         {/* View Type Toggle */}
-        <div className="mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="mb-3">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">View Type</h3>
-                <p className="text-sm text-gray-600">Choose between sales values or quantities sold</p>
+                <h3 className="text-xs font-semibold text-gray-900">View Type</h3>
+                <p className="text-[10px] text-gray-600">Choose between sales values or quantities sold</p>
               </div>
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
                 <button
                   onClick={() => setViewType('sales')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${
                     viewType === 'sales'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -447,7 +451,7 @@ const SalesRepPerformancePage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setViewType('quantity')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${
                     viewType === 'quantity'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -458,20 +462,20 @@ const SalesRepPerformancePage: React.FC = () => {
               </div>
             </div>
             {viewType === 'quantity' && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-orange-500 rounded"></div>
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4 text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 bg-orange-500 rounded"></div>
                       <span className="text-gray-700">Vapes (Categories 1, 3)</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 bg-green-500 rounded"></div>
                       <span className="text-gray-700">Pouches (Categories 4, 5)</span>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600">
-                    <div className="flex items-center gap-4">
+                  <div className="text-[10px] text-gray-600">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <span>• <span className="font-medium text-green-600">Green %</span> = 100%+ target achieved</span>
                       <span>• <span className="font-medium text-yellow-600">Yellow %</span> = 80-99% target achieved</span>
                       <span>• <span className="font-medium text-red-600">Red %</span> = Below 80% target</span>
@@ -536,35 +540,35 @@ const SalesRepPerformancePage: React.FC = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
             <input
               type="text"
               placeholder="Search sales reps, countries, regions, or routes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+              className="w-full pl-8 pr-3 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
 
         {/* Performance Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                <tr>
                   <th 
-                    className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                    className="px-3 py-2 text-left text-[10px] font-semibold text-gray-900 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => handleSort('sales_rep_name')}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       Sales Rep
                       {sortColumn === 'sales_rep_name' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                       ) : (
-                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                        <ArrowUpDown className="h-3 w-3 text-gray-400" />
                       )}
                     </div>
                   </th>
@@ -575,13 +579,13 @@ const SalesRepPerformancePage: React.FC = () => {
                       return (
                         <th 
                           key={month}
-                          className="px-3 py-4 text-center text-xs font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                          className="px-2 py-2 text-center text-[10px] font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                         >
-                          <div className="space-y-1">
+                          <div className="space-y-0.5">
                             <div className="text-gray-700 font-bold">{month}</div>
-                            <div className="flex justify-center gap-4 text-xs">
+                            <div className="flex justify-center gap-2 text-[10px]">
                               <div 
-                                className="flex items-center gap-1 cursor-pointer hover:text-blue-600"
+                                className="flex items-center gap-0.5 cursor-pointer hover:text-blue-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSort(`${monthKey}_vapes`);
@@ -589,13 +593,13 @@ const SalesRepPerformancePage: React.FC = () => {
                               >
                                 <span className="text-orange-600">V</span>
                                 {sortColumn === `${monthKey}_vapes` ? (
-                                  sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                  sortDirection === 'asc' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
                                 ) : (
-                                  <ArrowUpDown className="h-3 w-3 text-gray-400" />
+                                  <ArrowUpDown className="h-2.5 w-2.5 text-gray-400" />
                                 )}
                               </div>
                               <div 
-                                className="flex items-center gap-1 cursor-pointer hover:text-blue-600"
+                                className="flex items-center gap-0.5 cursor-pointer hover:text-blue-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSort(`${monthKey}_pouches`);
@@ -603,9 +607,9 @@ const SalesRepPerformancePage: React.FC = () => {
                               >
                                 <span className="text-green-600">P</span>
                                 {sortColumn === `${monthKey}_pouches` ? (
-                                  sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                  sortDirection === 'asc' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
                                 ) : (
-                                  <ArrowUpDown className="h-3 w-3 text-gray-400" />
+                                  <ArrowUpDown className="h-2.5 w-2.5 text-gray-400" />
                                 )}
                               </div>
                             </div>
@@ -620,15 +624,15 @@ const SalesRepPerformancePage: React.FC = () => {
                       return (
                         <th 
                           key={month} 
-                          className="px-4 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+                          className="px-2 py-2 text-right text-[10px] font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort(monthKey)}
                         >
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             {month}
                             {sortColumn === monthKey ? (
-                              sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                             ) : (
-                              <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                              <ArrowUpDown className="h-3 w-3 text-gray-400" />
                             )}
                           </div>
                         </th>
@@ -636,15 +640,15 @@ const SalesRepPerformancePage: React.FC = () => {
                     })
                   )}
                   <th 
-                    className="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors duration-150"
+                    className="px-3 py-2 text-right text-[10px] font-semibold text-gray-900 uppercase tracking-wider bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => handleSort('total')}
                   >
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       Total
                       {sortColumn === 'total' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                       ) : (
-                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                        <ArrowUpDown className="h-3 w-3 text-gray-400" />
                       )}
                     </div>
                   </th>
@@ -653,20 +657,20 @@ const SalesRepPerformancePage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentData.length === 0 ? (
                   <tr>
-                    <td colSpan={viewType === 'quantity' ? 14 : 14} className="px-6 py-12 text-center">
+                    <td colSpan={viewType === 'quantity' ? 14 : 14} className="px-3 py-8 text-center">
                       <div className="text-gray-500">
-                        <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">No performance data found</p>
-                        <p className="text-sm">Try adjusting your filters or search criteria</p>
+                        <BarChart3 className="h-8 w-8 mx-auto mb-3 text-gray-300" />
+                        <p className="text-xs font-medium">No performance data found</p>
+                        <p className="text-[10px]">Try adjusting your filters or search criteria</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   currentData.map((rep, index) => (
-                    <tr key={rep.sales_rep_id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10">
+                    <tr key={rep.sales_rep_id} className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <td className="whitespace-nowrap px-3 py-2 text-[10px] font-medium text-gray-900 sticky left-0 bg-inherit z-10">
                         <div className="flex items-center">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
                           {rep.sales_rep_name}
                         </div>
                       </td>
@@ -682,20 +686,20 @@ const SalesRepPerformancePage: React.FC = () => {
                           const pouchesPercentage = pouchesTarget > 0 ? (pouchesValue / pouchesTarget) * 100 : 0;
                           
                           return (
-                            <td key={month} className="px-3 py-4 text-center text-sm text-gray-900">
-                              <div className="space-y-2">
+                            <td key={month} className="px-2 py-2 text-center text-[10px] text-gray-900">
+                              <div className="space-y-1.5">
                                 {/* Vapes */}
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                   <div className="text-orange-600 font-medium">
                                     {vapesValue.toLocaleString()}
                                   </div>
                                   {vapesTarget > 0 && (
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-[10px] text-gray-500">
                                       Target: {vapesTarget.toLocaleString()}
                                     </div>
                                   )}
                                   {vapesTarget > 0 && (
-                                    <div className={`text-xs font-medium ${
+                                    <div className={`text-[10px] font-medium ${
                                       vapesPercentage >= 100 ? 'text-green-600' : 
                                       vapesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
                                     }`}>
@@ -705,17 +709,17 @@ const SalesRepPerformancePage: React.FC = () => {
                                 </div>
                                 
                                 {/* Pouches */}
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                   <div className="text-green-600 font-medium">
                                     {pouchesValue.toLocaleString()}
                                   </div>
                                   {pouchesTarget > 0 && (
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-[10px] text-gray-500">
                                       Target: {pouchesTarget.toLocaleString()}
                                     </div>
                                   )}
                                   {pouchesTarget > 0 && (
-                                    <div className={`text-xs font-medium ${
+                                    <div className={`text-[10px] font-medium ${
                                       pouchesPercentage >= 100 ? 'text-green-600' : 
                                       pouchesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
                                     }`}>
@@ -734,16 +738,16 @@ const SalesRepPerformancePage: React.FC = () => {
                           return (
                             <td 
                               key={month} 
-                              className="whitespace-nowrap px-4 py-4 text-sm text-right text-gray-900"
+                              className="whitespace-nowrap px-2 py-2 text-[10px] text-right text-gray-900"
                             >
                               {formatCurrency(monthValue)}
                             </td>
                           );
                         })
                       )}
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-right text-blue-900 bg-blue-50">
+                      <td className="whitespace-nowrap px-3 py-2 text-[10px] font-semibold text-right text-blue-900 bg-blue-50">
                         {viewType === 'quantity' ? (
-                          <div>
+                          <div className="space-y-0.5">
                             <div>Vapes: {((rep as any).total_vapes || 0).toLocaleString()}</div>
                             <div>Pouches: {((rep as any).total_pouches || 0).toLocaleString()}</div>
                           </div>
@@ -758,11 +762,11 @@ const SalesRepPerformancePage: React.FC = () => {
               
               {/* Enhanced Summary Row */}
               {sortedData.length > 0 && (
-                <tfoot className="bg-gray-100">
+                <tfoot className="bg-gradient-to-r from-gray-100 to-gray-200">
                   <tr>
-                    <td className="px-6 py-4 text-sm font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
+                    <td className="px-3 py-2 text-[10px] font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
                       <div className="flex items-center">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                         Grand Total
                       </div>
                     </td>
@@ -790,20 +794,20 @@ const SalesRepPerformancePage: React.FC = () => {
                         const pouchesPercentage = pouchesTargetTotal > 0 ? (pouchesTotal / pouchesTargetTotal) * 100 : 0;
                         
                         return (
-                          <td key={month} className="px-3 py-4 text-center text-sm font-bold text-gray-900">
-                            <div className="space-y-2">
+                          <td key={month} className="px-2 py-2 text-center text-[10px] font-bold text-gray-900">
+                            <div className="space-y-1.5">
                               {/* Vapes Total */}
-                              <div className="space-y-1">
+                              <div className="space-y-0.5">
                                 <div className="text-orange-600">
                                   {vapesTotal.toLocaleString()}
                                 </div>
                                 {vapesTargetTotal > 0 && (
-                                  <div className="text-xs text-gray-500 font-normal">
+                                  <div className="text-[10px] text-gray-500 font-normal">
                                     Target: {vapesTargetTotal.toLocaleString()}
                                   </div>
                                 )}
                                 {vapesTargetTotal > 0 && (
-                                  <div className={`text-xs font-medium ${
+                                  <div className={`text-[10px] font-medium ${
                                     vapesPercentage >= 100 ? 'text-green-600' : 
                                     vapesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
                                   }`}>
@@ -813,17 +817,17 @@ const SalesRepPerformancePage: React.FC = () => {
                               </div>
                               
                               {/* Pouches Total */}
-                              <div className="space-y-1">
+                              <div className="space-y-0.5">
                                 <div className="text-green-600">
                                   {pouchesTotal.toLocaleString()}
                                 </div>
                                 {pouchesTargetTotal > 0 && (
-                                  <div className="text-xs text-gray-500 font-normal">
+                                  <div className="text-[10px] text-gray-500 font-normal">
                                     Target: {pouchesTargetTotal.toLocaleString()}
                                   </div>
                                 )}
                                 {pouchesTargetTotal > 0 && (
-                                  <div className={`text-xs font-medium ${
+                                  <div className={`text-[10px] font-medium ${
                                     pouchesPercentage >= 100 ? 'text-green-600' : 
                                     pouchesPercentage >= 80 ? 'text-yellow-600' : 'text-red-600'
                                   }`}>
@@ -843,15 +847,15 @@ const SalesRepPerformancePage: React.FC = () => {
                           return sum + (parseFloat(String(monthValue)) || 0);
                         }, 0);
                         return (
-                          <td key={month} className="px-4 py-4 text-sm font-bold text-right text-gray-900">
+                          <td key={month} className="px-2 py-2 text-[10px] font-bold text-right text-gray-900">
                             {formatCurrency(monthTotal)}
                           </td>
                         );
                       })
                     )}
-                    <td className="px-6 py-4 text-sm font-bold text-right text-green-900 bg-green-100">
+                    <td className="px-3 py-2 text-[10px] font-bold text-right text-green-900 bg-green-100">
                       {viewType === 'quantity' ? (
-                        <div>
+                        <div className="space-y-0.5">
                           <div>Vapes: {sortedData.reduce((sum, rep) => sum + (parseFloat(String((rep as any).total_vapes)) || 0), 0).toLocaleString()}</div>
                           <div>Pouches: {sortedData.reduce((sum, rep) => sum + (parseFloat(String((rep as any).total_pouches)) || 0), 0).toLocaleString()}</div>
                         </div>
@@ -866,50 +870,50 @@ const SalesRepPerformancePage: React.FC = () => {
       </div>
     </div>
 
-        {/* Enhanced Pagination Controls */}
+        {/* Compact Pagination Controls */}
         {totalItems > 0 && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               {/* Items per page and info */}
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Show</span>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-700">Show</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="border border-gray-300 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
                   </select>
-                  <span className="text-sm text-gray-700">entries per page</span>
+                  <span className="text-[10px] text-gray-700">entries per page</span>
                 </div>
-                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                <div className="text-[10px] text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
                   Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
                 </div>
               </div>
 
-              {/* Enhanced Pagination buttons */}
-              <div className="flex items-center gap-2">
+              {/* Compact Pagination buttons */}
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3 w-3" />
                   Previous
                 </button>
 
                 {/* Page numbers */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   {getPageNumbers().map((page, index) => (
                     <button
                       key={index}
                       onClick={() => typeof page === 'number' ? handlePageChange(page) : null}
                       disabled={page === '...'}
-                      className={`px-3 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
+                      className={`px-2 py-1 text-[10px] font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
                         page === currentPage
                           ? 'bg-blue-600 text-white border border-blue-600'
                           : page === '...'
@@ -925,49 +929,49 @@ const SalesRepPerformancePage: React.FC = () => {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 >
                   Next
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3 w-3" />
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Enhanced Filter Modal */}
+        {/* Compact Filter Modal */}
         {showFilterModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
               {/* Modal Header */}
-              <div className="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Filter Options</h2>
-                    <p className="text-gray-600 mt-1">Customize your performance data view</p>
+                    <h2 className="text-sm font-bold text-gray-900">Filter Options</h2>
+                    <p className="text-[10px] text-gray-600 mt-0.5">Customize your performance data view</p>
                   </div>
                   <button
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
                     onClick={() => setShowFilterModal(false)}
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
               {/* Modal Body */}
-              <div className="px-8 py-6 max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Year */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-blue-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-blue-600" />
                       Year
                     </h3>
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(Number(e.target.value))}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                      className="block w-full px-2.5 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -976,38 +980,38 @@ const SalesRepPerformancePage: React.FC = () => {
                   </div>
 
                   {/* Date Range */}
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-green-600" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-green-600" />
                       Date Range
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <input
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                        className="block w-full px-2.5 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Start Date"
                       />
                       <input
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+                        className="block w-full px-2.5 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="End Date"
                       />
                     </div>
                   </div>
 
                   {/* Sales Reps */}
-                  <div className="space-y-3 md:col-span-2">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <User className="h-5 w-5 text-purple-600" />
+                  <div className="space-y-2 md:col-span-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5 text-purple-600" />
                       Sales Reps
                     </h3>
-                    <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                    <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
                       {salesReps.map(rep => (
-                        <label key={rep.id} className="flex items-center space-x-3 py-2 hover:bg-gray-50 rounded px-2">
+                        <label key={rep.id} className="flex items-center space-x-2 py-1 hover:bg-gray-50 rounded px-1.5">
                           <input
                             type="checkbox"
                             checked={selectedSalesReps.includes(rep.id)}
@@ -1018,22 +1022,22 @@ const SalesRepPerformancePage: React.FC = () => {
                                 setSelectedSalesReps(selectedSalesReps.filter(id => id !== rep.id));
                               }
                             }}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
-                          <span className="text-sm text-gray-700">{rep.name}</span>
+                          <span className="text-[10px] text-gray-700">{rep.name}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <button
                         onClick={() => setSelectedSalesReps(salesReps.map(rep => rep.id))}
-                        className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors duration-200"
+                        className="text-[10px] px-2.5 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
                       >
                         Select All
                       </button>
                       <button
                         onClick={() => setSelectedSalesReps([])}
-                        className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors duration-200"
+                        className="text-[10px] px-2.5 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                       >
                         Clear All
                       </button>
@@ -1043,7 +1047,7 @@ const SalesRepPerformancePage: React.FC = () => {
               </div>
               
               {/* Modal Footer */}
-              <div className="px-8 py-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+              <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
                 <button
                   onClick={() => {
                     setSelectedYear(new Date().getFullYear());
@@ -1051,13 +1055,13 @@ const SalesRepPerformancePage: React.FC = () => {
                     setEndDate('');
                     setSelectedSalesReps([]);
                   }}
-                  className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
+                  className="px-3 py-1.5 text-[10px] text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Clear All
                 </button>
                 <button
                   onClick={() => setShowFilterModal(false)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+                  className="px-3 py-1.5 text-[10px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   Apply Filters
                 </button>

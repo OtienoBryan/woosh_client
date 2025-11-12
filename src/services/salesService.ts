@@ -270,23 +270,26 @@ export const salesService = {
     page?: number,
     limit?: number,
     sortColumn?: string,
-    sortDirection?: 'asc' | 'desc'
-  ): Promise<{ data: MasterSalesData[]; pagination: any }> => {
+    sortDirection?: 'asc' | 'desc',
+    search?: string
+  ): Promise<{ data: MasterSalesData[]; pagination: any; totals?: any }> => {
     const response = await axios.get(`${API_BASE_URL}/master-sales`, {
-      params: { year, category, salesRep, categoryGroup, startDate, endDate, clientStatus, viewType, page, limit, sortColumn, sortDirection }
+      params: { year, category, salesRep, categoryGroup, startDate, endDate, clientStatus, viewType, page, limit, sortColumn, sortDirection, search }
     });
     
     // Handle both old format (array) and new format (object with data + pagination)
     if (response.data.success) {
       return {
         data: response.data.data,
-        pagination: response.data.pagination
+        pagination: response.data.pagination,
+        totals: response.data.totals
       };
     }
     // Fallback for old format
     return {
       data: Array.isArray(response.data) ? response.data : [],
-      pagination: { currentPage: 1, totalPages: 1, totalItems: Array.isArray(response.data) ? response.data.length : 0 }
+      pagination: { currentPage: 1, totalPages: 1, totalItems: Array.isArray(response.data) ? response.data.length : 0 },
+      totals: undefined
     };
   },
 

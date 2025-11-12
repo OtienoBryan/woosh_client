@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DateTime } from 'luxon';
 import { salesService, Country, SalesRep } from '../services/salesService';
-import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity, Navigation, FileText } from 'lucide-react';
+import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity, Navigation, FileText, X } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -76,9 +76,9 @@ const OverallAttendancePage: React.FC = () => {
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('Kenya');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [pendingCountry, setPendingCountry] = useState('');
+  const [pendingCountry, setPendingCountry] = useState('Kenya');
   const [pendingStartDate, setPendingStartDate] = useState(defaultStart);
   const [pendingEndDate, setPendingEndDate] = useState(defaultEnd);
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
@@ -172,16 +172,45 @@ const OverallAttendancePage: React.FC = () => {
       axios.get(`${API_BASE_URL}/clients?limit=10000`, { headers: getAuthHeaders(), signal })
         .then((res) => {
           const list = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+          console.log('Loaded clients for modal:', list.length);
           setClients(list);
           if (!totalClients) {
             const total = typeof res.data?.total === 'number' ? res.data.total : list.length;
             setTotalClients(total);
           }
         })
+        .catch((error) => {
+          console.error('Error loading clients:', error);
+        })
         .finally(() => setClientsLoading(false));
       return () => controller.abort();
     }
-  }, [clientsModalOpen]);
+  }, [clientsModalOpen, clients.length, clientsLoading]);
+
+  // Recalculate clients for date when clients are loaded or date changes
+  useEffect(() => {
+    if (clientsModalOpen && selectedDateForClients && clients.length > 0 && Array.isArray(journeyPlans)) {
+      const visitedClientIds = journeyPlans
+        .filter(jp => jp.date.slice(0, 10) === selectedDateForClients && jp.checkInTime)
+        .map(jp => jp.clientId);
+      
+      const uniqueClientIds = [...new Set(visitedClientIds)];
+      
+      const visitedClients = uniqueClientIds
+        .map(clientId => clients.find(client => client.id === clientId))
+        .filter(client => client !== undefined) as Client[];
+      
+      console.log('Recalculated clients for date:', {
+        date: selectedDateForClients,
+        visitedClientIds: uniqueClientIds.length,
+        foundClients: visitedClients.length,
+        totalClients: clients.length,
+        totalJourneyPlans: journeyPlans.length
+      });
+      
+      setClientsForDate(visitedClients);
+    }
+  }, [clientsModalOpen, selectedDateForClients, clients, journeyPlans]);
 
   // Build attendance rows
   useEffect(() => {
@@ -665,13 +694,29 @@ const OverallAttendancePage: React.FC = () => {
                               </td>
                             <td className="px-6 py-3 whitespace-nowrap text-center">
                                 <button
-                                  onClick={() => {
+                                  onClick={async () => {
                                     console.log('Clients visited clicked for date:', row.date);
                                     setSelectedDateForClients(row.date);
-                                    const clientsForDate = getClientsForDate(row.date);
-                                    console.log('Clients for date:', clientsForDate);
-                                    setClientsForDate(clientsForDate);
                                     setClientsModalOpen(true);
+                                    
+                                    // If clients are not loaded, trigger loading
+                                    if (clients.length === 0 && !clientsLoading) {
+                                      setClientsLoading(true);
+                                      try {
+                                        const res = await axios.get(`${API_BASE_URL}/clients?limit=10000`, { headers: getAuthHeaders() });
+                                        const list = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+                                        console.log('Loaded clients on button click:', list.length);
+                                        setClients(list);
+                                        if (!totalClients) {
+                                          const total = typeof res.data?.total === 'number' ? res.data.total : list.length;
+                                          setTotalClients(total);
+                                        }
+                                      } catch (error) {
+                                        console.error('Error loading clients:', error);
+                                      } finally {
+                                        setClientsLoading(false);
+                                      }
+                                    }
                                   }}
                                 className="text-[10px] font-semibold text-green-600 hover:text-green-800 transition-colors duration-150 cursor-pointer"
                                 >
@@ -955,30 +1000,30 @@ const OverallAttendancePage: React.FC = () => {
 
         {/* Clients Modal - Full Page */}
         {clientsModalOpen && (
-          <div className="fixed inset-0 bg-white z-[9999] overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg">
-              <div className="flex items-center justify-between p-6">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-white bg-opacity-20 p-2 rounded-lg">
-                    <MapPin className="h-6 w-6 text-white" />
+          <div className="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-100 z-[9999] overflow-hidden">
+            {/* Modern Compact Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md">
+              <div className="flex items-center justify-between p-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <MapPin className="h-3.5 w-3.5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="text-sm font-bold">
                       Clients Visited
                     </h1>
-                    <p className="text-green-100">
+                    <p className="text-[10px] text-green-100">
                       {selectedDateForClients && formatDate(selectedDateForClients)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-2">
                   {/* Sales Rep Filter */}
                   <div className="relative">
                     <select
                       value={clientsModalSalesRepFilter}
                       onChange={(e) => setClientsModalSalesRepFilter(e.target.value)}
-                      className="bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200"
+                      className="bg-white bg-opacity-20 text-white border border-white border-opacity-30 rounded-lg px-2.5 py-1.5 pr-6 text-[10px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all"
                     >
                       <option value="">All Sales Reps</option>
                       {Array.isArray(salesReps) && salesReps.filter(rep => rep.status === 1).map((rep) => (
@@ -987,67 +1032,70 @@ const OverallAttendancePage: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 pointer-events-none">
+                      <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
                   <button
                     onClick={() => setClientsModalOpen(false)}
-                    className="text-white hover:text-green-100 transition-colors duration-150 p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+                    className="text-white hover:text-green-100 transition-colors p-1.5 rounded-lg hover:bg-white hover:bg-opacity-20"
                   >
-                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Content */}
-            <div className="h-full overflow-y-auto bg-gray-50">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {filteredClientsForDate.length === 0 ? (
-                  <div className="text-center py-16">
-                    <div className="bg-white rounded-full p-8 w-32 h-32 mx-auto mb-6 flex items-center justify-center">
-                      <MapPin className="h-16 w-16 text-gray-400" />
+            <div className="h-full overflow-y-auto">
+              <div className="max-w-7xl mx-auto px-3 py-3">
+                {clientsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-3"></div>
+                    <p className="text-[10px] text-gray-600">Loading clients...</p>
+                  </div>
+                ) : filteredClientsForDate.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="bg-white rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center shadow-sm">
+                      <MapPin className="h-10 w-10 text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                    <h3 className="text-xs font-semibold text-gray-900 mb-1.5">
                       {clientsModalSalesRepFilter ? 'No Clients Visited by Selected Sales Rep' : 'No Clients Visited'}
                     </h3>
-                    <p className="text-gray-500">
+                    <p className="text-[10px] text-gray-500">
                       {clientsModalSalesRepFilter 
                         ? `No clients were visited by the selected sales representative on this date.`
                         : 'No clients were visited on this date.'
                       }
                     </p>
+                    <div className="mt-3 text-[10px] text-gray-400">
+                      <p>Debug: Clients loaded: {clients.length}, Journey plans: {journeyPlans.length}, Selected date: {selectedDateForClients}</p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Client Name
                             </th>
-                            {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Visit Details
-                            </th> */}
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Sales Representative
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Sales Rep
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Check-in Time
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Check-in
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Check-out Time
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                              Check-out
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Time Spent
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                               Actions
                             </th>
                           </tr>
@@ -1067,62 +1115,52 @@ const OverallAttendancePage: React.FC = () => {
                               return (
                                 <tr 
                                   key={`${client.id}-${jpIndex}`} 
-                                  className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                  className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all cursor-pointer"
                                   onClick={() => handleVisitClick(client, jp)}
                                 >
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
+                                  <td className="px-3 py-2 whitespace-nowrap">
+                                    <div className="flex items-center gap-2">
                                       <div className="flex-shrink-0">
-                                        <div className="bg-gradient-to-r from-green-500 to-green-600 p-2 rounded-full">
-                                          <MapPin className="h-4 w-4 text-white" />
+                                        <div className="bg-gradient-to-r from-green-500 to-green-600 p-1.5 rounded-lg">
+                                          <MapPin className="h-3 w-3 text-white" />
                                         </div>
                                       </div>
-                                      <div className="ml-3">
-                                        <div className="text-sm font-medium text-gray-900">{client.name}</div>
-                                        </div>
+                                      <div className="text-[10px] font-semibold text-gray-900 truncate max-w-[200px]">{client.name}</div>
                                     </div>
                                   </td>
-                                  {/* <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <div className="text-sm text-gray-900">
-                                      {jp.notes || 'No notes'}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      Status: {jp.status === 1 ? 'Completed' : 'Pending'}
-                                    </div>
-                                  </td> */}
-                                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <div className="text-sm font-medium text-gray-900">
+                                  <td className="px-3 py-2 whitespace-nowrap text-center">
+                                    <div className="text-[10px] font-medium text-gray-900">
                                       {salesRep ? salesRep.name : 'Unknown'}
                                     </div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-[10px] text-gray-500 truncate max-w-[150px]">
                                       {salesRep ? salesRep.email : ''}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <div className="text-sm text-gray-900">
+                                  <td className="px-3 py-2 whitespace-nowrap text-center">
+                                    <div className="text-[10px] text-gray-900">
                                       {jp.checkInTime ? new Date(jp.checkInTime).toLocaleTimeString('en-US', {
                                         hour: '2-digit',
                                         minute: '2-digit'
                                       }) : 'N/A'}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <div className="text-sm text-gray-900">
+                                  <td className="px-3 py-2 whitespace-nowrap text-center">
+                                    <div className="text-[10px] text-gray-900">
                                       {jp.checkoutTime ? new Date(jp.checkoutTime).toLocaleTimeString('en-US', {
                                         hour: '2-digit',
                                         minute: '2-digit'
                                       }) : 'Still Active'}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <div className="text-sm font-semibold text-blue-600">
+                                  <td className="px-3 py-2 whitespace-nowrap text-center">
+                                    <div className="text-[10px] font-semibold text-blue-600">
                                       {jp.checkInTime ? calculateTimeSpent(jp.checkInTime as string, jp.checkoutTime) : 'N/A'}
                                     </div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-[10px] text-gray-500">
                                       {jp.checkoutTime ? 'Completed' : 'In Progress'}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                  <td className="px-3 py-2 whitespace-nowrap text-center">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation(); // Prevent row click
@@ -1136,9 +1174,9 @@ const OverallAttendancePage: React.FC = () => {
                                           }
                                         });
                                       }}
-                                      className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                                      className="inline-flex items-center px-2 py-1 border border-transparent rounded-lg shadow-sm text-[10px] font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-500 transition-all"
                                     >
-                                      <FileText className="h-3 w-3 mr-1" />
+                                      <FileText className="h-2.5 w-2.5 mr-1" />
                                       Reports
                                     </button>
                                   </td>
@@ -1154,17 +1192,17 @@ const OverallAttendancePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="bg-white border-t border-gray-200 px-6 py-4">
+            {/* Compact Footer */}
+            <div className="bg-white border-t border-gray-200 px-3 py-2">
               <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600">
+                <div className="text-[10px] text-gray-600">
                   Showing {filteredClientsForDate.length} clients visited
                   {selectedDateForClients && ` on ${formatDate(selectedDateForClients)}`}
                   {clientsModalSalesRepFilter && ` by ${salesReps.find(rep => rep.id === parseInt(clientsModalSalesRepFilter))?.name || 'Selected Sales Rep'}`}
                 </div>
                 <button
                   onClick={() => setClientsModalOpen(false)}
-                  className="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg shadow-sm text-[10px] font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-500 transition-all"
                 >
                   Close
                 </button>

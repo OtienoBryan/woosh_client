@@ -248,7 +248,7 @@ const FeedbackReportPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('all');
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya');
   const [selectedSalesRep, setSelectedSalesRep] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [countries, setCountries] = useState<Country[]>([]);

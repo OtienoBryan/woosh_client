@@ -25,7 +25,8 @@ const AvailabilityReportPage: React.FC = () => {
   
   const [filters, setFilters] = useState<AvailabilityReportFilters>({
     startDate: getTodayDate(),
-    endDate: getTodayDate()
+    endDate: getTodayDate(),
+    country: 'Kenya'
   });
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -722,32 +723,6 @@ const AvailabilityReportPage: React.FC = () => {
                 <h3 className="text-base font-medium text-gray-900 mb-4">Filters</h3>
                 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Outlet
-                    </label>
-                    <input
-                      type="text"
-                      value={filters.outlet || ''}
-                      onChange={(e) => handleFilterChange('outlet', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                      placeholder="Enter outlet name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Comment
-                    </label>
-                    <input
-                      type="text"
-                      value={filters.comment || ''}
-                      onChange={(e) => handleFilterChange('comment', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                      placeholder="Enter comment"
-                    />
-                  </div>
-
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Country

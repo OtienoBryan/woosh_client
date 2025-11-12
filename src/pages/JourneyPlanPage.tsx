@@ -1,10 +1,96 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, MapPin, Users, Calendar, Clock, Eye, BarChart3, FileText } from 'lucide-react';
+import { Plus, MapPin, Users, Calendar, Eye, Globe } from 'lucide-react';
 import CreateJourneyPlanModal from '../components/CreateJourneyPlanModal';
 import PendingJourneyPlansModal from '../components/PendingJourneyPlansModal';
 import SalesRepJourneyPlansModal from '../components/SalesRepJourneyPlansModal';
 import { getWithAuth } from '../utils/fetchWithAuth';
+
+// Country flag image mapping
+const getCountryFlag = (countryName: string): string | null => {
+  const flagMap: { [key: string]: string } = {
+    'Kenya': '/kenya_flag.jpeg',
+    'Tanzania': '/tz_flag.jpeg',
+  };
+  
+  // Try exact match first
+  if (flagMap[countryName]) {
+    return flagMap[countryName];
+  }
+  
+  // Try case-insensitive match
+  const lowerName = countryName.toLowerCase();
+  for (const [key, flag] of Object.entries(flagMap)) {
+    if (key.toLowerCase() === lowerName) {
+      return flag;
+    }
+  }
+  
+  // Return null if no flag image found (will use emoji fallback)
+  return null;
+};
+
+// Country flag emoji fallback for countries without images
+const getCountryFlagEmoji = (countryName: string): string => {
+  const flagMap: { [key: string]: string } = {
+    'Kenya': '🇰🇪',
+    'Tanzania': '🇹🇿',
+    'Uganda': '🇺🇬',
+    'Rwanda': '🇷🇼',
+    'Burundi': '🇧🇮',
+    'Ethiopia': '🇪🇹',
+    'South Sudan': '🇸🇸',
+    'Somalia': '🇸🇴',
+    'Djibouti': '🇩🇯',
+    'Eritrea': '🇪🇷',
+    'Sudan': '🇸🇩',
+    'Egypt': '🇪🇬',
+    'Libya': '🇱🇾',
+    'Tunisia': '🇹🇳',
+    'Algeria': '🇩🇿',
+    'Morocco': '🇲🇦',
+    'Mauritania': '🇲🇷',
+    'Mali': '🇲🇱',
+    'Niger': '🇳🇪',
+    'Chad': '🇹🇩',
+    'Nigeria': '🇳🇬',
+    'Ghana': '🇬🇭',
+    'Senegal': '🇸🇳',
+    'Ivory Coast': '🇨🇮',
+    'Cameroon': '🇨🇲',
+    'Gabon': '🇬🇦',
+    'Congo': '🇨🇬',
+    'DRC': '🇨🇩',
+    'Angola': '🇦🇴',
+    'Zambia': '🇿🇲',
+    'Zimbabwe': '🇿🇼',
+    'Botswana': '🇧🇼',
+    'Namibia': '🇳🇦',
+    'South Africa': '🇿🇦',
+    'Mozambique': '🇲🇿',
+    'Malawi': '🇲🇼',
+    'Madagascar': '🇲🇬',
+    'Mauritius': '🇲🇺',
+    'Seychelles': '🇸🇨',
+    'Comoros': '🇰🇲',
+  };
+  
+  // Try exact match first
+  if (flagMap[countryName]) {
+    return flagMap[countryName];
+  }
+  
+  // Try case-insensitive match
+  const lowerName = countryName.toLowerCase();
+  for (const [key, flag] of Object.entries(flagMap)) {
+    if (key.toLowerCase() === lowerName) {
+      return flag;
+    }
+  }
+  
+  // Default to globe emoji if not found
+  return '🌍';
+};
 
 interface SalesRep {
   id: number;
@@ -43,88 +129,113 @@ const JourneyPlanPage: React.FC = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [journeyPlans, setJourneyPlans] = useState<JourneyPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedSalesRep, setSelectedSalesRep] = useState<SalesRep | null>(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showSalesRepModal, setShowSalesRepModal] = useState(false);
   const [clickedSalesRep, setClickedSalesRep] = useState<SalesRep | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya');
+  const [countries, setCountries] = useState<{id: number; name: string}[]>([]);
 
-  useEffect(() => {
-    fetchSalesReps();
-    fetchJourneyPlans();
-  }, []);
-
-  const fetchSalesReps = async () => {
+  const fetchCountries = async () => {
     try {
-      // Fetch active sales reps (status = 1)
-      const response = await getWithAuth('/api/sales-reps?status=1');
+      const response = await getWithAuth('/api/countries');
+      const data: any = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        setCountries(data.data);
+      } else if (Array.isArray(data)) {
+        setCountries(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch countries:', error);
+    }
+  };
+
+  const fetchSalesReps = useCallback(async () => {
+    try {
+      // Fetch active sales reps (status = 1) with country filter
+      const url = selectedCountry && selectedCountry !== ''
+        ? `/api/sales-reps?status=1&country=${encodeURIComponent(selectedCountry)}`
+        : '/api/sales-reps?status=1';
+      const response = await getWithAuth(url);
       const data: any = await response.json();
       if (data.success) {
         setSalesReps(data.data);
+      } else if (Array.isArray(data)) {
+        setSalesReps(data);
       }
     } catch (error) {
       console.error('Failed to fetch sales reps:', error);
     }
-  };
+  }, [selectedCountry]);
 
-  const fetchJourneyPlans = async () => {
+  const fetchJourneyPlans = useCallback(async () => {
     try {
-      const response = await getWithAuth('/api/journey-plans');
+      // Fetch journey plans with country filter and limit to recent 50 for performance
+      // Since the journey plans section is hidden, we only need minimal data
+      const url = selectedCountry && selectedCountry !== ''
+        ? `/api/journey-plans?country=${encodeURIComponent(selectedCountry)}&limit=50`
+        : '/api/journey-plans?limit=50';
+      const response = await getWithAuth(url);
       const data: any = await response.json();
       const rawPlans = Array.isArray(data) ? data : (data?.data ?? []);
       setJourneyPlans(Array.isArray(rawPlans) ? rawPlans : []);
     } catch (error) {
       console.error('Failed to fetch journey plans:', error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [selectedCountry]);
+
+  // Load countries in parallel with other data
+  useEffect(() => {
+    fetchCountries();
+  }, []);
+
+  // Parallel data fetching for better performance
+  useEffect(() => {
+    setIsLoading(true);
+    // Fetch both in parallel instead of sequentially
+    Promise.all([
+      fetchSalesReps(),
+      fetchJourneyPlans()
+    ]).finally(() => {
+      setIsLoading(false);
+    });
+  }, [selectedCountry, fetchSalesReps, fetchJourneyPlans]);
 
   const handleCreateJourneyPlan = (salesRep: SalesRep) => {
     setSelectedSalesRep(salesRep);
     setShowCreateModal(true);
   };
 
-  const handleRouteCoverage = (salesRep: SalesRep) => {
+  // Memoize filtered journey plans to avoid recalculation
+  const journeyPlansByRep = useMemo(() => {
+    const map = new Map<number, JourneyPlan[]>();
+    journeyPlans.forEach(plan => {
+      const userId = Number(plan.userId);
+      if (!map.has(userId)) {
+        map.set(userId, []);
+      }
+      map.get(userId)!.push(plan);
+    });
+    return map;
+  }, [journeyPlans]);
+
+  const handleRouteCoverage = useCallback((salesRep: SalesRep) => {
+    const repPlans = journeyPlansByRep.get(salesRep.id) || [];
     navigate(`/dashboard/route-coverage/${salesRep.id}`, { 
       state: { 
         salesRep, 
-        journeyPlans: journeyPlans.filter(plan => Number(plan.userId) === Number(salesRep.id)) 
+        journeyPlans: repPlans
       } 
     });
-  };
+  }, [navigate, journeyPlansByRep]);
 
-  const handleRouteReport = (salesRep: SalesRep) => {
-    navigate(`/dashboard/route-report/${salesRep.id}`, { 
-      state: { 
-        salesRep
-      } 
-    });
-  };
 
-  const handleTestFetch = async () => {
-    try {
-      const userIdToTest = 109;
-      console.log('[JourneyPlanPage] Testing fetch for JourneyPlan userId:', userIdToTest);
-      const res = await getWithAuth(`/api/journey-plans/user/${userIdToTest}`);
-      console.log('[JourneyPlanPage] Response status:', res.status);
-      const json = await res.json();
-      const raw = Array.isArray(json) ? json : (json?.data ?? []);
-      console.log('[JourneyPlanPage] Raw payload:', json);
-      console.log('[JourneyPlanPage] Parsed plans length:', Array.isArray(raw) ? raw.length : 'not-array');
-      alert(`Fetched ${Array.isArray(raw) ? raw.length : 0} plans for userId ${userIdToTest}`);
-    } catch (e: any) {
-      console.error('[JourneyPlanPage] Test fetch error:', e);
-      alert(`Test fetch failed: ${e?.message || e}`);
-    }
-  };
-
-  const handleCreateSuccess = () => {
+  const handleCreateSuccess = useCallback(() => {
     fetchJourneyPlans();
     setShowCreateModal(false);
     setSelectedSalesRep(null);
-  };
+  }, [fetchJourneyPlans]);
 
   const handleStatusUpdate = (planId: number, newStatus: number) => {
     // Update the local state to reflect the status change
@@ -140,157 +251,242 @@ const JourneyPlanPage: React.FC = () => {
     setShowSalesRepModal(true);
   };
 
+  // Calculate stats - must be before any conditional returns
+  const stats = useMemo(() => {
+    const total = journeyPlans.length;
+    const pending = journeyPlans.filter(p => p.status === 0).length;
+    const inProgress = journeyPlans.filter(p => p.status === 1).length;
+    const completed = journeyPlans.filter(p => p.status === 2).length;
+    return { total, pending, inProgress, completed };
+  }, [journeyPlans]);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading journey plans...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center text-red-600">
-          <p className="text-lg font-semibold">Error</p>
-          <p>{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Retry
-          </button>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-3 text-xs text-gray-600">Loading journey plans...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-3 py-6 text-xs">
-      {/* Header */}
-                       <div className="mb-8">
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-red-600" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="container mx-auto px-4 py-4">
+        {/* Modern Header */}
+        <div className="mb-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md">
+                  <MapPin className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-base font-bold text-gray-900">Journey Plans</h1>
+                  <p className="text-[10px] text-gray-500">Manage sales representative route plans</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Country Filter Cards */}
+        <div className="mb-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe className="h-4 w-4 text-gray-600" />
+              <h3 className="text-xs font-semibold text-gray-900">Filter by Country</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {/* All Countries Card */}
+              <button
+                onClick={() => setSelectedCountry('')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all shadow-sm ${
+                  selectedCountry === ''
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-blue-600 shadow-md'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-md'
+                }`}
+              >
+                <span className="text-base">🌍</span>
+                <span className="text-[10px] font-medium">All Countries</span>
+              </button>
+              
+              {/* Country Cards */}
+              {countries.map((country) => {
+                const isSelected = selectedCountry === country.name;
+                const flagImage = getCountryFlag(country.name);
+                const flagEmoji = getCountryFlagEmoji(country.name);
+    return (
+          <button
+                    key={country.id}
+                    onClick={() => setSelectedCountry(country.name)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all shadow-sm ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white border-red-600 shadow-md'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-md'
+                    }`}
+                  >
+                    {flagImage ? (
+                      <img 
+                        src={flagImage} 
+                        alt={`${country.name} flag`}
+                        className="w-5 h-4 object-cover rounded-sm"
+                      />
+                    ) : (
+                      <span className="text-base">{flagEmoji}</span>
+                    )}
+                    <span className={`text-[10px] font-medium ${isSelected ? 'text-white' : 'text-gray-700'}`}>
+                      {country.name}
+                    </span>
+          </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4 hidden">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-600">Sales Reps</p>
+                <p className="text-sm font-bold text-gray-900">{salesReps.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <Calendar className="h-3.5 w-3.5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-600">Pending</p>
+                <p className="text-sm font-bold text-gray-900">{stats.pending}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                <MapPin className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-600">In Progress</p>
+                <p className="text-sm font-bold text-gray-900">{stats.inProgress}</p>
+              </div>
+        </div>
+      </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                <Eye className="h-3.5 w-3.5 text-green-600" />
              </div>
              <div>
-              <h1 className="text-2xl font-bold text-gray-900">Journey Plans</h1>
-              <p className="text-gray-600 text-xs">Manage sales representative route plans and client visits</p>
+                <p className="text-[10px] text-gray-600">Completed</p>
+                <p className="text-sm font-bold text-gray-900">{stats.completed}</p>
+              </div>
              </div>
            </div>
          </div>
 
       {/* Sales Representatives Section */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <Users className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Active Sales Representatives</h2>
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
-               {salesReps.length} reps
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+          <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <Users className="h-3.5 w-3.5 text-white" />
+                </div>
+                <h2 className="text-xs font-semibold text-gray-900">Active Sales Representatives</h2>
+                <span className="bg-blue-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                  {salesReps.length}
              </span>
            </div>
-          <button
-            onClick={handleTestFetch}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-700 text-white text-xs rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-          >
-            Test Fetch (userId 109)
-          </button>
            <button
              onClick={() => setShowPendingModal(true)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-600 text-white text-xs rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2 py-1 bg-yellow-600 text-white text-[10px] rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-1 transition-all shadow-sm"
            >
-            <Eye className="h-3.5 w-3.5" />
-             View Pending Plans
+                <Eye className="h-3 w-3" />
+                Pending Plans
            </button>
+            </div>
          </div>
 
         {salesReps.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No active sales representatives found.</p>
+          <div className="text-center py-6 p-4">
+            <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-xs text-gray-500">No active sales representatives found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-xs">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Phone
                   </th>
-                  
-                  <th className="px-4 py-2 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-2 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200 text-xs">
+              <tbody className="bg-white divide-y divide-gray-200">
                                  {salesReps.map((rep) => (
                    <tr 
                      key={rep.id} 
-                     className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all"
                      onClick={() => handleSalesRepClick(rep)}
                    >
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs font-medium text-gray-900">{rep.name}</div>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] font-semibold text-gray-900 truncate max-w-[150px]" title={rep.name}>
+                        {rep.name}
+                      </div>
                      </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-gray-600">{rep.email}</div>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] text-gray-600 truncate max-w-[200px]" title={rep.email}>
+                        {rep.email}
+                      </div>
                      </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-gray-500">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-[10px] text-gray-500 truncate max-w-[120px]" title={rep.phone || '-'}>
                          {rep.phone || '-'}
                        </div>
                      </td>
-                     
-                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                         Active
-                       </span>
-                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                    <td className="px-3 py-2 whitespace-nowrap text-center">
                       <div className="flex flex-row flex-wrap justify-center gap-1">
                          <button
                            onClick={(e) => {
                              e.stopPropagation();
                              handleCreateJourneyPlan(rep);
                            }}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-[11px] rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white text-[10px] rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all shadow-sm"
                          >
-                          <Plus className="h-3 w-3" />
-                           Create Route Plan
+                          <Plus className="h-2.5 w-2.5" />
+                          Create Plan
                          </button>
                                       <button
                onClick={(e) => {
                  e.stopPropagation();
                  handleRouteCoverage(rep);
                }}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 text-white text-[11px] rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-             >
-              <MapPin className="h-3 w-3" />
-               Route Coverage
-             </button>
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 handleRouteReport(rep);
-               }}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-purple-600 text-white text-[11px] rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
-             >
-              <FileText className="h-3 w-3" />
-               Route Report
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-[10px] rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all shadow-sm"
+                        >
+                          <MapPin className="h-2.5 w-2.5" />
+                          Coverage
              </button>
                        </div>
                      </td>
@@ -303,7 +499,7 @@ const JourneyPlanPage: React.FC = () => {
       </div>
 
       {/* Journey Plans Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-6 hidden">
                  <div className="flex items-center justify-between mb-6">
            <div className="flex items-center gap-3">
              <Calendar className="h-6 w-6 text-green-600" />
@@ -478,6 +674,7 @@ const JourneyPlanPage: React.FC = () => {
             onStatusUpdate={handleStatusUpdate}
           />
         )}
+      </div>
       </div>
     );
   };

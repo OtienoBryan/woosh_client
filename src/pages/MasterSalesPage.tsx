@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { salesService, MasterSalesData } from '../services/salesService';
-import { Search, Download, Filter, TrendingUp, Users, DollarSign, Calendar, BarChart3, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Download, Filter, TrendingUp, Users, DollarSign, Calendar, BarChart3, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+
+// Debounce hook for search optimization
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const MasterSalesPage: React.FC = () => {
   const [salesData, setSalesData] = useState<MasterSalesData[]>([]);
-  const [filteredData, setFilteredData] = useState<MasterSalesData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedSalesReps, setSelectedSalesReps] = useState<number[]>([]);
@@ -31,6 +49,7 @@ const MasterSalesPage: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewType, setViewType] = useState<'sales' | 'quantity'>('sales');
+  const [allRecordsTotals, setAllRecordsTotals] = useState<any>(null);
 
   const months = [
     'january', 'february', 'march', 'april', 'may', 'june',
@@ -42,24 +61,37 @@ const MasterSalesPage: React.FC = () => {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
-  // Fetch data when filters, pagination, or sorting changes
+  // Debounced search query - delays API call until user stops typing
+  const debouncedSearchQuery = useDebounce(searchInput, 500);
+
+  // Reset to page 1 when debounced search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
+
+  // Sync searchInput with searchQuery when debounced value changes
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery);
+  }, [debouncedSearchQuery]);
+
+  // Fetch data when filters, pagination, sorting, or search changes
   useEffect(() => {
     fetchSalesData();
-  }, [selectedYear, selectedCategories, selectedSalesReps, selectedCategoryGroup, startDate, endDate, clientStatus, viewType, currentPage, itemsPerPage, sortColumn, sortDirection]);
+  }, [selectedYear, selectedCategories, selectedSalesReps, selectedCategoryGroup, startDate, endDate, clientStatus, viewType, currentPage, itemsPerPage, sortColumn, sortDirection, searchQuery]);
 
   useEffect(() => {
     fetchCategories();
     fetchSalesReps();
   }, []);
 
-  // Client-side filtering (search only)
-  useEffect(() => {
-    filterData();
-  }, [salesData, searchQuery]);
-
   const fetchSalesData = async () => {
     try {
-      setLoading(true);
+      // Only show full loading on initial load, use subtle refresh indicator otherwise
+      if (salesData.length === 0) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       setError(null);
       const categoryIds = selectedCategories.length > 0 ? selectedCategories : undefined;
       const salesRepIds = selectedSalesReps.length > 0 ? selectedSalesReps : undefined;
@@ -87,19 +119,23 @@ const MasterSalesPage: React.FC = () => {
         pageToSend,
         limitToSend,
         sortColumn || undefined,
-        sortDirection
+        sortDirection,
+        searchQuery.trim() || undefined
       );
       
       setSalesData(result.data);
       setTotalPages(result.pagination.totalPages);
       setTotalItems(result.pagination.totalItems);
+      setAllRecordsTotals(result.totals || null);
       
       console.log(`[Master Sales] Loaded ${result.data.length} clients (Page ${currentPage}/${result.pagination.totalPages})`);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sales data');
       setSalesData([]);
+      setAllRecordsTotals(null);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -196,23 +232,84 @@ const MasterSalesPage: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const filterData = () => {
-    if (!searchQuery.trim()) {
-      setFilteredData(salesData);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = salesData.filter(client =>
-      client.client_name.toLowerCase().includes(query)
-    );
-    setFilteredData(filtered);
-  };
 
   const exportToCSV = async () => {
     try {
       setExporting(true);
-      const csvContent = generateCSVContent();
+      
+      // Fetch ALL filtered records for export (no pagination)
+      const categoryIds = selectedCategories.length > 0 ? selectedCategories : undefined;
+      const salesRepIds = selectedSalesReps.length > 0 ? selectedSalesReps : undefined;
+      const categoryGroup = selectedCategoryGroup || undefined;
+      const startDateParam = startDate || undefined;
+      const endDateParam = endDate || undefined;
+      const clientStatusParam = clientStatus || undefined;
+      
+      // Fetch all records with a very large limit
+      const result = await salesService.getMasterSalesData(
+        selectedYear, 
+        categoryIds, 
+        salesRepIds, 
+        categoryGroup, 
+        startDateParam, 
+        endDateParam, 
+        clientStatusParam, 
+        viewType,
+        1, // page 1
+        999999, // very large limit to get all records
+        sortColumn || undefined,
+        sortDirection,
+        searchQuery.trim() || undefined
+      );
+      
+      const allData = result.data;
+      const totals = result.totals || allRecordsTotals;
+      
+      // Generate CSV content with all records
+      const headers = ['Client Name', ...monthLabels, 'Total'];
+      const rows = allData.map(client => [
+        client.client_name,
+        ...months.map(month => {
+          const value = parseFloat(String((client as any)[month])) || 0;
+          return viewType === 'sales' ? formatCurrency(value) : value.toLocaleString();
+        }),
+        (() => {
+          const total = parseFloat(String(client.total)) || 0;
+          return viewType === 'sales' ? formatCurrency(total) : total.toLocaleString();
+        })()
+      ]);
+      
+      // Add totals row at the bottom
+      if (totals) {
+        rows.push([
+          'Grand Total',
+          ...months.map(month => {
+            const monthTotal = parseFloat(String(totals[month])) || 0;
+            return viewType === 'sales' ? formatCurrency(monthTotal) : monthTotal.toLocaleString();
+          }),
+          (() => {
+            const grandTotal = parseFloat(String(totals.total)) || 0;
+            return viewType === 'sales' ? formatCurrency(grandTotal) : grandTotal.toLocaleString();
+          })()
+        ]);
+      }
+      
+      // Format CSV with proper escaping
+      const csvContent = [
+        headers.map(cell => {
+          if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+            return `"${cell.replace(/"/g, '""')}"`;
+          }
+          return cell;
+        }).join(','),
+        ...rows.map(row => row.map(cell => {
+          if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+            return `"${cell.replace(/"/g, '""')}"`;
+          }
+          return cell;
+        }).join(','))
+      ].join('\n');
+      
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
@@ -225,34 +322,21 @@ const MasterSalesPage: React.FC = () => {
         selectedCategories.length > 0 ? `-${selectedCategories.length}-categories` : '',
         selectedSalesReps.length > 0 ? `-${selectedSalesReps.length}-reps` : '',
         selectedCategoryGroup ? `-${selectedCategoryGroup}` : '',
-        clientStatus ? `-${clientStatus}` : ''
+        clientStatus ? `-${clientStatus}` : '',
+        searchQuery.trim() ? `-search-${searchQuery.trim().substring(0, 20)}` : ''
       ].filter(Boolean).join('');
       link.setAttribute('download', `master-${viewType === 'sales' ? 'sales' : 'quantities'}-${selectedYear}-${dateStr}${filterSuffix}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
+      alert('Failed to export CSV. Please try again.');
     } finally {
       setExporting(false);
     }
-  };
-
-  const generateCSVContent = () => {
-    const headers = ['Client Name', ...monthLabels, 'Total'];
-    const rows = sortedData.map(client => [
-      client.client_name,
-      ...months.map(month => {
-        const value = parseFloat(String((client as any)[month])) || 0;
-        return viewType === 'sales' ? formatCurrency(value) : value.toLocaleString();
-      }),
-      (() => {
-        const total = parseFloat(String(client.total)) || 0;
-        return viewType === 'sales' ? formatCurrency(total) : total.toLocaleString();
-      })()
-    ]);
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
   };
 
   const formatCurrency = (amount: number) => {
@@ -262,9 +346,9 @@ const MasterSalesPage: React.FC = () => {
     }).format(amount);
   };
 
-  // OPTIMIZED: Server-side sorting and pagination - backend handles both
-  // No need for client-side sorting anymore
-  const currentData = filteredData; // Data comes sorted and paginated from backend
+  // OPTIMIZED: Server-side sorting, pagination, and search - backend handles all
+  // No need for client-side filtering/sorting anymore
+  const currentData = salesData; // Data comes sorted, paginated, and filtered from backend
   const sortedData = currentData; // Alias for backward compatibility
   
   // Calculate display range for "Showing X to Y of Z" text
@@ -345,9 +429,9 @@ const MasterSalesPage: React.FC = () => {
     return pages;
   };
 
-  // Calculate summary statistics
-  const totalValue = sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0);
-  const totalClients = sortedData.length;
+  // Calculate summary statistics - use backend totals for all filtered records
+  const totalValue = allRecordsTotals ? (parseFloat(String(allRecordsTotals.total)) || 0) : 0;
+  const totalClients = totalItems; // Use totalItems from backend (all filtered records)
   const avgValuePerClient = totalClients > 0 ? totalValue / totalClients : 0;
   const activeFilters = [
     selectedYear !== new Date().getFullYear(),
@@ -532,22 +616,38 @@ const MasterSalesPage: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="block w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs transition-all duration-200"
                   placeholder="Search clients by name..."
                 />
+                {isRefreshing && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <Loader2 className="h-3 w-3 text-gray-400 animate-spin" />
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
               <BarChart3 className="h-3 w-3" />
-              <span>{sortedData.length} of {salesData.length} clients</span>
+              <span>{totalItems} {searchQuery.trim() ? 'filtered' : 'total'} clients</span>
+              {isRefreshing && (
+                <Loader2 className="h-3 w-3 text-gray-400 animate-spin" />
+              )}
             </div>
           </div>
         </div>
 
         {/* Enhanced Sales Table */}
-        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden relative">
+          {isRefreshing && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Updating data...</span>
+              </div>
+            </div>
+          )}
           <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
             <h2 className="text-xs font-semibold text-gray-900">Sales Data</h2>
             <p className="text-[10px] text-gray-600 mt-0.5">Monthly breakdown for all clients</p>
@@ -670,8 +770,8 @@ const MasterSalesPage: React.FC = () => {
                   )}
                 </tbody>
                 
-                                 {/* Enhanced Summary Row */}
-                 {sortedData.length > 0 && (
+                                 {/* Enhanced Summary Row - using totals from ALL filtered records */}
+                 {allRecordsTotals && (
                    <tfoot className="bg-gray-100">
                      <tr>
                        <td className="px-3 py-2 text-xs font-bold text-gray-900 sticky left-0 bg-gray-100 z-10">
@@ -681,10 +781,7 @@ const MasterSalesPage: React.FC = () => {
                          </div>
                        </td>
                        {months.map((month) => {
-                         const monthTotal = sortedData.reduce((sum, client) => {
-                           const monthValue = (client as any)[month];
-                           return sum + (parseFloat(String(monthValue)) || 0);
-                         }, 0);
+                         const monthTotal = parseFloat(String(allRecordsTotals[month])) || 0;
                          return (
                            <td key={month} className="px-2 py-2 text-xs font-bold text-right text-gray-900">
                              {viewType === 'sales' ? formatCurrency(monthTotal) : monthTotal.toLocaleString()}
@@ -692,7 +789,7 @@ const MasterSalesPage: React.FC = () => {
                          );
                        })}
                        <td className="px-3 py-2 text-xs font-bold text-right text-green-900 bg-green-100">
-                         {viewType === 'sales' ? formatCurrency(sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0)) : sortedData.reduce((sum, client) => sum + (parseFloat(String(client.total)) || 0), 0).toLocaleString()}
+                         {viewType === 'sales' ? formatCurrency(parseFloat(String(allRecordsTotals.total)) || 0) : (parseFloat(String(allRecordsTotals.total)) || 0).toLocaleString()}
                        </td>
                      </tr>
                    </tfoot>

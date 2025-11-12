@@ -81,22 +81,20 @@ const RouteCoveragePage: React.FC = () => {
 
   useEffect(() => {
     console.log('[RouteCoverage] Mount/useEffect', { salesRepId, hasState: !!location.state, tokenPresent: !!localStorage.getItem('token') });
+    
+    // Always fetch fresh data from API to ensure we get ALL records
+    // Use location.state only for salesRep info if available, but always fetch journey plans
     if (location.state) {
-      console.log('[RouteCoverage] location.state received:', location.state);
       const state: any = location.state as any;
       const rep = state?.salesRep || null;
-      const plans = Array.isArray(state?.journeyPlans) ? state.journeyPlans : [];
-      console.log('[RouteCoverage] Parsed from state:', { rep, plansCount: plans.length });
-      setSalesRep(rep);
-      setJourneyPlans(plans);
-      processDailyPerformance(plans);
-    } else {
-      // If no state, fetch data from API
-      console.log('[RouteCoverage] No location.state, fetching from API...');
-      fetchSalesRepData();
+      if (rep) {
+        setSalesRep(rep);
+      }
     }
-    setIsLoading(false);
-  }, [location.state, salesRepId]);
+    
+    // Always fetch all journey plans from API (not limited)
+    fetchSalesRepData();
+  }, [salesRepId]);
 
   // Initialize filtered data when dailyPerformance changes
   useEffect(() => {
@@ -281,7 +279,7 @@ const RouteCoveragePage: React.FC = () => {
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig[0];
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${config.bgColor} ${config.textColor}`}>
         {config.label}
       </span>
     );
@@ -487,81 +485,81 @@ const RouteCoveragePage: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-3">
                              <button
                  onClick={() => navigate('/dashboard/journey-plans')}
-                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                 className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
                >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-4 w-4" />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Route Coverage</h1>
-                  <p className="text-sm text-gray-600">{salesRep.name} • {salesRep.email}</p>
+                  <h1 className="text-lg font-bold text-gray-900">Route Coverage</h1>
+                  <p className="text-xs text-gray-600">{salesRep.name} • {salesRep.email}</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <MapPin className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <MapPin className="h-3.5 w-3.5" />
               <span>{salesRep.route_name || 'No route assigned'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Overall Performance Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="h-3.5 w-3.5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Plans</p>
-                <p className="text-2xl font-bold text-gray-900">{overallStats.totalPlans}</p>
+                <p className="text-xs font-medium text-gray-600">Total Plans</p>
+                <p className="text-lg font-bold text-gray-900">{overallStats.totalPlans}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+          <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-3.5 w-3.5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">{overallStats.completedPlans}</p>
+                <p className="text-xs font-medium text-gray-600">Completed</p>
+                <p className="text-lg font-bold text-gray-900">{overallStats.completedPlans}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Clock className="h-5 w-5 text-yellow-600" />
+          <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Clock className="h-3.5 w-3.5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xs font-medium text-gray-600">Pending</p>
+                <p className="text-lg font-bold text-gray-900">
                   {overallStats.totalPlans - overallStats.completedPlans}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
+          <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-3.5 w-3.5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Completion Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{overallStats.completionRate.toFixed(1)}%</p>
+                <p className="text-xs font-medium text-gray-600">Completion Rate</p>
+                <p className="text-lg font-bold text-gray-900">{overallStats.completionRate.toFixed(1)}%</p>
               </div>
             </div>
           </div>
@@ -569,34 +567,34 @@ const RouteCoveragePage: React.FC = () => {
 
                                    {/* Daily Performance */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                                <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Daily Performance & Achievements</h2>
-                <p className="text-sm text-gray-600">Click on dates to view achieved journey plans and overall performance</p>
+                                                <div className="p-3 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Daily Performance & Achievements</h2>
+                <p className="text-xs text-gray-600">Click on dates to view achieved journey plans and overall performance</p>
                 
                 {/* Date Range Filter */}
-                <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">From:</label>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-medium text-gray-700">From:</label>
                     <input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">To:</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-medium text-gray-700">To:</label>
                     <input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <button
                     onClick={filterByDateRange}
                     disabled={!startDate || !endDate}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    className="px-2.5 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                   >
                     Filter
                   </button>
@@ -606,14 +604,14 @@ const RouteCoveragePage: React.FC = () => {
                       setStartDate(currentMonth.start);
                       setEndDate(currentMonth.end);
                     }}
-                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                    className="px-2.5 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-colors"
                   >
                     Current Month
                   </button>
                   {(startDate || endDate) && (
                     <button
                       onClick={clearDateFilter}
-                      className="px-4 py-2 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                      className="px-2.5 py-1 bg-gray-500 text-white text-xs rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors"
                     >
                       Clear Filter
                     </button>
@@ -622,9 +620,9 @@ const RouteCoveragePage: React.FC = () => {
               </div>
 
                      {filteredDailyPerformance.length === 0 ? (
-             <div className="p-8 text-center">
-               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-               <p className="text-gray-500">
+             <div className="p-6 text-center">
+               <Calendar className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+               <p className="text-xs text-gray-500">
                  {startDate && endDate 
                    ? `No journey plans found for the selected date range (${startDate} to ${endDate})`
                    : 'No journey plans found for this sales representative.'
@@ -632,13 +630,13 @@ const RouteCoveragePage: React.FC = () => {
                </p>
              </div>
            ) : (
-            <div className="p-6">
+            <div className="p-3">
                                             {/* Date Table */}
-                               <div className="mb-6">
+                               <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Click on a date to view details</label>
+                    <label className="block text-xs font-medium text-gray-700">Click on a date to view details</label>
                     {startDate && endDate && (
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs text-gray-600">
                         Showing {filteredDailyPerformance.length} of {dailyPerformance.length} dates
                       </span>
                     )}
@@ -647,22 +645,22 @@ const RouteCoveragePage: React.FC = () => {
                    <table className="min-w-full divide-y divide-gray-200">
                      <thead className="bg-gray-50">
                        <tr>
-                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                         <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                            Date
                          </th>
-                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                         <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                            Day
                          </th>
-                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                         <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                            Total Plans
                          </th>
-                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                         <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                            Achieved
                          </th>
-                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                         <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                            Completion Rate
                          </th>
-                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                         <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                            Actions
                          </th>
                        </tr>
@@ -676,44 +674,44 @@ const RouteCoveragePage: React.FC = () => {
                            }`}
                            onClick={() => handleDateSelect(day.date)}
                          >
-                           <td className="px-6 py-4 whitespace-nowrap">
-                             <div className="text-sm font-semibold text-gray-900">
+                           <td className="px-3 py-2 whitespace-nowrap">
+                             <div className="text-xs font-semibold text-gray-900">
                                {getFormattedDate(day.date)}
                              </div>
                            </td>
-                           <td className="px-6 py-4 whitespace-nowrap">
-                             <div className="text-sm text-gray-600">
+                           <td className="px-3 py-2 whitespace-nowrap">
+                             <div className="text-xs text-gray-600">
                                {new Date(day.date).toLocaleDateString('en-US', { 
                                  weekday: 'long' 
                                })}
                              </div>
                            </td>
-                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                             <div className="text-sm font-medium text-blue-600">
+                           <td className="px-3 py-2 whitespace-nowrap text-center">
+                             <div className="text-xs font-medium text-blue-600">
                                {day.totalPlans}
                              </div>
                            </td>
-                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                             <div className="text-sm font-medium text-green-600">
+                           <td className="px-3 py-2 whitespace-nowrap text-center">
+                             <div className="text-xs font-medium text-green-600">
                                {day.completedPlans}
                              </div>
                            </td>
-                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                             <div className="text-sm font-medium text-purple-600">
+                           <td className="px-3 py-2 whitespace-nowrap text-center">
+                             <div className="text-xs font-medium text-purple-600">
                                {day.completionRate.toFixed(1)}%
                              </div>
                            </td>
-                           <td className="px-6 py-4 whitespace-nowrap text-center">
+                           <td className="px-3 py-2 whitespace-nowrap text-center">
                              <button
                                onClick={(e) => {
                                  e.stopPropagation();
                                  handleDateSelect(day.date);
                                }}
-                               className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white ${
+                               className={`inline-flex items-center px-2 py-1 border border-transparent text-xs leading-3 font-medium rounded-md text-white ${
                                  selectedDate === day.date
                                    ? 'bg-blue-600 hover:bg-blue-700'
                                    : 'bg-gray-600 hover:bg-gray-700'
-                               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                               } focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500 transition-colors`}
                              >
                                {selectedDate === day.date ? 'Selected' : 'Select'}
                              </button>
@@ -736,9 +734,9 @@ const RouteCoveragePage: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white w-full h-full flex flex-col overflow-hidden">
              {/* Modal Header */}
-             <div className="flex items-center justify-between p-6 border-b border-gray-200">
+             <div className="flex items-center justify-between p-3 border-b border-gray-200">
                <div>
-                 <h2 className="text-xl font-semibold text-gray-900">
+                 <h2 className="text-sm font-semibold text-gray-900">
                    {new Date(selectedDayPerformance.date).toLocaleDateString('en-US', { 
                      weekday: 'long', 
                      year: 'numeric', 
@@ -746,37 +744,37 @@ const RouteCoveragePage: React.FC = () => {
                      day: 'numeric' 
                    })}
                  </h2>
-                 <p className="text-sm text-gray-600 mt-1">
+                 <p className="text-xs text-gray-600 mt-0.5">
                    Journey Plans Overview
                  </p>
                </div>
                <button
                  onClick={closeModal}
-                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                 className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
                >
-                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                  </svg>
                </button>
              </div>
 
              {/* Modal Content */}
-             <div className="flex-1 overflow-y-auto p-6">
+             <div className="flex-1 overflow-y-auto p-3">
                {/* Selected Day Performance Summary */}
-               <div className="mb-6">
-                 <div className="bg-gray-50 rounded-lg p-4">
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="mb-3">
+                 <div className="bg-gray-50 rounded-lg p-3">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                      <div className="text-center">
-                       <p className="text-2xl font-bold text-blue-600">{selectedDayPerformance.totalPlans}</p>
-                       <p className="text-sm text-gray-600">Total Plans</p>
+                       <p className="text-lg font-bold text-blue-600">{selectedDayPerformance.totalPlans}</p>
+                       <p className="text-xs text-gray-600">Total Plans</p>
                      </div>
                      <div className="text-center">
-                       <p className="text-2xl font-bold text-green-600">{selectedDayPerformance.completedPlans}</p>
-                       <p className="text-sm text-gray-600">Completed</p>
+                       <p className="text-lg font-bold text-green-600">{selectedDayPerformance.completedPlans}</p>
+                       <p className="text-xs text-gray-600">Completed</p>
                      </div>
                      <div className="text-center">
-                       <p className="text-2xl font-bold text-purple-600">{selectedDayPerformance.completionRate.toFixed(1)}%</p>
-                       <p className="text-sm text-gray-600">Completion Rate</p>
+                       <p className="text-lg font-bold text-purple-600">{selectedDayPerformance.completionRate.toFixed(1)}%</p>
+                       <p className="text-xs text-gray-600">Completion Rate</p>
                      </div>
                    </div>
                  </div>
@@ -900,17 +898,17 @@ const RouteCoveragePage: React.FC = () => {
                                {/* All Journey Plans Section */}
                 {selectedDayPerformance.allPlans.length > 0 && (
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5 text-blue-600" />
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
+                        <BarChart3 className="h-4 w-4 text-blue-600" />
                         All Journey Plans ({selectedDayPerformance.allPlans.length})
                       </h3>
                       {selectedDayPerformance.allPlans.some(plan => plan.latitude && plan.longitude && (plan.status === 2 || plan.status === 3)) && (
                         <button
                           onClick={() => openMapModal(selectedDayPerformance.allPlans)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
                         >
-                          <MapPin className="h-4 w-4" />
+                          <MapPin className="h-3.5 w-3.5" />
                           View on Map
                         </button>
                       )}
@@ -921,31 +919,28 @@ const RouteCoveragePage: React.FC = () => {
                        <table className="min-w-full divide-y divide-gray-200">
                          <thead className="bg-gray-50 sticky top-0 z-10">
                            <tr>
-                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Client
                              </th>
-                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                               Route
-                             </th>
-                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Scheduled
                              </th>
-                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Status
                              </th>
-                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Check-in
                              </th>
-                             <th className="px-4 py-3 text-center text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Check-out
                              </th>
-                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Time Spent
                              </th>
-                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Coordinates
                              </th>
-                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                             <th className="px-2 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                                Actions
                              </th>
                            </tr>
@@ -974,43 +969,33 @@ const RouteCoveragePage: React.FC = () => {
                                }`}
                              >
                                {/* Client Name */}
-                               <td className="px-4 py-4 whitespace-nowrap">
-                                 <div className="flex items-center gap-2">
-                                   <span className="text-sm font-medium text-gray-900">
+                               <td className="px-2 py-2 whitespace-nowrap">
+                                 <div className="flex items-center gap-1.5">
+                                   <span className="text-xs font-medium text-gray-900">
                                      {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}
                                    </span>
                                    {plan.status === 3 && (
-                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
                                        ✓
                                      </span>
                                    )}
                                  </div>
                                </td>
                                
-                               {/* Route */}
-                               <td className="px-4 py-4 whitespace-nowrap">
-                                 <div className="flex items-center gap-2">
-                                   <MapPin className="h-4 w-4 text-gray-400" />
-                                   <span className="text-sm text-gray-600">
-                                     {plan.route_name || 'No route'}
-                                   </span>
-                                 </div>
-                               </td>
-                               
                                {/* Scheduled Time */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
-                                 <span className="text-sm text-gray-900">{plan.time}</span>
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
+                                 <span className="text-xs text-gray-900">{plan.time}</span>
                                </td>
                                
                                {/* Status */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
                                  {getStatusBadge(plan.status)}
                                </td>
                                
                                {/* Check-in Time */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
                                  {plan.checkInTime ? (
-                                   <span className="text-sm text-blue-600">
+                                   <span className="text-xs text-blue-600">
                                      {new Date(plan.checkInTime).toLocaleTimeString('en-US', {
                                        hour: '2-digit',
                                        minute: '2-digit',
@@ -1018,14 +1003,14 @@ const RouteCoveragePage: React.FC = () => {
                                      })}
                                    </span>
                                  ) : (
-                                   <span className="text-sm text-gray-400">Not checked in</span>
+                                   <span className="text-xs text-gray-400">Not checked in</span>
                                  )}
                                </td>
                                
                                {/* Check-out Time */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
                                  {plan.checkoutTime ? (
-                                   <span className="text-sm text-blue-600">
+                                   <span className="text-xs text-blue-600">
                                      {new Date(plan.checkoutTime).toLocaleTimeString('en-US', {
                                        hour: '2-digit',
                                        minute: '2-digit',
@@ -1033,47 +1018,47 @@ const RouteCoveragePage: React.FC = () => {
                                      })}
                                    </span>
                                  ) : (
-                                   <span className="text-sm text-gray-400">Not checked out</span>
+                                   <span className="text-xs text-gray-400">Not checked out</span>
                                  )}
                                </td>
                                
                                {/* Time Spent */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
                                  {plan.checkInTime && plan.checkoutTime ? (
-                                   <span className="text-sm text-blue-600 font-medium">
+                                   <span className="text-xs text-blue-600 font-medium">
                                      {calculateTimeSpent(plan.checkInTime, plan.checkoutTime)}
                                    </span>
                                  ) : (
-                                   <span className="text-sm text-gray-400">N/A</span>
+                                   <span className="text-xs text-gray-400">N/A</span>
                                  )}
                                </td>
                                
                                {/* Coordinates */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
                                 {plan.latitude && plan.longitude && (plan.status === 2 || plan.status === 3) ? (
                                    <button
                                      onClick={() => openMapModal([plan])}
-                                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                     className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                                    >
                                      {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
                                    </button>
                                  ) : plan.latitude && plan.longitude ? (
-                                   <span className="text-sm text-gray-500">
+                                   <span className="text-xs text-gray-500">
                                      {plan.latitude.toFixed(4)}, {plan.longitude.toFixed(4)}
                                    </span>
                                  ) : (
-                                   <span className="text-sm text-gray-400">Not available</span>
+                                   <span className="text-xs text-gray-400">Not available</span>
                                  )}
                                </td>
                                
                                {/* Actions */}
-                               <td className="px-4 py-4 whitespace-nowrap text-center">
+                               <td className="px-2 py-2 whitespace-nowrap text-center">
                                  {plan.status !== 0 && (
                                    <button
                                      onClick={() => navigate(`/dashboard/route-report/${salesRep?.id}`, {
                                        state: { salesRep, clientId: plan.clientId, selectedDate: selectedDate }
                                      })}
-                                     className="inline-flex items-center px-3 py-2 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                     className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                                    >
                                      View Reports
                                    </button>
@@ -1087,17 +1072,17 @@ const RouteCoveragePage: React.FC = () => {
                     
                     {/* Notes Section */}
                     {selectedDayPerformance.allPlans.some(plan => plan.notes) && (
-                      <div className="mt-6">
-                        <h4 className="text-md font-medium text-gray-900 mb-3">Notes</h4>
-                        <div className="space-y-2">
+                      <div className="mt-3">
+                        <h4 className="text-xs font-medium text-gray-900 mb-2">Notes</h4>
+                        <div className="space-y-1.5">
                           {selectedDayPerformance.allPlans
                             .filter(plan => plan.notes)
                             .map((plan: JourneyPlan) => (
-                              <div key={plan.id} className="bg-gray-50 rounded p-3">
-                                <span className="text-sm font-medium text-gray-700">
+                              <div key={plan.id} className="bg-gray-50 rounded p-2">
+                                <span className="text-xs font-medium text-gray-700">
                                   {plan.client_name || plan.client_company_name || `Client ID: ${plan.clientId}`}:
                                 </span>
-                                <span className="text-sm text-gray-600 ml-2">{plan.notes}</span>
+                                <span className="text-xs text-gray-600 ml-2">{plan.notes}</span>
                               </div>
                             ))}
                         </div>

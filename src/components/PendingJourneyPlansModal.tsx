@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, Clock, MapPin, User, Building, Calendar, Filter, Search } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Clock, User, Building, Calendar, Filter, Search } from 'lucide-react';
+import { patchWithAuth } from '../utils/fetchWithAuth';
 
 interface JourneyPlan {
   id: number;
@@ -48,13 +49,7 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen) {
-      filterPlans();
-    }
-  }, [isOpen, journeyPlans, searchTerm, statusFilter, dateFilter]);
-
-  const filterPlans = () => {
+  const filterPlans = useCallback(() => {
     let filtered = journeyPlans.filter(plan => {
       // Status filter
       if (statusFilter !== 'all' && plan.status !== statusFilter) {
@@ -72,7 +67,6 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
         const matches = (
           (plan.user_name && plan.user_name.toLowerCase().includes(searchLower)) ||
           (plan.client_name && plan.client_name.toLowerCase().includes(searchLower)) ||
-          (plan.route_name && plan.route_name.toLowerCase().includes(searchLower)) ||
           plan.id.toString().includes(searchTerm)
         );
         return matches;
@@ -89,7 +83,13 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
     });
 
     setFilteredPlans(filtered);
-  };
+  }, [journeyPlans, searchTerm, statusFilter, dateFilter]);
+
+  useEffect(() => {
+    if (isOpen) {
+      filterPlans();
+    }
+  }, [isOpen, filterPlans]);
 
   // Group plans by sales representative
   const getGroupedPlans = () => {
@@ -118,7 +118,7 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig[0];
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${config.bgColor} ${config.textColor}`}>
         {config.label}
       </span>
     );
@@ -126,18 +126,16 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
 
   const handleStatusChange = async (planId: number, newStatus: number) => {
     try {
-      const response = await fetch(`/api/journey-plans/${planId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
+      const response = await patchWithAuth(`/api/journey-plans/${planId}`, {
+        status: newStatus
       });
 
       if (response.ok) {
         if (onStatusUpdate) {
           onStatusUpdate(planId, newStatus);
         }
+        // Refresh filtered plans
+        filterPlans();
       } else {
         console.error('Failed to update status');
       }
@@ -156,197 +154,165 @@ const PendingJourneyPlansModal: React.FC<PendingJourneyPlansModalProps> = ({
 
   if (!isOpen) return null;
 
+  const groupedPlans = getGroupedPlans();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white w-full h-full flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-              <Clock className="h-5 w-5 text-yellow-600" />
+        {/* Modern Header */}
+        <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+              <Clock className="h-3.5 w-3.5 text-white" />
             </div>
-                         <div>
-               <h2 className="text-xl font-semibold text-gray-900">Pending Journey Plans</h2>
-               <p className="text-sm text-gray-600">
-                 {getGroupedPlans().length} sales rep{getGroupedPlans().length !== 1 ? 's' : ''} • {getPendingPlansCount()} pending • {getInProgressPlansCount()} in progress
-               </p>
-             </div>
+            <div>
+              <h2 className="text-sm font-bold text-gray-900">Pending Journey Plans</h2>
+              <p className="text-[10px] text-gray-600">
+                {groupedPlans.length} rep{groupedPlans.length !== 1 ? 's' : ''} • {getPendingPlansCount()} pending • {getInProgressPlansCount()} in progress
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
           >
-            <X className="h-6 w-6" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex flex-wrap gap-4 items-center">
+        {/* Compact Filters */}
+        <div className="p-3 border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-wrap gap-2 items-center">
             {/* Search */}
-            <div className="flex-1 min-w-64">
+            <div className="flex-1 min-w-48">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by sales rep, client, or route..."
+                  placeholder="Search by rep or client..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pl-7 pr-2 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-                             <select
-                 value={statusFilter}
-                 onChange={(e) => setStatusFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-               >
-                 <option value="all">All Statuses</option>
-                 <option value={0}>Pending</option>
-                 <option value={1}>In Progress</option>
-                 <option value={2}>Completed</option>
-                 <option value={3}>Cancelled</option>
-               </select>
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3 w-3 text-gray-500" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="px-2 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              >
+                <option value="all">All Statuses</option>
+                <option value={0}>Pending</option>
+                <option value={1}>In Progress</option>
+                <option value={2}>Completed</option>
+                <option value={3}>Cancelled</option>
+              </select>
             </div>
 
             {/* Date Filter */}
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3 w-3 text-gray-500" />
               <input
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="px-2 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
           </div>
         </div>
 
-                                                                       {/* Content */}
-           <div className="flex-1 overflow-y-auto p-6">
-           {filteredPlans.length === 0 ? (
-             <div className="text-center py-12">
-               <Clock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-               <p className="text-gray-500 text-lg">No journey plans found</p>
-               <p className="text-gray-400 text-sm">Try adjusting your filters</p>
-             </div>
-           ) : (
-             <div className="space-y-6">
-               {getGroupedPlans().map(([salesRepName, plans]) => (
-                 <div key={salesRepName} className="bg-gray-50 rounded-lg p-4">
-                   {/* Sales Rep Header */}
-                   <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
-                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                       <User className="h-4 w-4 text-blue-600" />
-                     </div>
-                     <div>
-                       <h3 className="text-lg font-semibold text-gray-900">{salesRepName}</h3>
-                       <p className="text-sm text-gray-600">
-                         {plans.length} journey plan{plans.length !== 1 ? 's' : ''}
-                       </p>
-                     </div>
-                   </div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-3">
+          {filteredPlans.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500 text-xs">No journey plans found</p>
+              <p className="text-gray-400 text-[10px]">Try adjusting your filters</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {groupedPlans.map(([salesRepName, plans]) => (
+                <div key={salesRepName} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-2.5 border border-gray-200 shadow-sm">
+                  {/* Sales Rep Header */}
+                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200">
+                    <div className="w-5 h-5 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <User className="h-2.5 w-2.5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-gray-900">{salesRepName}</h3>
+                      <p className="text-[10px] text-gray-600">
+                        {plans.length} plan{plans.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
 
-                   {/* Journey Plans for this Sales Rep */}
-                   <div className="space-y-3">
-                     {plans.map((plan) => (
-                       <div
-                         key={plan.id}
-                         className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                       >
-                         <div className="flex items-start justify-between">
-                           <div className="flex-1">
-                             <div className="flex items-center gap-4 mb-3">
-                               <div className="flex items-center gap-2">
-                                 <Building className="h-4 w-4 text-green-500" />
-                                 <span className="font-medium text-gray-900">
-                                   {plan.client_name || `Client ID: ${plan.clientId}`}
-                                 </span>
-                               </div>
-                               <div className="flex items-center gap-2">
-                                 <MapPin className="h-4 w-4 text-purple-500" />
-                                 <span className="text-gray-700">
-                                   {plan.route_name || `Route ID: ${plan.routeId}` || 'No route'}
-                                 </span>
-                               </div>
-                             </div>
+                  {/* Journey Plans for this Sales Rep */}
+                  <div className="space-y-2">
+                    {plans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        className="bg-white border border-gray-200 rounded-lg p-2.5 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <Building className="h-3 w-3 text-green-600" />
+                                <span className="font-medium text-[10px] text-gray-900 truncate">
+                                  {plan.client_name || `Client ID: ${plan.clientId}`}
+                                </span>
+                              </div>
+                            </div>
 
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                               <div>
-                                 <span className="font-medium">Date:</span> {new Date(plan.date).toLocaleDateString()}
-                               </div>
-                               <div>
-                                 <span className="font-medium">Time:</span> {plan.time}
-                               </div>
-                               <div>
-                                 <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
-                               </div>
-                             </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 text-[10px] text-gray-600 mb-1.5">
+                              <div>
+                                <span className="font-medium">Date:</span> {new Date(plan.date).toLocaleDateString()}
+                              </div>
+                              <div>
+                                <span className="font-medium">Time:</span> {plan.time}
+                              </div>
+                              <div>
+                                <span className="font-medium">Status:</span> {getStatusBadge(plan.status)}
+                              </div>
+                            </div>
 
-                             {plan.notes && (
-                               <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                                 <span className="font-medium text-gray-700">Notes:</span>
-                                 <p className="text-gray-600 mt-1">{plan.notes}</p>
-                               </div>
-                             )}
+                            {plan.notes && (
+                              <div className="mt-1.5 p-1.5 bg-gray-50 rounded-md">
+                                <span className="font-medium text-[10px] text-gray-700">Notes:</span>
+                                <p className="text-[10px] text-gray-600 mt-0.5">{plan.notes}</p>
+                              </div>
+                            )}
 
-                             {(plan.latitude && plan.longitude) && (
-                               <div className="mt-3 text-sm text-blue-600">
-                                 📍 Coordinates: {plan.latitude.toFixed(6)}, {plan.longitude.toFixed(6)}
-                               </div>
-                             )}
-                           </div>
+                            {(plan.latitude && plan.longitude) && (
+                              <div className="mt-1.5 text-[10px] text-blue-600">
+                                📍 {plan.latitude.toFixed(6)}, {plan.longitude.toFixed(6)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-                           {/* Status Update Actions */}
-                           <div className="ml-4 flex flex-col gap-2">
-                             {plan.status === 0 && (
-                               <>
-                                 <button
-                                   onClick={() => handleStatusChange(plan.id, 1)}
-                                   className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-md hover:bg-yellow-200 transition-colors"
-                                 >
-                                   Start Journey
-                                 </button>
-                                 <button
-                                   onClick={() => handleStatusChange(plan.id, 3)}
-                                   className="px-3 py-1 bg-red-100 text-red-800 text-xs rounded-md hover:bg-red-200 transition-colors"
-                                 >
-                                   Cancel
-                                 </button>
-                               </>
-                             )}
-                             {plan.status === 1 && (
-                               <button
-                                 onClick={() => handleStatusChange(plan.id, 2)}
-                                 className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-md hover:bg-green-200 transition-colors"
-                               >
-                                 Complete
-                               </button>
-                             )}
-                           </div>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-               ))}
-             </div>
-           )}
-         </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        {/* Compact Footer */}
+        <div className="p-2.5 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing {filteredPlans.length} of {journeyPlans.length} journey plans
+            <p className="text-[10px] text-gray-600">
+              Showing {filteredPlans.length} of {journeyPlans.length} plans
             </p>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              className="px-3 py-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-[10px] rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all shadow-sm"
             >
               Close
             </button>

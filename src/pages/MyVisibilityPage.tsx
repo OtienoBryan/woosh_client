@@ -44,7 +44,7 @@ const MyVisibilityPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOutlet, setSelectedOutlet] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya');
   const [selectedSalesRep, setSelectedSalesRep] = useState<string>('');
   const [outlets, setOutlets] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
