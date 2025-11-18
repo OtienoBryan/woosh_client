@@ -187,24 +187,57 @@ const MasterSalesPage: React.FC = () => {
   const exportModalToCSV = () => {
     if (salesDetails.length === 0) return;
 
+    // Group products by product_name and aggregate quantities and totals
+    const productSummary: { [key: string]: { 
+      product_name: string; 
+      category_name: string; 
+      total_quantity: number; 
+      total_sales: number;
+      avg_unit_price: number;
+    } } = {};
+    
+    salesDetails.forEach((detail) => {
+      const productName = detail.product_name || 'Unknown Product';
+      if (!productSummary[productName]) {
+        productSummary[productName] = {
+          product_name: productName,
+          category_name: detail.category_name || 'N/A',
+          total_quantity: 0,
+          total_sales: 0,
+          avg_unit_price: 0
+        };
+      }
+      productSummary[productName].total_quantity += parseFloat(String(detail.quantity)) || 0;
+      productSummary[productName].total_sales += parseFloat(String(detail.line_total)) || 0;
+    });
+    
+    // Calculate average unit price for each product
+    Object.keys(productSummary).forEach(productName => {
+      const product = productSummary[productName];
+      if (product.total_quantity > 0) {
+        product.avg_unit_price = product.total_sales / product.total_quantity;
+      }
+    });
+    
+    // Convert to array and sort by total sales (descending)
+    const productsArray = Object.values(productSummary).sort((a, b) => b.total_sales - a.total_sales);
+
     // Create CSV header
-    const headers = ['Order #', 'Date', 'Product', 'Category', 'Quantity', 'Unit Price', 'Line Total', 'Sales Rep'];
+    const headers = ['Product', 'Category', 'Total Quantity', 'Avg Unit Price', 'Total Sales'];
     
     // Create CSV rows
-    const rows = salesDetails.map(detail => [
-      detail.order_number || detail.order_id,
-      new Date(detail.order_date).toLocaleDateString(),
-      detail.product_name,
-      detail.category_name || 'N/A',
-      detail.quantity,
-      parseFloat(String(detail.unit_price)) || 0,
-      parseFloat(String(detail.line_total)) || 0,
-      detail.sales_rep_name || 'N/A'
+    const rows = productsArray.map(product => [
+      product.product_name,
+      product.category_name,
+      product.total_quantity,
+      product.avg_unit_price,
+      product.total_sales
     ]);
 
     // Add total row
-    const total = salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0);
-    rows.push(['', '', '', '', '', 'Grand Total:', total, '']);
+    const totalQuantity = productsArray.reduce((sum, p) => sum + p.total_quantity, 0);
+    const totalSales = productsArray.reduce((sum, p) => sum + p.total_sales, 0);
+    rows.push(['Grand Total', '', totalQuantity, '', totalSales]);
 
     // Combine headers and rows
     const csvContent = [
@@ -222,7 +255,7 @@ const MasterSalesPage: React.FC = () => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    const fileName = `Sales_Details_${selectedClient?.name}_${selectedMonth === 'total' ? selectedYear : `${monthLabels[months.indexOf(selectedMonth)]}_${selectedYear}`}.csv`;
+    const fileName = `Products_Sold_${selectedClient?.name}_${selectedMonth === 'total' ? selectedYear : `${monthLabels[months.indexOf(selectedMonth)]}_${selectedYear}`}.csv`;
     
     link.setAttribute('href', url);
     link.setAttribute('download', fileName);
@@ -1096,7 +1129,10 @@ const MasterSalesPage: React.FC = () => {
                     <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-500">
                       <span className="flex items-center gap-1">
                         <BarChart3 className="h-3 w-3" />
-                        {salesDetails.length} order items
+                        {(() => {
+                          const uniqueProducts = new Set(salesDetails.map(d => d.product_name));
+                          return `${uniqueProducts.size} product${uniqueProducts.size !== 1 ? 's' : ''}`;
+                        })()} sold
                       </span>
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
@@ -1134,19 +1170,49 @@ const MasterSalesPage: React.FC = () => {
                   <div className="text-center py-6">
                     <BarChart3 className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                     <p className="text-xs font-medium text-gray-500">No sales details found</p>
-                    <p className="text-[10px] text-gray-400">No individual sales records for this client and month</p>
+                    <p className="text-[10px] text-gray-400">No products sold for this client and month</p>
                   </div>
-                ) : (
+                ) : (() => {
+                  // Group products by product_name and aggregate quantities and totals
+                  const productSummary: { [key: string]: { 
+                    product_name: string; 
+                    category_name: string; 
+                    total_quantity: number; 
+                    total_sales: number;
+                    avg_unit_price: number;
+                  } } = {};
+                  
+                  salesDetails.forEach((detail) => {
+                    const productName = detail.product_name || 'Unknown Product';
+                    if (!productSummary[productName]) {
+                      productSummary[productName] = {
+                        product_name: productName,
+                        category_name: detail.category_name || 'N/A',
+                        total_quantity: 0,
+                        total_sales: 0,
+                        avg_unit_price: 0
+                      };
+                    }
+                    productSummary[productName].total_quantity += parseFloat(String(detail.quantity)) || 0;
+                    productSummary[productName].total_sales += parseFloat(String(detail.line_total)) || 0;
+                  });
+                  
+                  // Calculate average unit price for each product
+                  Object.keys(productSummary).forEach(productName => {
+                    const product = productSummary[productName];
+                    if (product.total_quantity > 0) {
+                      product.avg_unit_price = product.total_sales / product.total_quantity;
+                    }
+                  });
+                  
+                  // Convert to array and sort by total sales (descending)
+                  const productsArray = Object.values(productSummary).sort((a, b) => b.total_sales - a.total_sales);
+                  
+                  return (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
-                            Order #
-                          </th>
-                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
                           <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
                             Product
                           </th>
@@ -1154,63 +1220,55 @@ const MasterSalesPage: React.FC = () => {
                             Category
                           </th>
                           <th className="px-3 py-2 text-right text-[9px] font-medium text-gray-500 uppercase tracking-wider">
-                            Qty
+                            Total Quantity
                           </th>
                           <th className="px-3 py-2 text-right text-[9px] font-medium text-gray-500 uppercase tracking-wider">
-                            Unit Price
+                            Avg Unit Price
                           </th>
                           <th className="px-3 py-2 text-right text-[9px] font-medium text-gray-500 uppercase tracking-wider">
-                            Line Total
-                          </th>
-                          <th className="px-3 py-2 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">
-                            Sales Rep
+                            Total Sales
                           </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {salesDetails.map((detail, index) => (
-                          <tr key={`${detail.order_id}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-blue-600">
-                              #{detail.order_number || detail.order_id}
-                            </td>
+                        {productsArray.map((product, index) => (
+                          <tr key={product.product_name} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-                              {new Date(detail.order_date).toLocaleDateString()}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-                              <div className="font-medium">{detail.product_name}</div>
+                              <div className="font-medium">{product.product_name}</div>
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                              {detail.category_name || 'N/A'}
+                              {product.category_name}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 text-right">
-                              {detail.quantity}
+                              {product.total_quantity.toLocaleString()}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 text-right">
-                              {formatCurrency(parseFloat(String(detail.unit_price)) || 0)}
+                              {formatCurrency(product.avg_unit_price)}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900 text-right">
-                              {formatCurrency(parseFloat(String(detail.line_total)) || 0)}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                              {detail.sales_rep_name || 'N/A'}
+                              {formatCurrency(product.total_sales)}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot className="bg-gray-100">
                         <tr>
-                          <td colSpan={6} className="px-3 py-2 text-xs font-bold text-gray-900 text-right">
+                          <td colSpan={2} className="px-3 py-2 text-xs font-bold text-gray-900 text-right">
                             Grand Total:
                           </td>
                           <td className="px-3 py-2 text-xs font-bold text-gray-900 text-right">
-                            {formatCurrency(salesDetails.reduce((sum, detail) => sum + (parseFloat(String(detail.line_total)) || 0), 0))}
+                            {productsArray.reduce((sum, p) => sum + p.total_quantity, 0).toLocaleString()}
                           </td>
                           <td className="px-3 py-2"></td>
+                          <td className="px-3 py-2 text-xs font-bold text-gray-900 text-right">
+                            {formatCurrency(productsArray.reduce((sum, p) => sum + p.total_sales, 0))}
+                          </td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Modal Footer */}

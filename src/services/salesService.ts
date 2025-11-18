@@ -63,6 +63,8 @@ export interface MasterSalesData {
 export interface SalesRepMonthlyPerformance {
   sales_rep_id: number;
   sales_rep_name: string;
+  countryId?: number;
+  country?: string;
   // Sales view fields
   january?: number;
   february?: number;

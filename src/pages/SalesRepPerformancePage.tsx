@@ -12,7 +12,7 @@ const SalesRepPerformancePage: React.FC = () => {
   const [selectedSalesReps, setSelectedSalesReps] = useState<number[]>([]);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
   const [salesReps, setSalesReps] = useState<{ id: number; name: string }[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -68,13 +68,30 @@ const SalesRepPerformancePage: React.FC = () => {
       const startDateParam = startDate || undefined;
       const endDateParam = endDate || undefined;
       const countryParam = selectedCountry || undefined;
-      console.log('Fetching performance data with params:', { selectedYear, salesRepIds, startDateParam, endDateParam, viewType, countryParam });
+      console.log('[SalesRepPerformance] ===== FETCHING DATA =====');
+      console.log('[SalesRepPerformance] Full params:', { 
+        selectedYear, 
+        salesRepIds, 
+        startDateParam, 
+        endDateParam, 
+        viewType,
+        countryParam
+      });
+      
       const data = await salesService.getSalesRepMonthlyPerformance(selectedYear, salesRepIds, startDateParam, endDateParam, viewType, countryParam);
-      console.log('Fetched performance data:', data);
+      
+      console.log('[SalesRepPerformance] ===== DATA RECEIVED =====');
+      console.log('[SalesRepPerformance] Data type:', Array.isArray(data) ? 'array' : typeof data);
+      console.log('[SalesRepPerformance] Data length:', Array.isArray(data) ? data.length : 'N/A');
+      console.log('[SalesRepPerformance] First 3 items:', Array.isArray(data) ? data.slice(0, 3) : data);
+      
       setPerformanceData(Array.isArray(data) ? data : []);
     } catch (err: any) {
+      console.error('[SalesRepPerformance] ===== ERROR =====');
+      console.error('[SalesRepPerformance] Error fetching data:', err);
+      console.error('[SalesRepPerformance] Error message:', err.message);
+      console.error('[SalesRepPerformance] Error response:', err.response);
       setError(err.message || 'Failed to fetch performance data');
-      console.error('Error fetching data:', err);
       setPerformanceData([]);
     } finally {
       setLoading(false);
@@ -171,10 +188,13 @@ const SalesRepPerformancePage: React.FC = () => {
     
     if (viewType === 'quantity') {
       // Quantity view: Match page format - single column per month with vapes/pouches stacked
-      headers = ['Sales Rep', ...monthLabels, 'Total'];
+      headers = ['Sales Rep', 'Country', ...monthLabels, 'Total'];
       
       rows = sortedData.map(rep => {
-        const row = [rep.sales_rep_name];
+        const row = [
+          rep.sales_rep_name,
+          rep.country || (rep.countryId === 1 ? 'Kenya' : rep.countryId === 2 ? 'Tanzania' : 'N/A')
+        ];
         
         // Add monthly data in the same format as the page
         months.forEach(month => {
@@ -248,9 +268,10 @@ const SalesRepPerformancePage: React.FC = () => {
       });
     } else {
       // Sales view: Single column for each month
-      headers = ['Sales Rep', ...monthLabels, 'Total'];
+      headers = ['Sales Rep', 'Country', ...monthLabels, 'Total'];
       rows = sortedData.map(rep => [
         rep.sales_rep_name,
+        rep.country || (rep.countryId === 1 ? 'Kenya' : rep.countryId === 2 ? 'Tanzania' : 'N/A'),
         ...months.map(month => formatCurrency(parseFloat(String((rep as any)[month])) || 0)),
         formatCurrency(parseFloat(String(rep.total)) || 0)
       ]);
@@ -409,27 +430,6 @@ const SalesRepPerformancePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Country Filter */}
-        <div className="mb-3">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <label className="block text-[10px] font-medium text-gray-700 mb-1">Country</label>
-                <select
-                  value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="block w-full px-2.5 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Countries</option>
-                  {countries.map((country) => (
-                    <option key={country.id} value={country.name}>{country.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* View Type Toggle */}
         <div className="mb-3">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
@@ -572,6 +572,19 @@ const SalesRepPerformancePage: React.FC = () => {
                       )}
                     </div>
                   </th>
+                  <th 
+                    className="px-3 py-2 text-left text-[10px] font-semibold text-gray-900 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('country')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Country
+                      {sortColumn === 'country' ? (
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 text-gray-400" />
+                      )}
+                    </div>
+                  </th>
                   {viewType === 'quantity' ? (
                     // Quantity view: Show single column for each month with vapes/pouches stacked
                     monthLabels.map((month, index) => {
@@ -657,7 +670,7 @@ const SalesRepPerformancePage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentData.length === 0 ? (
                   <tr>
-                    <td colSpan={viewType === 'quantity' ? 14 : 14} className="px-3 py-8 text-center">
+                    <td colSpan={viewType === 'quantity' ? 15 : 15} className="px-3 py-8 text-center">
                       <div className="text-gray-500">
                         <BarChart3 className="h-8 w-8 mx-auto mb-3 text-gray-300" />
                         <p className="text-xs font-medium">No performance data found</p>
@@ -673,6 +686,9 @@ const SalesRepPerformancePage: React.FC = () => {
                           <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
                           {rep.sales_rep_name}
                         </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-[10px] text-gray-600">
+                        {rep.country || (rep.countryId === 1 ? 'Kenya' : rep.countryId === 2 ? 'Tanzania' : 'N/A')}
                       </td>
                       {viewType === 'quantity' ? (
                         // Quantity view: Show vapes and pouches stacked vertically for each month with targets
@@ -770,6 +786,7 @@ const SalesRepPerformancePage: React.FC = () => {
                         Grand Total
                       </div>
                     </td>
+                    <td className="px-3 py-2 text-[10px] font-bold text-gray-900"></td>
                     {viewType === 'quantity' ? (
                       // Quantity view: Show vapes and pouches totals stacked vertically for each month with targets
                       months.map((month) => {
@@ -1003,6 +1020,24 @@ const SalesRepPerformancePage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Country */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                      <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
+                      Country
+                    </h3>
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="block w-full px-2.5 py-1.5 text-[10px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    >
+                      <option value="">All Countries</option>
+                      {countries.map((country) => (
+                        <option key={country.id} value={country.name}>{country.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Sales Reps */}
                   <div className="space-y-2 md:col-span-2">
                     <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
@@ -1053,6 +1088,7 @@ const SalesRepPerformancePage: React.FC = () => {
                     setSelectedYear(new Date().getFullYear());
                     setStartDate('');
                     setEndDate('');
+                    setSelectedCountry('');
                     setSelectedSalesReps([]);
                   }}
                   className="px-3 py-1.5 text-[10px] text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
