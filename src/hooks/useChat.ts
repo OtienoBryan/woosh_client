@@ -200,6 +200,37 @@ export const useRemoveMember = () => {
   });
 };
 
+// Custom hook for deleting a room (group chat only)
+export const useDeleteRoom = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (roomId: number) => {
+      const token = localStorage.getItem('token');
+      const res = await axios.delete(
+        `${API_BASE_URL}/chat/rooms/${roomId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return res.data;
+    },
+    onSuccess: (data, variables) => {
+      // Remove the room from cache
+      queryClient.setQueryData(['chat-rooms'], (oldRooms: ChatRoom[] | undefined) => {
+        if (!oldRooms) return oldRooms;
+        return oldRooms.filter(room => room.id !== variables);
+      });
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['messages', variables] });
+      queryClient.invalidateQueries({ queryKey: ['room-members', variables] });
+      console.log(`✅ Room ${variables} deleted from cache`);
+    },
+    onError: (error) => {
+      console.error('❌ Failed to delete room:', error);
+    },
+  });
+};
+
 // Custom hook for editing messages
 export const useEditMessage = () => {
   const queryClient = useQueryClient();

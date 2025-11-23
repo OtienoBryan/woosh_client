@@ -12,6 +12,7 @@ import {
   useEditMessage,
   useDeleteMessage,
   useRemoveMember,
+  useDeleteRoom,
   useSocket,
   useUnreadCounts,
   useReadMessages,
@@ -149,6 +150,7 @@ const InstantChatPage: React.FC = () => {
   const editMessageMutation = useEditMessage();
   const deleteMessageMutation = useDeleteMessage();
   const removeMemberMutation = useRemoveMember();
+  const deleteRoomMutation = useDeleteRoom();
 
   // Handle room selection
   const handleRoomSelect = (room: ChatRoom) => {
@@ -602,6 +604,42 @@ const InstantChatPage: React.FC = () => {
   // Check if current user can remove members (only group creator can remove)
   const canRemoveMembers = selectedRoom?.is_group && selectedRoom?.created_by === user?.id;
 
+  // Check if current user can delete the group (creator or HR/executive)
+  const isGroup = selectedRoom?.is_group === true || selectedRoom?.is_group === 1;
+  const isCreator = selectedRoom?.created_by && user?.id && 
+    (Number(selectedRoom.created_by) === Number(user.id) || 
+     String(selectedRoom.created_by) === String(user.id));
+  const isAuthorizedRole = user?.role && (
+    user.role.toLowerCase() === 'hr' || 
+    user.role.toLowerCase() === 'executive'
+  );
+  const canDeleteGroup = isGroup && (isCreator || isAuthorizedRole);
+
+  // Handle delete group
+  const handleDeleteGroup = async () => {
+    if (!selectedRoom || !isGroup) {
+      setToast('Only group chats can be deleted.');
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to delete the group "${selectedRoom.name || 'Group Chat'}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteRoomMutation.mutateAsync(selectedRoom.id);
+      setSelectedRoom(null);
+      setToast('Group deleted successfully!');
+      setTimeout(() => setToast(null), 2000);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete group. Please try again.';
+      setToast(errorMessage);
+      setTimeout(() => setToast(null), 3000);
+      console.error('Delete group error:', error);
+    }
+  };
+
   // Filter rooms based on search term
   const filteredRooms = rooms.filter((room: ChatRoom) => 
     room.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -701,41 +739,85 @@ const InstantChatPage: React.FC = () => {
               <p className="text-xs">No chats found {searchTerm && `matching "${searchTerm}"`}</p>
             </div>
           ) : (
-            filteredRooms.map((room: ChatRoom) => (
-              <div
-                key={room.id}
-                className={`p-2.5 flex items-center border-b border-gray-100 cursor-pointer hover:bg-indigo-50 transition-all ${
-                  selectedRoom?.id === room.id ? 'bg-indigo-100 border-l-4 border-l-indigo-500' : ''
-                }`}
-                onClick={() => handleRoomSelect(room)}
-              >
-                <div className={`rounded-full w-10 h-10 flex items-center justify-center mr-2.5 font-semibold text-sm ${
-                  room.is_group 
-                    ? 'bg-gradient-to-br from-purple-400 to-pink-400 text-white' 
-                    : 'bg-gradient-to-br from-blue-400 to-indigo-400 text-white'
-                }`}>
-                  {room.is_group ? 'G' : 'P'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium text-gray-800 text-xs truncate">
-                      {room.is_group ? (room.name || 'Group Chat') : 'Private Chat'}
-                    </div>
-                    {unreadCounts[room.id] > 0 && (
-                      <div className="bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[18px] text-center font-semibold ml-1">
-                        {unreadCounts[room.id]}
+            filteredRooms.map((room: ChatRoom) => {
+              const canDeleteThisRoom = room.is_group && (
+                Number(room.created_by) === Number(user?.id) || 
+                String(room.created_by) === String(user?.id) ||
+                user?.role?.toLowerCase() === 'hr' || 
+                user?.role?.toLowerCase() === 'executive'
+              );
+              
+              const handleDeleteRoomFromList = async (e: React.MouseEvent) => {
+                e.stopPropagation(); // Prevent room selection
+                if (!window.confirm(`Are you sure you want to delete the group "${room.name || 'Group Chat'}"? This action cannot be undone.`)) {
+                  return;
+                }
+                
+                try {
+                  await deleteRoomMutation.mutateAsync(room.id);
+                  if (selectedRoom?.id === room.id) {
+                    setSelectedRoom(null);
+                  }
+                  setToast('Group deleted successfully!');
+                  setTimeout(() => setToast(null), 2000);
+                } catch (error: any) {
+                  const errorMessage = error.response?.data?.message || error.message || 'Failed to delete group. Please try again.';
+                  setToast(errorMessage);
+                  setTimeout(() => setToast(null), 3000);
+                }
+              };
+              
+              return (
+                <div
+                  key={room.id}
+                  className={`p-2.5 flex items-center border-b border-gray-100 cursor-pointer hover:bg-indigo-50 transition-all group ${
+                    selectedRoom?.id === room.id ? 'bg-indigo-100 border-l-4 border-l-indigo-500' : ''
+                  }`}
+                  onClick={() => handleRoomSelect(room)}
+                >
+                  <div className={`rounded-full w-10 h-10 flex items-center justify-center mr-2.5 font-semibold text-sm ${
+                    room.is_group 
+                      ? 'bg-gradient-to-br from-purple-400 to-pink-400 text-white' 
+                      : 'bg-gradient-to-br from-blue-400 to-indigo-400 text-white'
+                  }`}>
+                    {room.is_group ? 'G' : 'P'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium text-gray-800 text-xs truncate">
+                        {room.is_group ? (room.name || 'Group Chat') : 'Private Chat'}
                       </div>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-gray-500 mt-0.5 truncate">
-                    {room.is_group ? `${room.name ? 'Group' : 'Direct'} conversation` : 'Private conversation'}
-                  </div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">
-                    {room.created_at && formatTime(room.created_at)}
+                      <div className="flex items-center gap-1">
+                        {unreadCounts[room.id] > 0 && (
+                          <div className="bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[18px] text-center font-semibold ml-1">
+                            {unreadCounts[room.id]}
+                          </div>
+                        )}
+                        {room.is_group && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRoomFromList(e);
+                            }}
+                            disabled={deleteRoomMutation.isPending}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 text-red-600 transition-all disabled:opacity-50"
+                            title="Delete group"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+                      {room.is_group ? `${room.name ? 'Group' : 'Direct'} conversation` : 'Private conversation'}
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">
+                      {room.created_at && formatTime(room.created_at)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -773,6 +855,20 @@ const InstantChatPage: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-2">
+                {selectedRoom?.is_group && (
+                  <button
+                    onClick={handleDeleteGroup}
+                    disabled={deleteRoomMutation.isPending}
+                    className="bg-red-500/80 text-white p-2 rounded-lg hover:bg-red-600/80 transition-all backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={canDeleteGroup ? "Delete group" : "Delete group (permission will be checked)"}
+                  >
+                    {deleteRoomMutation.isPending ? (
+                      <RefreshCw size={16} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => setShowMembersPanel(!showMembersPanel)}
                   className={`bg-white/20 text-white p-2 rounded-lg hover:bg-white/30 transition-all backdrop-blur-sm ${showMembersPanel ? 'bg-white/30' : ''}`}
