@@ -22,6 +22,7 @@ interface EmployeeContract {
   start_date: string;
   end_date: string;
   renewed_from: number | null;
+  description?: string | null;
   uploaded_at: string;
 }
 
@@ -79,6 +80,7 @@ const EmployeeDocumentsPage: React.FC = () => {
   const [contractForm, setContractForm] = useState({
     start_date: '',
     end_date: '',
+    description: '',
     file: null as File | null,
   });
   const [documentForm, setDocumentForm] = useState({
@@ -234,6 +236,7 @@ const EmployeeDocumentsPage: React.FC = () => {
       formData.append('file', contractForm.file);
       formData.append('start_date', contractForm.start_date);
       formData.append('end_date', contractForm.end_date);
+      formData.append('description', contractForm.description || '');
 
       console.log('Sending request to:', `/api/staff/${staffId}/contracts`);
       console.log('FormData contents:');
@@ -254,7 +257,7 @@ const EmployeeDocumentsPage: React.FC = () => {
         console.log('Upload successful:', result);
         alert('Contract uploaded successfully!');
         setIsContractModalOpen(false);
-        setContractForm({ start_date: '', end_date: '', file: null });
+        setContractForm({ start_date: '', end_date: '', description: '', file: null });
         fetchContracts(); // Refresh contracts list
       } else {
         const errorData = await response.text();
@@ -561,14 +564,14 @@ const EmployeeDocumentsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setIsTerminationModalOpen(true)}
-                  className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700"
+                  className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 hidden"
                 >
                   <FileText className="h-3 w-3 mr-1.5" />
                   Upload Termination Letter
                 </button>
                 <button
                   onClick={() => setIsWarningModalOpen(true)}
-                  className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700"
+                  className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 hidden"
                 >
                   <FileText className="h-3 w-3 mr-1.5" />
                   Upload Warning Letter
@@ -687,6 +690,9 @@ const EmployeeDocumentsPage: React.FC = () => {
                       End Date
                     </th>
                           <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                          <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Uploaded
                     </th>
                           <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
@@ -718,6 +724,11 @@ const EmployeeDocumentsPage: React.FC = () => {
                             <td className="px-3 py-2 whitespace-nowrap">
                               <div className="text-[10px] text-gray-900">
                           {new Date(contract.end_date).toLocaleDateString()}
+                        </div>
+                      </td>
+                            <td className="px-3 py-2">
+                              <div className="text-[10px] text-gray-900 max-w-xs truncate" title={contract.description || ''}>
+                          {contract.description || '-'}
                         </div>
                       </td>
                             <td className="px-3 py-2 whitespace-nowrap">
@@ -1130,7 +1141,7 @@ const EmployeeDocumentsPage: React.FC = () => {
               <button
                 onClick={() => {
                   setIsContractModalOpen(false);
-                  setContractForm({ start_date: '', end_date: '', file: null });
+                  setContractForm({ start_date: '', end_date: '', description: '', file: null });
                 }}
                 className="text-gray-400 hover:text-gray-500"
               >
@@ -1181,12 +1192,25 @@ const EmployeeDocumentsPage: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={contractForm.description}
+                  onChange={(e) => setContractForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Enter contract description (optional)"
+                />
+              </div>
+
               <div className="flex justify-end space-x-2 pt-3">
                 <button
                   type="button"
                   onClick={() => {
                     setIsContractModalOpen(false);
-                    setContractForm({ start_date: '', end_date: '', file: null });
+                    setContractForm({ start_date: '', end_date: '', description: '', file: null });
                   }}
                   className="px-2.5 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >

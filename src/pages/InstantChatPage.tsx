@@ -11,6 +11,7 @@ import {
   useCreateGroup,
   useEditMessage,
   useDeleteMessage,
+  useRemoveMember,
   useSocket,
   useUnreadCounts,
   useReadMessages,
@@ -122,6 +123,14 @@ const InstantChatPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const [showMembersPanel, setShowMembersPanel] = useState(false);
+  
+  // Mention functionality state
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const mentionDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
 
   // Use React Query hooks
   const { data: rooms = [], isLoading: roomsLoading, error: roomsError, refetch: refetchRooms } = useChatRooms();
@@ -139,6 +148,7 @@ const InstantChatPage: React.FC = () => {
   const createGroupMutation = useCreateGroup();
   const editMessageMutation = useEditMessage();
   const deleteMessageMutation = useDeleteMessage();
+  const removeMemberMutation = useRemoveMember();
 
   // Handle room selection
   const handleRoomSelect = (room: ChatRoom) => {
@@ -300,6 +310,175 @@ const InstantChatPage: React.FC = () => {
     prevConnectedRef.current = isConnected;
   }, [isConnected]);
 
+  // Get available users for mentions (room members or all staff)
+  const getMentionableUsers = () => {
+    if (selectedRoom && roomMembers.length > 0) {
+      // Use room members, excluding current user
+      return roomMembers.filter((member: any) => member.id !== user?.id);
+    }
+    // Fallback to all staff, excluding current user
+    return allStaff.filter((staff: any) => staff.id !== user?.id);
+  };
+
+  // Filter users based on mention query
+  const filteredMentionUsers = mentionQuery
+    ? getMentionableUsers().filter((user: any) =>
+        (user.name || '').toLowerCase().includes(mentionQuery.toLowerCase()) ||
+        (user.username || '').toLowerCase().includes(mentionQuery.toLowerCase())
+      )
+    : getMentionableUsers();
+
+  // Handle message input change with @mention detection
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Check for @mention
+    const cursorPosition = e.target.selectionStart || 0;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      // Check if there's a space or newline after @ (meaning mention is complete)
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        const query = textAfterAt.toLowerCase();
+        setMentionQuery(query);
+        
+        // Calculate dropdown position relative to input
+        if (messageInputRef.current) {
+          const rect = messageInputRef.current.getBoundingClientRect();
+          setMentionPosition({
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+          });
+        }
+        
+        setShowMentionDropdown(true);
+        setSelectedMentionIndex(0);
+        return;
+      }
+    }
+    
+    setShowMentionDropdown(false);
+    setMentionQuery('');
+  };
+
+  // Close mention dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        mentionDropdownRef.current &&
+        !mentionDropdownRef.current.contains(event.target as Node) &&
+        messageInputRef.current &&
+        !messageInputRef.current.contains(event.target as Node)
+      ) {
+        setShowMentionDropdown(false);
+        setMentionQuery('');
+      }
+    };
+
+    if (showMentionDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showMentionDropdown]);
+
+  // Handle mention selection
+  const handleMentionSelect = (selectedUser: any) => {
+    if (!messageInputRef.current) return;
+
+    const value = newMessage;
+    const cursorPosition = messageInputRef.current.selectionStart || 0;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      const textAfterCursor = value.substring(cursorPosition);
+      
+      // Get the username to insert
+      const username = selectedUser.name || selectedUser.username || 'User';
+      
+      // Replace @query with @username
+      const newText = 
+        value.substring(0, lastAtIndex + 1) + 
+        username +
+        ' ' + 
+        textAfterCursor;
+      
+      setNewMessage(newText);
+      setShowMentionDropdown(false);
+      setMentionQuery('');
+      
+      // Set cursor position after the mention
+      setTimeout(() => {
+        if (messageInputRef.current) {
+          const newCursorPos = lastAtIndex + 1 + username.length + 1;
+          messageInputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+          messageInputRef.current.focus();
+        }
+      }, 0);
+    }
+  };
+
+  // Handle keyboard navigation in mention dropdown
+  const handleMessageKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showMentionDropdown && filteredMentionUsers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIndex((prev) => 
+          prev < filteredMentionUsers.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIndex((prev) => (prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        handleMentionSelect(filteredMentionUsers[selectedMentionIndex]);
+      } else if (e.key === 'Escape') {
+        setShowMentionDropdown(false);
+        setMentionQuery('');
+      }
+    }
+  };
+
+  // Render message with highlighted mentions
+  const renderMessageWithMentions = (message: string) => {
+    // Match @mentions in the message (more flexible regex)
+    const mentionRegex = /@([\w\s]+?)(?=\s|$|@|,|\.|!|\?)/g;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match;
+    let keyIndex = 0;
+
+    while ((match = mentionRegex.exec(message)) !== null) {
+      // Add text before mention
+      if (match.index > lastIndex) {
+        parts.push(message.substring(lastIndex, match.index));
+      }
+      
+      // Add highlighted mention
+      const mentionText = match[0];
+      parts.push(
+        <span key={`mention-${keyIndex++}`} className="bg-blue-100 text-blue-800 font-semibold px-1 rounded">
+          {mentionText}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < message.length) {
+      parts.push(message.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? <>{parts}</> : message;
+  };
+
   // Send message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +486,8 @@ const InstantChatPage: React.FC = () => {
     
     const messageText = newMessage.trim();
     setNewMessage('');
+    setShowMentionDropdown(false);
+    setMentionQuery('');
     
     try {
       await sendMessageMutation.mutateAsync({
@@ -393,6 +574,33 @@ const InstantChatPage: React.FC = () => {
       setTimeout(() => setToast(null), 3000);
     }
   };
+
+  // Handle remove member
+  const handleRemoveMember = async (memberId: number) => {
+    if (!selectedRoom || !user) return;
+    
+    const member = roomMembers.find((m: any) => m.id === memberId);
+    const memberName = member?.name || member?.username || 'this member';
+    
+    if (!window.confirm(`Are you sure you want to remove ${memberName} from this group?`)) {
+      return;
+    }
+    
+    try {
+      await removeMemberMutation.mutateAsync({
+        roomId: selectedRoom.id,
+        staffId: memberId,
+      });
+      setToast(`${memberName} removed from group`);
+      setTimeout(() => setToast(null), 2000);
+    } catch (error: any) {
+      setToast(error.response?.data?.message || 'Failed to remove member');
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  // Check if current user can remove members (only group creator can remove)
+  const canRemoveMembers = selectedRoom?.is_group && selectedRoom?.created_by === user?.id;
 
   // Filter rooms based on search term
   const filteredRooms = rooms.filter((room: ChatRoom) => 
@@ -660,7 +868,7 @@ const InstantChatPage: React.FC = () => {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="text-xs leading-relaxed">{msg.message}</div>
+                                  <div className="text-xs leading-relaxed">{renderMessageWithMentions(msg.message)}</div>
                                   <div className={`text-[10px] mt-1 flex items-center justify-end gap-1.5 ${
                                     msg.sender_id === user?.id ? 'text-indigo-100' : 'text-gray-500'
                                   }`}>
@@ -705,14 +913,54 @@ const InstantChatPage: React.FC = () => {
                 </div>
 
                 {/* Message input */}
-                <form onSubmit={handleSend} className="bg-white p-2.5 border-t border-indigo-100 shadow-lg">
+                <form onSubmit={handleSend} className="bg-white p-2.5 border-t border-indigo-100 shadow-lg relative">
                   <div className="flex items-center gap-2">
-                    <input
-                      className="flex-1 border-2 border-indigo-200 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                      value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)}
-                      placeholder="Type your message..."
-                    />
+                    <div className="flex-1 relative">
+                      <input
+                        ref={messageInputRef}
+                        className="w-full border-2 border-indigo-200 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        value={newMessage}
+                        onChange={handleMessageChange}
+                        onKeyDown={handleMessageKeyDown}
+                        placeholder="Type your message... (use @ to mention someone)"
+                      />
+                      
+                      {/* Mention dropdown */}
+                      {showMentionDropdown && filteredMentionUsers.length > 0 && (
+                        <div
+                          ref={mentionDropdownRef}
+                          className="absolute bottom-full left-0 mb-2 w-64 bg-white border-2 border-indigo-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
+                        >
+                          <div className="p-2 border-b border-indigo-100 bg-indigo-50">
+                            <div className="text-xs font-semibold text-indigo-700">Mention someone</div>
+                          </div>
+                          {filteredMentionUsers.map((mentionUser: any, index: number) => (
+                            <div
+                              key={mentionUser.id}
+                              className={`p-2 cursor-pointer hover:bg-indigo-50 transition-colors ${
+                                index === selectedMentionIndex ? 'bg-indigo-100' : ''
+                              }`}
+                              onClick={() => handleMentionSelect(mentionUser)}
+                              onMouseEnter={() => setSelectedMentionIndex(index)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="rounded-full w-8 h-8 flex items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-400 text-white text-xs font-semibold">
+                                  {(mentionUser.name || mentionUser.username || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-medium text-gray-800 truncate">
+                                    {mentionUser.name || mentionUser.username || 'User'}
+                                  </div>
+                                  {mentionUser.email && (
+                                    <div className="text-[10px] text-gray-500 truncate">{mentionUser.email}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <button 
                       type="submit" 
                       className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-2 rounded-full hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -754,22 +1002,34 @@ const InstantChatPage: React.FC = () => {
                         {roomMembers.map((member: any) => (
                           <div
                             key={member.id}
-                            className="flex items-center p-2 rounded-lg hover:bg-indigo-50 transition-all"
+                            className="flex items-center justify-between p-2 rounded-lg hover:bg-indigo-50 transition-all group"
                           >
-                            <div className="rounded-full w-8 h-8 flex items-center justify-center mr-2 bg-gradient-to-br from-blue-400 to-indigo-400 text-white text-xs font-semibold">
-                              {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-800 truncate">
-                                {member.name || 'Unknown'}
-                                {member.id === user?.id && (
-                                  <span className="ml-1 text-xs text-indigo-600">(You)</span>
+                            <div className="flex items-center flex-1 min-w-0">
+                              <div className="rounded-full w-8 h-8 flex items-center justify-center mr-2 bg-gradient-to-br from-blue-400 to-indigo-400 text-white text-xs font-semibold">
+                                {member.name ? member.name.charAt(0).toUpperCase() : 'U'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-800 truncate">
+                                  {member.name || 'Unknown'}
+                                  {member.id === user?.id && (
+                                    <span className="ml-1 text-xs text-indigo-600">(You)</span>
+                                  )}
+                                </div>
+                                {member.email && (
+                                  <div className="text-xs text-gray-500 truncate">{member.email}</div>
                                 )}
                               </div>
-                              {member.email && (
-                                <div className="text-xs text-gray-500 truncate">{member.email}</div>
-                              )}
                             </div>
+                            {canRemoveMembers && member.id !== user?.id && (
+                              <button
+                                onClick={() => handleRemoveMember(member.id)}
+                                className="ml-2 p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                title={`Remove ${member.name || 'member'}`}
+                                disabled={removeMemberMutation.isPending}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

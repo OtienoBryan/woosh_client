@@ -3,7 +3,7 @@ import { Staff, staffService, CreateStaffData } from '../services/staffService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { teamService } from '../services/teamService';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 // Enhanced SVG icons for modern design
@@ -40,6 +40,7 @@ interface Team {
 const REQUIRED_ROLES = ['Team Leader', 'Driver', 'Cash Officer', 'Police'];
 
 const StaffList: React.FC = () => {
+  const navigate = useNavigate();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -79,13 +80,79 @@ const StaffList: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedEmploymentType, setSelectedEmploymentType] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy] = useState<'name' | 'role' | 'date'>('name'); // Future use for sorting
   const [sortOrder] = useState<'asc' | 'desc'>('asc'); // Future use for sorting
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [actionMenuStaffId, setActionMenuStaffId] = useState<number | null>(null);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('personal');
+  const [managerId, setManagerId] = useState<number | ''>('');
+  const [benefit1, setBenefit1] = useState<string>('');
+  const [benefit2, setBenefit2] = useState<string>('');
+  const [benefit3, setBenefit3] = useState<string>('');
+  const [beneficiary1Name, setBeneficiary1Name] = useState<string>('');
+  const [beneficiary1Relationship, setBeneficiary1Relationship] = useState<string>('');
+  const [beneficiary1Contact, setBeneficiary1Contact] = useState<string>('');
+  const [beneficiary2Name, setBeneficiary2Name] = useState<string>('');
+  const [beneficiary2Relationship, setBeneficiary2Relationship] = useState<string>('');
+  const [beneficiary2Contact, setBeneficiary2Contact] = useState<string>('');
+  const [emergency1Name, setEmergency1Name] = useState<string>('');
+  const [emergency1Relationship, setEmergency1Relationship] = useState<string>('');
+  const [emergency1Contact, setEmergency1Contact] = useState<string>('');
+  const [emergency2Name, setEmergency2Name] = useState<string>('');
+  const [emergency2Relationship, setEmergency2Relationship] = useState<string>('');
+  const [emergency2Contact, setEmergency2Contact] = useState<string>('');
+  const [family1Name, setFamily1Name] = useState<string>('');
+  const [family1Relationship, setFamily1Relationship] = useState<string>('');
+  const [family1Contact, setFamily1Contact] = useState<string>('');
+  const [family2Name, setFamily2Name] = useState<string>('');
+  const [family2Relationship, setFamily2Relationship] = useState<string>('');
+  const [family2Contact, setFamily2Contact] = useState<string>('');
+  const [family3Name, setFamily3Name] = useState<string>('');
+  const [family3Relationship, setFamily3Relationship] = useState<string>('');
+  const [family3Contact, setFamily3Contact] = useState<string>('');
+  const [education1Institution, setEducation1Institution] = useState<string>('');
+  const [education1Year, setEducation1Year] = useState<string>('');
+  const [education1Qualification, setEducation1Qualification] = useState<string>('');
+  const [education2Institution, setEducation2Institution] = useState<string>('');
+  const [education2Year, setEducation2Year] = useState<string>('');
+  const [education2Qualification, setEducation2Qualification] = useState<string>('');
+  const [education3Institution, setEducation3Institution] = useState<string>('');
+  const [education3Year, setEducation3Year] = useState<string>('');
+  const [education3Qualification, setEducation3Qualification] = useState<string>('');
+  const [education4Institution, setEducation4Institution] = useState<string>('');
+  const [education4Year, setEducation4Year] = useState<string>('');
+  const [education4Qualification, setEducation4Qualification] = useState<string>('');
+  const [education5Institution, setEducation5Institution] = useState<string>('');
+  const [education5Year, setEducation5Year] = useState<string>('');
+  const [education5Qualification, setEducation5Qualification] = useState<string>('');
+  const [experience1Organization, setExperience1Organization] = useState<string>('');
+  const [experience1From, setExperience1From] = useState<string>('');
+  const [experience1To, setExperience1To] = useState<string>('');
+  const [experience1Designation, setExperience1Designation] = useState<string>('');
+  const [experience1Reason, setExperience1Reason] = useState<string>('');
+  const [experience2Organization, setExperience2Organization] = useState<string>('');
+  const [experience2From, setExperience2From] = useState<string>('');
+  const [experience2To, setExperience2To] = useState<string>('');
+  const [experience2Designation, setExperience2Designation] = useState<string>('');
+  const [experience2Reason, setExperience2Reason] = useState<string>('');
+  const [experience3Organization, setExperience3Organization] = useState<string>('');
+  const [experience3From, setExperience3From] = useState<string>('');
+  const [experience3To, setExperience3To] = useState<string>('');
+  const [experience3Designation, setExperience3Designation] = useState<string>('');
+  const [experience3Reason, setExperience3Reason] = useState<string>('');
+  const [experience4Organization, setExperience4Organization] = useState<string>('');
+  const [experience4From, setExperience4From] = useState<string>('');
+  const [experience4To, setExperience4To] = useState<string>('');
+  const [experience4Designation, setExperience4Designation] = useState<string>('');
+  const [experience4Reason, setExperience4Reason] = useState<string>('');
+  const [experience5Organization, setExperience5Organization] = useState<string>('');
+  const [experience5From, setExperience5From] = useState<string>('');
+  const [experience5To, setExperience5To] = useState<string>('');
+  const [experience5Designation, setExperience5Designation] = useState<string>('');
+  const [experience5Reason, setExperience5Reason] = useState<string>('');
 
   // Get current date in format: DD MMMM YYYY
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -260,6 +327,7 @@ const StaffList: React.FC = () => {
       setIsModalOpen(false);
       setIsEditMode(false);
       setEditingStaff(null);
+      setActiveTab('personal');
       setNewStaff({
         name: '',
         photo_url: '',
@@ -276,6 +344,71 @@ const StaffList: React.FC = () => {
         department: '',
         department_id: undefined,
       });
+      setManagerId('');
+      setBenefit1('');
+      setBenefit2('');
+      setBenefit3('');
+      setBeneficiary1Name('');
+      setBeneficiary1Relationship('');
+      setBeneficiary1Contact('');
+      setBeneficiary2Name('');
+      setBeneficiary2Relationship('');
+      setBeneficiary2Contact('');
+      setEmergency1Name('');
+      setEmergency1Relationship('');
+      setEmergency1Contact('');
+      setEmergency2Name('');
+      setEmergency2Relationship('');
+      setEmergency2Contact('');
+      setFamily1Name('');
+      setFamily1Relationship('');
+      setFamily1Contact('');
+      setFamily2Name('');
+      setFamily2Relationship('');
+      setFamily2Contact('');
+      setFamily3Name('');
+      setFamily3Relationship('');
+      setFamily3Contact('');
+      setEducation1Institution('');
+      setEducation1Year('');
+      setEducation1Qualification('');
+      setEducation2Institution('');
+      setEducation2Year('');
+      setEducation2Qualification('');
+      setEducation3Institution('');
+      setEducation3Year('');
+      setEducation3Qualification('');
+      setEducation4Institution('');
+      setEducation4Year('');
+      setEducation4Qualification('');
+      setEducation5Institution('');
+      setEducation5Year('');
+      setEducation5Qualification('');
+      setExperience1Organization('');
+      setExperience1From('');
+      setExperience1To('');
+      setExperience1Designation('');
+      setExperience1Reason('');
+      setExperience2Organization('');
+      setExperience2From('');
+      setExperience2To('');
+      setExperience2Designation('');
+      setExperience2Reason('');
+      setExperience3Organization('');
+      setExperience3From('');
+      setExperience3To('');
+      setExperience3Designation('');
+      setExperience3Reason('');
+      setExperience4Organization('');
+      setExperience4From('');
+      setExperience4To('');
+      setExperience4Designation('');
+      setExperience4Reason('');
+      setExperience5Organization('');
+      setExperience5From('');
+      setExperience5To('');
+      setExperience5Designation('');
+      setExperience5Reason('');
       setSelectedFile(null);
     } catch (err) {
       setError(isEditMode ? 'Failed to update staff member' : 'Failed to create staff member');
@@ -317,25 +450,7 @@ const StaffList: React.FC = () => {
   };
 
   const handleEdit = (staff: Staff) => {
-    setEditingStaff(staff);
-    setNewStaff({
-      name: staff.name,
-      photo_url: staff.photo_url,
-      empl_no: staff.empl_no,
-      id_no: staff.id_no,
-      role: staff.role,
-      designation: staff.designation || '',
-      employment_type: staff.employment_type,
-      gender: staff.gender || '',
-      business_email: staff.business_email || '',
-      department_email: staff.department_email || '',
-      phone_number: staff.phone_number || '',
-      salary: staff.salary || null,
-      department: staff.department || '',
-      department_id: staff.department_id,
-    });
-    setIsEditMode(true);
-    setIsModalOpen(true);
+    navigate(`/dashboard/edit-staff/${staff.id}`);
   };
 
   const handleToggleStatus = async (staffId: number, currentStatus: number) => {
@@ -591,7 +706,10 @@ const StaffList: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  setActiveTab('personal');
+                  setIsModalOpen(true);
+                }}
                     className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-[10px]"
               >
                 <Icons.Plus />
@@ -855,7 +973,10 @@ const StaffList: React.FC = () => {
               </p>
               {!searchTerm && !selectedRole && selectedStatus === 'all' && !selectedEmploymentType && !selectedGender && (
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    setActiveTab('personal');
+                    setIsModalOpen(true);
+                  }}
                   className="mt-4 inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-[10px]"
                 >
                   <Icons.Plus />
@@ -1223,25 +1344,62 @@ const StaffList: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Add/Edit Staff Modal */}
+      {/* Enhanced Add/Edit Staff Modal with Tabbed Sections */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">
-                {isEditMode ? 'Edit Staff Member' : 'Add New Staff Member'}
-              </h3>
-                <p className="text-[10px] text-gray-500 mt-1">
-                  {isEditMode ? 'Update staff member information' : 'Enter staff member details'}
-                </p>
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-4">
+                {/* Photo Upload Section */}
+                <div className="relative">
+                  {selectedFile ? (
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="Preview"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                    />
+                  ) : newStaff.photo_url ? (
+                    <img
+                      src={newStaff.photo_url}
+                      alt={newStaff.name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-200">
+                      <Icons.Photo />
+                    </div>
+                  )}
+                  <label
+                    htmlFor="photo"
+                    className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-md"
+                  >
+                    <Icons.Upload />
+                  </label>
+                  <input
+                    type="file"
+                    name="photo"
+                    id="photo"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    {isEditMode ? 'Edit Staff Member' : 'Add New Staff Member'}
+                  </h3>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {isEditMode ? 'Update staff member information' : 'Enter staff member details'}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
                   setIsEditMode(false);
                   setEditingStaff(null);
+                  setActiveTab('personal');
                   setNewStaff({
                     name: '',
                     photo_url: '',
@@ -1258,6 +1416,10 @@ const StaffList: React.FC = () => {
                     department: '',
                     department_id: undefined,
                   });
+                  setManagerId('');
+                  setBenefit1('');
+                  setBenefit2('');
+                  setBenefit3('');
                   setSelectedFile(null);
                 }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -1266,54 +1428,42 @@ const StaffList: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="px-6 py-6">
-              <div className="flex flex-col lg:flex-row gap-8">
-                {/* Left Column - Photo and Basic Info */}
-                <div className="flex-shrink-0 w-full lg:w-48 flex justify-center lg:justify-start">
-                  {/* Photo Upload Section */}
-                  <div className="text-center">
-                    <div className="relative inline-block">
-                      {selectedFile ? (
-                        <img
-                          src={URL.createObjectURL(selectedFile)}
-                          alt="Preview"
-                          className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
-                        />
-                      ) : newStaff.photo_url ? (
-                        <img
-                          src={newStaff.photo_url}
-                          alt={newStaff.name}
-                          className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg"
-                        />
-                      ) : (
-                        <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mx-auto border-4 border-white shadow-lg">
-                          <Icons.Photo />
-                        </div>
-                      )}
-                      <label
-                        htmlFor="photo"
-                        className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 cursor-pointer transition-colors"
-                      >
-                        <Icons.Upload />
-                      </label>
-                    </div>
-                    <input
-                      type="file"
-                      name="photo"
-                      id="photo"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <p className="text-[10px] text-gray-500 mt-2">Click to upload photo</p>
-                  </div>
-                </div>
+            {/* Tabs Navigation */}
+            <div className="border-b border-gray-200 overflow-x-auto flex-shrink-0">
+              <div className="flex space-x-1 px-6 min-w-max">
+                {[
+                  { id: 'personal', label: 'Personal Details' },
+                  { id: 'offer', label: 'Offer Details' },
+                  { id: 'beneficiary', label: 'Nominated Beneficiary' },
+                  { id: 'emergency', label: 'Emergency Contact' },
+                  { id: 'family', label: 'Family Details' },
+                  { id: 'statutory', label: 'Statutory Details' },
+                  { id: 'bank', label: 'Bank Details' },
+                  { id: 'education', label: 'Education Details' },
+                  { id: 'experience', label: 'Work Experience' },
+                  { id: 'references', label: 'References' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-3 text-[10px] font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                {/* Right Column - Form Fields */}
-                <div className="flex-1">
+            {/* Modal Body - Tab Content */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+              <div className="px-6 py-6">
+                {/* Personal Details Tab */}
+                {activeTab === 'personal' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Full Name - spans both columns */}
                     <div className="col-span-1 md:col-span-2">
                       <label htmlFor="name" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Full Name *
@@ -1325,29 +1475,10 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.name}
                         onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="Enter full name"
                       />
                     </div>
-
-                    {/* Employee Number */}
-                    <div>
-                      <label htmlFor="empl_no" className="block text-[10px] font-medium text-gray-700 mb-2">
-                        Employee Number *
-                      </label>
-                      <input
-                        type="text"
-                        name="empl_no"
-                        id="empl_no"
-                        required
-                        value={newStaff.empl_no}
-                        onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                        placeholder="EMP001"
-                      />
-                    </div>
-
-                    {/* ID Number */}
                     <div>
                       <label htmlFor="id_no" className="block text-[10px] font-medium text-gray-700 mb-2">
                         ID Number *
@@ -1359,12 +1490,126 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.id_no}
                         onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="123456789"
                       />
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Gender
+                      </label>
+                      <select
+                        name="gender"
+                        value={newStaff.gender}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      >
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="phone_number" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone_number"
+                        id="phone_number"
+                        value={newStaff.phone_number || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="+254 700 000 000"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="business_email" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Personal Email
+                      </label>
+                      <input
+                        type="email"
+                        name="business_email"
+                        id="business_email"
+                        value={newStaff.business_email || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="john.doe@email.com"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="date_of_birth" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        name="date_of_birth"
+                        id="date_of_birth"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="marital_status" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Marital Status
+                      </label>
+                      <select
+                        name="marital_status"
+                        id="marital_status"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      >
+                        <option value="">Select status</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widowed">Widowed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="nationality" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Nationality
+                      </label>
+                      <input
+                        type="text"
+                        name="nationality"
+                        id="nationality"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="e.g., Kenyan"
+                      />
+                    </div>
+                    <div className="col-span-1 md:col-span-2">
+                      <label htmlFor="address" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Residential Address
+                      </label>
+                      <textarea
+                        name="address"
+                        id="address"
+                        rows={3}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="Enter full address"
+                      />
+                    </div>
+                  </div>
+                )}
 
-                    {/* Designation */}
+                {/* Offer Details Tab */}
+                {activeTab === 'offer' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="empl_no" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Employee Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="empl_no"
+                        id="empl_no"
+                        required
+                        value={newStaff.empl_no}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="EMP001"
+                      />
+                    </div>
                     <div>
                       <label htmlFor="designation" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Designation *
@@ -1376,34 +1621,10 @@ const StaffList: React.FC = () => {
                         required
                         value={newStaff.designation || ''}
                         onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="e.g., Manager, Supervisor, Officer"
                       />
                     </div>
-
-                    {/* Role - Hidden */}
-                    <div className="hidden">
-                      <label htmlFor="role" className="block text-[10px] font-medium text-gray-700 mb-2">
-                        Role *
-                      </label>
-                      <select
-                        name="role"
-                        id="role"
-                        required
-                        value={newStaff.role}
-                        onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                      >
-                        <option value="">Select a role</option>
-                        {departments.map((department) => (
-                          <option key={department.id} value={department.name}>
-                            {department.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Department */}
                     <div>
                       <label htmlFor="department_id" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Department *
@@ -1421,7 +1642,7 @@ const StaffList: React.FC = () => {
                             department: selectedDept?.name || ''
                           }));
                         }}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                       >
                         <option value="">Select a department</option>
                         {myDepartments.map((dept) => (
@@ -1431,8 +1652,6 @@ const StaffList: React.FC = () => {
                         ))}
                       </select>
                     </div>
-
-                    {/* Employment Type */}
                     <div>
                       <label className="block text-[10px] font-medium text-gray-700 mb-2">
                         Employment Type *
@@ -1441,81 +1660,14 @@ const StaffList: React.FC = () => {
                         name="employment_type"
                         value={newStaff.employment_type}
                         onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                       >
                         <option value="Consultant">Consultant</option>
                         <option value="Contract">Contract</option>
                         <option value="Permanent">Permanent</option>
+                        <option value="Probation">Probation</option>
                       </select>
                     </div>
-
-                    {/* Gender */}
-                    <div>
-                      <label className="block text-[10px] font-medium text-gray-700 mb-2">
-                        Gender
-                      </label>
-                      <select
-                        name="gender"
-                        value={newStaff.gender}
-                        onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                      >
-                        <option value="">Select gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-
-                    {/* Business Email */}
-                    <div>
-                      <label htmlFor="business_email" className="block text-[10px] font-medium text-gray-700 mb-2">
-                        Business Email
-                      </label>
-                      <input
-                        type="email"
-                        name="business_email"
-                        id="business_email"
-                        value={newStaff.business_email || ''}
-                        onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                        placeholder="john.doe@company.com"
-                      />
-                    </div>
-
-                    {/* Department Email */}
-                    <div>
-                      <label htmlFor="department_email" className="block text-[10px] font-medium text-gray-700 mb-2">
-                        Department Email
-                      </label>
-                      <input
-                        type="email"
-                        name="department_email"
-                        id="department_email"
-                        value={newStaff.department_email || ''}
-                        onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                        placeholder="hr@company.com"
-                      />
-                    </div>
-
-                    {/* Phone Number */}
-                    <div>
-                      <label htmlFor="phone_number" className="block text-[10px] font-medium text-gray-700 mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone_number"
-                        id="phone_number"
-                        value={newStaff.phone_number || ''}
-                        onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                        placeholder="+254 700 000 000"
-                      />
-                    </div>
-
-                    {/* Salary */}
                     <div>
                       <label htmlFor="salary" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Salary
@@ -1528,22 +1680,1407 @@ const StaffList: React.FC = () => {
                         min="0"
                         value={newStaff.salary || ''}
                         onChange={handleInputChange}
-                        className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
                         placeholder="50000.00"
                       />
                     </div>
+                    <div>
+                      <label htmlFor="offer_date" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Offer Date
+                      </label>
+                      <input
+                        type="date"
+                        name="offer_date"
+                        id="offer_date"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="start_date" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        name="start_date"
+                        id="start_date"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="department_email" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Department Email
+                      </label>
+                      <input
+                        type="email"
+                        name="department_email"
+                        id="department_email"
+                        value={newStaff.department_email || ''}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="hr@company.com"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="manager_id" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Manager
+                      </label>
+                      <select
+                        name="manager_id"
+                        id="manager_id"
+                        value={managerId}
+                        onChange={(e) => setManagerId(e.target.value === '' ? '' : parseInt(e.target.value))}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      >
+                        <option value="">Select a manager</option>
+                        {staff
+                          .filter(member => member.status === 1 && (isEditMode ? member.id !== editingStaff?.id : true))
+                          .map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name} {member.designation ? `- ${member.designation}` : ''}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Other Benefits
+                      </label>
+                      <div className="space-y-3">
+                        <div>
+                          <label htmlFor="benefit1" className="block text-[10px] text-gray-600 mb-1">
+                            Benefit 1
+                          </label>
+                          <input
+                            type="text"
+                            name="benefit1"
+                            id="benefit1"
+                            value={benefit1}
+                            onChange={(e) => setBenefit1(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="e.g., Medical Insurance, Housing Allowance, etc."
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="benefit2" className="block text-[10px] text-gray-600 mb-1">
+                            Benefit 2
+                          </label>
+                          <input
+                            type="text"
+                            name="benefit2"
+                            id="benefit2"
+                            value={benefit2}
+                            onChange={(e) => setBenefit2(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="e.g., Transport Allowance, etc."
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="benefit3" className="block text-[10px] text-gray-600 mb-1">
+                            Benefit 3
+                          </label>
+                          <input
+                            type="text"
+                            name="benefit3"
+                            id="benefit3"
+                            value={benefit3}
+                            onChange={(e) => setBenefit3(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="e.g., Annual Leave, etc."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="hidden">
+                      <label htmlFor="role" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Role *
+                      </label>
+                      <select
+                        name="role"
+                        id="role"
+                        required
+                        value={newStaff.role}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                      >
+                        <option value="">Select a role</option>
+                        {departments.map((department) => (
+                          <option key={department.id} value={department.name}>
+                            {department.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Nominated Beneficiary Tab */}
+                {activeTab === 'beneficiary' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Beneficiary 1</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="beneficiary1_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="beneficiary1_name"
+                            id="beneficiary1_name"
+                            value={beneficiary1Name}
+                            onChange={(e) => setBeneficiary1Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="beneficiary1_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="beneficiary1_relationship"
+                            id="beneficiary1_relationship"
+                            value={beneficiary1Relationship}
+                            onChange={(e) => setBeneficiary1Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Child">Child</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="beneficiary1_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="beneficiary1_contact"
+                            id="beneficiary1_contact"
+                            value={beneficiary1Contact}
+                            onChange={(e) => setBeneficiary1Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Beneficiary 2</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="beneficiary2_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="beneficiary2_name"
+                            id="beneficiary2_name"
+                            value={beneficiary2Name}
+                            onChange={(e) => setBeneficiary2Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="beneficiary2_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="beneficiary2_relationship"
+                            id="beneficiary2_relationship"
+                            value={beneficiary2Relationship}
+                            onChange={(e) => setBeneficiary2Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Child">Child</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="beneficiary2_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="beneficiary2_contact"
+                            id="beneficiary2_contact"
+                            value={beneficiary2Contact}
+                            onChange={(e) => setBeneficiary2Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Emergency Contact Details Tab */}
+                {activeTab === 'emergency' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Emergency Contact 1</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="emergency1_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="emergency1_name"
+                            id="emergency1_name"
+                            value={emergency1Name}
+                            onChange={(e) => setEmergency1Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="emergency1_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="emergency1_relationship"
+                            id="emergency1_relationship"
+                            value={emergency1Relationship}
+                            onChange={(e) => setEmergency1Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Child">Child</option>
+                            <option value="Friend">Friend</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="emergency1_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="emergency1_contact"
+                            id="emergency1_contact"
+                            value={emergency1Contact}
+                            onChange={(e) => setEmergency1Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Emergency Contact 2</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="emergency2_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="emergency2_name"
+                            id="emergency2_name"
+                            value={emergency2Name}
+                            onChange={(e) => setEmergency2Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="emergency2_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="emergency2_relationship"
+                            id="emergency2_relationship"
+                            value={emergency2Relationship}
+                            onChange={(e) => setEmergency2Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Child">Child</option>
+                            <option value="Friend">Friend</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="emergency2_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="emergency2_contact"
+                            id="emergency2_contact"
+                            value={emergency2Contact}
+                            onChange={(e) => setEmergency2Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Family Details Tab */}
+                {activeTab === 'family' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Family Member 1</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="family1_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="family1_name"
+                            id="family1_name"
+                            value={family1Name}
+                            onChange={(e) => setFamily1Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="family1_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="family1_relationship"
+                            id="family1_relationship"
+                            value={family1Relationship}
+                            onChange={(e) => setFamily1Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Brother">Brother</option>
+                            <option value="Sister">Sister</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Child">Child</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="family1_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="family1_contact"
+                            id="family1_contact"
+                            value={family1Contact}
+                            onChange={(e) => setFamily1Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Family Member 2</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="family2_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="family2_name"
+                            id="family2_name"
+                            value={family2Name}
+                            onChange={(e) => setFamily2Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="family2_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="family2_relationship"
+                            id="family2_relationship"
+                            value={family2Relationship}
+                            onChange={(e) => setFamily2Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Brother">Brother</option>
+                            <option value="Sister">Sister</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Child">Child</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="family2_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="family2_contact"
+                            id="family2_contact"
+                            value={family2Contact}
+                            onChange={(e) => setFamily2Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Family Member 3</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="family3_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="family3_name"
+                            id="family3_name"
+                            value={family3Name}
+                            onChange={(e) => setFamily3Name(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="family3_relationship" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Relationship
+                          </label>
+                          <select
+                            name="family3_relationship"
+                            id="family3_relationship"
+                            value={family3Relationship}
+                            onChange={(e) => setFamily3Relationship(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          >
+                            <option value="">Select relationship</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Brother">Brother</option>
+                            <option value="Sister">Sister</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Child">Child</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="family3_contact" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Contact
+                          </label>
+                          <input
+                            type="text"
+                            name="family3_contact"
+                            id="family3_contact"
+                            value={family3Contact}
+                            onChange={(e) => setFamily3Contact(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Phone or Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Statutory Details Tab */}
+                {activeTab === 'statutory' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="nhif_number" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        NHIF Number
+                      </label>
+                      <input
+                        type="text"
+                        name="nhif_number"
+                        id="nhif_number"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="NHIF Number"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="nssf_number" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        NSSF Number
+                      </label>
+                      <input
+                        type="text"
+                        name="nssf_number"
+                        id="nssf_number"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="NSSF Number"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="kra_pin" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        KRA PIN
+                      </label>
+                      <input
+                        type="text"
+                        name="kra_pin"
+                        id="kra_pin"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="KRA PIN"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="passport_number" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Passport Number
+                      </label>
+                      <input
+                        type="text"
+                        name="passport_number"
+                        id="passport_number"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="Passport Number"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Bank Details Tab */}
+                {activeTab === 'bank' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="bank_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        name="bank_name"
+                        id="bank_name"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="Bank Name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="bank_branch" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Branch
+                      </label>
+                      <input
+                        type="text"
+                        name="bank_branch"
+                        id="bank_branch"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="Branch Name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="account_number" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Account Number
+                      </label>
+                      <input
+                        type="text"
+                        name="account_number"
+                        id="account_number"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="Account Number"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="account_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        Account Name
+                      </label>
+                      <input
+                        type="text"
+                        name="account_name"
+                        id="account_name"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="Account Holder Name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="swift_code" className="block text-[10px] font-medium text-gray-700 mb-2">
+                        SWIFT Code
+                      </label>
+                      <input
+                        type="text"
+                        name="swift_code"
+                        id="swift_code"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                        placeholder="SWIFT Code"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Education Details Tab */}
+                {activeTab === 'education' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Education 1</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="education1_institution" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Institution
+                          </label>
+                          <input
+                            type="text"
+                            name="education1_institution"
+                            id="education1_institution"
+                            value={education1Institution}
+                            onChange={(e) => setEducation1Institution(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Institution Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education1_qualification" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Qualification
+                          </label>
+                          <input
+                            type="text"
+                            name="education1_qualification"
+                            id="education1_qualification"
+                            value={education1Qualification}
+                            onChange={(e) => setEducation1Qualification(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Degree/Diploma/Certificate"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education1_year" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Year of Completion
+                          </label>
+                          <input
+                            type="text"
+                            name="education1_year"
+                            id="education1_year"
+                            value={education1Year}
+                            onChange={(e) => setEducation1Year(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Year"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Education 2</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="education2_institution" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Institution
+                          </label>
+                          <input
+                            type="text"
+                            name="education2_institution"
+                            id="education2_institution"
+                            value={education2Institution}
+                            onChange={(e) => setEducation2Institution(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Institution Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education2_qualification" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Qualification
+                          </label>
+                          <input
+                            type="text"
+                            name="education2_qualification"
+                            id="education2_qualification"
+                            value={education2Qualification}
+                            onChange={(e) => setEducation2Qualification(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Degree/Diploma/Certificate"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education2_year" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Year of Completion
+                          </label>
+                          <input
+                            type="text"
+                            name="education2_year"
+                            id="education2_year"
+                            value={education2Year}
+                            onChange={(e) => setEducation2Year(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Year"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Education 3</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="education3_institution" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Institution
+                          </label>
+                          <input
+                            type="text"
+                            name="education3_institution"
+                            id="education3_institution"
+                            value={education3Institution}
+                            onChange={(e) => setEducation3Institution(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Institution Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education3_qualification" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Qualification
+                          </label>
+                          <input
+                            type="text"
+                            name="education3_qualification"
+                            id="education3_qualification"
+                            value={education3Qualification}
+                            onChange={(e) => setEducation3Qualification(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Degree/Diploma/Certificate"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education3_year" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Year of Completion
+                          </label>
+                          <input
+                            type="text"
+                            name="education3_year"
+                            id="education3_year"
+                            value={education3Year}
+                            onChange={(e) => setEducation3Year(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Year"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Education 4</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="education4_institution" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Institution
+                          </label>
+                          <input
+                            type="text"
+                            name="education4_institution"
+                            id="education4_institution"
+                            value={education4Institution}
+                            onChange={(e) => setEducation4Institution(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Institution Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education4_qualification" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Qualification
+                          </label>
+                          <input
+                            type="text"
+                            name="education4_qualification"
+                            id="education4_qualification"
+                            value={education4Qualification}
+                            onChange={(e) => setEducation4Qualification(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Degree/Diploma/Certificate"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education4_year" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Year of Completion
+                          </label>
+                          <input
+                            type="text"
+                            name="education4_year"
+                            id="education4_year"
+                            value={education4Year}
+                            onChange={(e) => setEducation4Year(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Year"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Education 5</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="education5_institution" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Institution
+                          </label>
+                          <input
+                            type="text"
+                            name="education5_institution"
+                            id="education5_institution"
+                            value={education5Institution}
+                            onChange={(e) => setEducation5Institution(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Institution Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education5_qualification" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Qualification
+                          </label>
+                          <input
+                            type="text"
+                            name="education5_qualification"
+                            id="education5_qualification"
+                            value={education5Qualification}
+                            onChange={(e) => setEducation5Qualification(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Degree/Diploma/Certificate"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="education5_year" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Year of Completion
+                          </label>
+                          <input
+                            type="text"
+                            name="education5_year"
+                            id="education5_year"
+                            value={education5Year}
+                            onChange={(e) => setEducation5Year(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Year"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Work Experience Tab */}
+                {activeTab === 'experience' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Work Experience 1</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="experience1_organization" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Organization
+                          </label>
+                          <input
+                            type="text"
+                            name="experience1_organization"
+                            id="experience1_organization"
+                            value={experience1Organization}
+                            onChange={(e) => setExperience1Organization(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Organization Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience1_designation" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Designation
+                          </label>
+                          <input
+                            type="text"
+                            name="experience1_designation"
+                            id="experience1_designation"
+                            value={experience1Designation}
+                            onChange={(e) => setExperience1Designation(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title/Position"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience1_from" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            From
+                          </label>
+                          <input
+                            type="date"
+                            name="experience1_from"
+                            id="experience1_from"
+                            value={experience1From}
+                            onChange={(e) => setExperience1From(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience1_to" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            To
+                          </label>
+                          <input
+                            type="date"
+                            name="experience1_to"
+                            id="experience1_to"
+                            value={experience1To}
+                            onChange={(e) => setExperience1To(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                          <label htmlFor="experience1_reason" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Reason for Leaving
+                          </label>
+                          <textarea
+                            name="experience1_reason"
+                            id="experience1_reason"
+                            value={experience1Reason}
+                            onChange={(e) => setExperience1Reason(e.target.value)}
+                            rows={2}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Reason for leaving"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Work Experience 2</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="experience2_organization" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Organization
+                          </label>
+                          <input
+                            type="text"
+                            name="experience2_organization"
+                            id="experience2_organization"
+                            value={experience2Organization}
+                            onChange={(e) => setExperience2Organization(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Organization Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience2_designation" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Designation
+                          </label>
+                          <input
+                            type="text"
+                            name="experience2_designation"
+                            id="experience2_designation"
+                            value={experience2Designation}
+                            onChange={(e) => setExperience2Designation(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title/Position"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience2_from" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            From
+                          </label>
+                          <input
+                            type="date"
+                            name="experience2_from"
+                            id="experience2_from"
+                            value={experience2From}
+                            onChange={(e) => setExperience2From(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience2_to" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            To
+                          </label>
+                          <input
+                            type="date"
+                            name="experience2_to"
+                            id="experience2_to"
+                            value={experience2To}
+                            onChange={(e) => setExperience2To(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                          <label htmlFor="experience2_reason" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Reason for Leaving
+                          </label>
+                          <textarea
+                            name="experience2_reason"
+                            id="experience2_reason"
+                            value={experience2Reason}
+                            onChange={(e) => setExperience2Reason(e.target.value)}
+                            rows={2}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Reason for leaving"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Work Experience 3</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="experience3_organization" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Organization
+                          </label>
+                          <input
+                            type="text"
+                            name="experience3_organization"
+                            id="experience3_organization"
+                            value={experience3Organization}
+                            onChange={(e) => setExperience3Organization(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Organization Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience3_designation" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Designation
+                          </label>
+                          <input
+                            type="text"
+                            name="experience3_designation"
+                            id="experience3_designation"
+                            value={experience3Designation}
+                            onChange={(e) => setExperience3Designation(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title/Position"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience3_from" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            From
+                          </label>
+                          <input
+                            type="date"
+                            name="experience3_from"
+                            id="experience3_from"
+                            value={experience3From}
+                            onChange={(e) => setExperience3From(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience3_to" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            To
+                          </label>
+                          <input
+                            type="date"
+                            name="experience3_to"
+                            id="experience3_to"
+                            value={experience3To}
+                            onChange={(e) => setExperience3To(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                          <label htmlFor="experience3_reason" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Reason for Leaving
+                          </label>
+                          <textarea
+                            name="experience3_reason"
+                            id="experience3_reason"
+                            value={experience3Reason}
+                            onChange={(e) => setExperience3Reason(e.target.value)}
+                            rows={2}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Reason for leaving"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Work Experience 4</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="experience4_organization" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Organization
+                          </label>
+                          <input
+                            type="text"
+                            name="experience4_organization"
+                            id="experience4_organization"
+                            value={experience4Organization}
+                            onChange={(e) => setExperience4Organization(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Organization Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience4_designation" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Designation
+                          </label>
+                          <input
+                            type="text"
+                            name="experience4_designation"
+                            id="experience4_designation"
+                            value={experience4Designation}
+                            onChange={(e) => setExperience4Designation(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title/Position"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience4_from" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            From
+                          </label>
+                          <input
+                            type="date"
+                            name="experience4_from"
+                            id="experience4_from"
+                            value={experience4From}
+                            onChange={(e) => setExperience4From(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience4_to" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            To
+                          </label>
+                          <input
+                            type="date"
+                            name="experience4_to"
+                            id="experience4_to"
+                            value={experience4To}
+                            onChange={(e) => setExperience4To(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                          <label htmlFor="experience4_reason" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Reason for Leaving
+                          </label>
+                          <textarea
+                            name="experience4_reason"
+                            id="experience4_reason"
+                            value={experience4Reason}
+                            onChange={(e) => setExperience4Reason(e.target.value)}
+                            rows={2}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Reason for leaving"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Work Experience 5</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="experience5_organization" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Organization
+                          </label>
+                          <input
+                            type="text"
+                            name="experience5_organization"
+                            id="experience5_organization"
+                            value={experience5Organization}
+                            onChange={(e) => setExperience5Organization(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Organization Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience5_designation" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Designation
+                          </label>
+                          <input
+                            type="text"
+                            name="experience5_designation"
+                            id="experience5_designation"
+                            value={experience5Designation}
+                            onChange={(e) => setExperience5Designation(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title/Position"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience5_from" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            From
+                          </label>
+                          <input
+                            type="date"
+                            name="experience5_from"
+                            id="experience5_from"
+                            value={experience5From}
+                            onChange={(e) => setExperience5From(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="experience5_to" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            To
+                          </label>
+                          <input
+                            type="date"
+                            name="experience5_to"
+                            id="experience5_to"
+                            value={experience5To}
+                            onChange={(e) => setExperience5To(e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                          />
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                          <label htmlFor="experience5_reason" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Reason for Leaving
+                          </label>
+                          <textarea
+                            name="experience5_reason"
+                            id="experience5_reason"
+                            value={experience5Reason}
+                            onChange={(e) => setExperience5Reason(e.target.value)}
+                            rows={2}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Reason for leaving"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* References Tab */}
+                {activeTab === 'references' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Reference 1</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="ref1_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="ref1_name"
+                            id="ref1_name"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref1_position" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Position
+                          </label>
+                          <input
+                            type="text"
+                            name="ref1_position"
+                            id="ref1_position"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref1_company" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Company
+                          </label>
+                          <input
+                            type="text"
+                            name="ref1_company"
+                            id="ref1_company"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Company Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref1_phone" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Phone
+                          </label>
+                          <input
+                            type="tel"
+                            name="ref1_phone"
+                            id="ref1_phone"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="+254 700 000 000"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref1_email" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            name="ref1_email"
+                            id="ref1_email"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="email@example.com"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-4">Reference 2</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="ref2_name" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            name="ref2_name"
+                            id="ref2_name"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Full Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref2_position" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Position
+                          </label>
+                          <input
+                            type="text"
+                            name="ref2_position"
+                            id="ref2_position"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Job Title"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref2_company" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Company
+                          </label>
+                          <input
+                            type="text"
+                            name="ref2_company"
+                            id="ref2_company"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="Company Name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref2_phone" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Phone
+                          </label>
+                          <input
+                            type="tel"
+                            name="ref2_phone"
+                            id="ref2_phone"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="+254 700 000 000"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="ref2_email" className="block text-[10px] font-medium text-gray-700 mb-2">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            name="ref2_email"
+                            id="ref2_email"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
+                            placeholder="email@example.com"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
-              <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+              <div className="flex justify-end space-x-3 pt-6 pb-6 px-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     setIsEditMode(false);
                     setEditingStaff(null);
+                    setActiveTab('personal');
                     setNewStaff({
                       name: '',
                       photo_url: '',
@@ -1560,16 +3097,20 @@ const StaffList: React.FC = () => {
                       department: '',
                       department_id: undefined,
                     });
+                    setManagerId('');
+                    setBenefit1('');
+                    setBenefit2('');
+                    setBenefit3('');
                     setSelectedFile(null);
                   }}
-                  className="px-3 py-1.5 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-[10px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className={`px-4 py-1.5 text-[10px] font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
+                  className={`px-4 py-2 text-[10px] font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
                     isUploading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >

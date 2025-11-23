@@ -215,6 +215,12 @@ const navigation = [
     roles: ['admin', 'manager', 'accountant', 'executive']
   },
   {
+    name: 'Department Expenses',
+    href: '/department-expenses/upload',
+    icon: DollarSign,
+    roles: ['admin', 'manager', 'accountant', 'hr', 'executive']
+  },
+  {
     name: 'Expense Summary',
     href: '/expense-summary',
     icon: BarChart3,

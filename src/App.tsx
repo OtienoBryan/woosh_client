@@ -5,6 +5,7 @@ import ClientDetailsPage from './pages/ClientDetailsPage';
 import UnscheduledRequests from './pages/UnscheduledRequests';
 import PhotoListPage from './pages/PhotoListPage';
 import StaffList from './pages/StaffList';
+import EditStaffPage from './pages/EditStaffPage';
 import ProductPerformancePage from './pages/ProductPerformancePage';
 import ProductPerformanceGraphPage from './pages/ProductPerformanceGraphPage';
 import AutoLogout from './components/AutoLogout';
@@ -144,6 +145,7 @@ import DeliveryNoteDetailsPage from './pages/DeliveryNoteDetailsPage';
 import MyVisibilityPage from './pages/MyVisibilityPage';
 import EmployeeWorkingHoursPage from './pages/EmployeeWorkingHoursPage';
 import EmployeeWorkingDaysPage from './pages/EmployeeWorkingDaysPage';
+import PublicHolidaysPage from './pages/PublicHolidaysPage';
 import OutOfOfficeRequestsPage from './pages/OutOfOfficeRequestsPage';
 import AddJournalEntryPage from './pages/AddJournalEntryPage';
 import CreditNotesPage from './pages/CreditNotesPage';
@@ -153,6 +155,7 @@ import CreditNoteSummaryPage from './pages/CreditNoteSummaryPage';
 import CreditNoteDetailsPage from './pages/CreditNoteDetailsPage';
 import RoutesPage from './pages/RoutesPage';
 import UpliftSalesPage from './pages/UpliftSalesPage';
+import DepartmentExpenseUploadPage from './pages/DepartmentExpenseUploadPage';
 
 // Protected route wrapper
 const ProtectedRoute = () => {
@@ -247,6 +250,7 @@ const App = () => {
             <Route path="/dashboard/in-transit" element={<InTransitRequests />} />
             <Route path="/dashboard/photo-list" element={<PhotoListPage />} />
             <Route path="/dashboard/staff-list" element={<StaffList/>} />
+            <Route path="/dashboard/edit-staff/:id" element={<EditStaffPage />} />
             <Route path="/notices" element={<NoticesPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/my-account" element={<MyAccountPage />} />
@@ -268,8 +272,10 @@ const App = () => {
             <Route path="/managers-performance" element={<ManagersPerformancePage />} />
             <Route path="/employee-working-hours" element={<EmployeeWorkingHoursPage />} />
             <Route path="/employee-working-days" element={<EmployeeWorkingDaysPage />} />
+            <Route path="/public-holidays" element={<PublicHolidaysPage />} />
             <Route path="/out-of-office-requests" element={<OutOfOfficeRequestsPage />} />
             <Route path="/add-journal-entry" element={<AddJournalEntryPage />} />
+            <Route path="/department-expenses/upload" element={<DepartmentExpenseUploadPage />} />
 
             <Route path="/dashboard/teams-list" element={<TeamsList/>} />
             <Route path="/dashboard/clients-list" element={<ClientsList/>} />

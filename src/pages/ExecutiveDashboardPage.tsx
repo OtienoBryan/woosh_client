@@ -351,6 +351,7 @@ const FinancialDashboardPage = () => {
     { to: '/overall-stock', label: 'Store Inventory', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
     { to: '/expense-summary', label: 'Expenses Summary', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { to: '/department-expenses/upload', label: 'Dept Expenses', icon: <DollarSignIcon className="h-3 w-3" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
     { to: '/products', label: 'Products', icon: <BoxIcon className="h-3 w-3" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
     { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },

@@ -40,6 +40,64 @@ export interface CreateStaffData {
   salary?: number | null;
   department?: string;
   department_id?: number;
+  // Extended fields
+  manager_id?: number | null;
+  offer_date?: string | null;
+  start_date?: string | null;
+  date_of_birth?: string | null;
+  marital_status?: string | null;
+  nationality?: string | null;
+  address?: string | null;
+  nhif_number?: string | null;
+  nssf_number?: string | null;
+  kra_pin?: string | null;
+  passport_number?: string | null;
+  bank_name?: string | null;
+  bank_branch?: string | null;
+  account_number?: string | null;
+  account_name?: string | null;
+  swift_code?: string | null;
+  benefits?: string[] | null;
+  beneficiaries?: Array<{
+    name: string;
+    relationship: string;
+    contact: string;
+    entry_order: number;
+  }>;
+  emergency_contacts?: Array<{
+    name: string;
+    relationship: string;
+    contact: string;
+    entry_order: number;
+  }>;
+  family?: Array<{
+    name: string;
+    relationship: string;
+    contact: string;
+    entry_order: number;
+  }>;
+  education?: Array<{
+    institution: string;
+    qualification: string;
+    year_of_completion?: string | null;
+    entry_order: number;
+  }>;
+  work_experience?: Array<{
+    organization: string;
+    designation: string;
+    from_date?: string | null;
+    to_date?: string | null;
+    reason_for_leaving?: string | null;
+    entry_order: number;
+  }>;
+  references?: Array<{
+    name: string;
+    position?: string | null;
+    company?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    entry_order: number;
+  }>;
 }
 
 export const staffService = {
@@ -62,6 +120,18 @@ export const staffService = {
           console.error('Error message:', error.message);
         }
       }
+      throw error;
+    }
+  },
+
+  getStaffById: async (staffId: number): Promise<any> => {
+    try {
+      console.log('Fetching staff by ID:', staffId);
+      const response = await api.get(`/staff/${staffId}`);
+      console.log('Staff data response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in staffService.getStaffById:', error);
       throw error;
     }
   },
@@ -106,11 +176,14 @@ export const staffService = {
     }
   },
 
-  updateStaff: async (staffId: number, staffData: CreateStaffData): Promise<Staff> => {
+  updateStaff: async (staffId: number, staffData: Partial<CreateStaffData>): Promise<Staff> => {
     try {
+      console.log('Updating staff:', staffId, staffData);
       const response = await api.put(`/staff/${staffId}`, staffData);
+      console.log('Update response:', response.data);
       return response.data;
     } catch (error) {
+      console.error('Error in staffService.updateStaff:', error);
       throw error;
     }
   },

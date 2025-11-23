@@ -175,6 +175,31 @@ export const useCreateGroup = () => {
   });
 };
 
+// Custom hook for removing a member from a room
+export const useRemoveMember = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ roomId, staffId }: { roomId: number; staffId: number }) => {
+      const token = localStorage.getItem('token');
+      const res = await axios.delete(
+        `${API_BASE_URL}/chat/rooms/${roomId}/members`,
+        {
+          data: { roomId, staffId },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      return res.data;
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate room members to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['room-members', variables.roomId] });
+      // Also invalidate rooms in case member count changes
+      queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+    },
+  });
+};
+
 // Custom hook for editing messages
 export const useEditMessage = () => {
   const queryClient = useQueryClient();

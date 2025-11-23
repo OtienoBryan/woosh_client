@@ -12,6 +12,7 @@ interface Document {
   file_type?: string;
   start_date?: string;
   end_date?: string;
+  parent_folder_id?: number | null;
 }
 
 interface DocumentCategory {
@@ -20,6 +21,14 @@ interface DocumentCategory {
   description?: string;
   color: string;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DocumentFolder {
+  id: number;
+  name: string;
+  parent_folder_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +45,10 @@ const Icons = {
   X: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
   Upload: () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>,
   ChevronDown: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>,
+  ChevronRight: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
+  Folder: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>,
+  FolderOpen: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h12a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>,
+  Home: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
   Calendar: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   Tag: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>,
   Edit: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
@@ -71,6 +84,7 @@ const DocumentListPage: React.FC = () => {
 
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'category'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showFilters, setShowFilters] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,13 +103,28 @@ const DocumentListPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   
+  // Folder management state
+  const [folders, setFolders] = useState<DocumentFolder[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
+  const [folderPath, setFolderPath] = useState<DocumentFolder[]>([]);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [folderLoading, setFolderLoading] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<DocumentFolder | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState('');
+  const [folderEditLoading, setFolderEditLoading] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = async (folderId: number | null = null) => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('/api/documents');
+      const url = folderId !== null 
+        ? `/api/documents?parent_folder_id=${folderId}`
+        : '/api/documents?parent_folder_id=null';
+      
+      const res = await fetchWithAuth(url);
       
       if (!res.ok) {
         throw new Error(`Failed to fetch documents: ${res.statusText}`);
@@ -118,6 +147,58 @@ const DocumentListPage: React.FC = () => {
       setError('Failed to load documents');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFolders = async (folderId: number | null = null) => {
+    try {
+      const url = folderId !== null 
+        ? `/api/document-folders?parent_folder_id=${folderId}`
+        : '/api/document-folders?parent_folder_id=null';
+      
+      const res = await fetchWithAuth(url);
+      
+      if (!res.ok) {
+        throw new Error(`Failed to fetch folders: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (Array.isArray(data)) {
+        setFolders(data);
+      } else {
+        console.error('API returned non-array data for folders:', data);
+        setFolders([]);
+      }
+    } catch (err) {
+      console.error('Error fetching folders:', err);
+      setFolders([]);
+    }
+  };
+
+  const fetchFolderPath = async (folderId: number | null) => {
+    if (folderId === null) {
+      setFolderPath([]);
+      return;
+    }
+
+    try {
+      const path: DocumentFolder[] = [];
+      let currentId: number | null = folderId;
+
+      while (currentId !== null) {
+        const res = await fetchWithAuth(`/api/document-folders/${currentId}`);
+        if (!res.ok) break;
+        
+        const folder = await res.json();
+        path.unshift(folder);
+        currentId = folder.parent_folder_id;
+      }
+
+      setFolderPath(path);
+    } catch (err) {
+      console.error('Error fetching folder path:', err);
+      setFolderPath([]);
     }
   };
 
@@ -145,9 +226,15 @@ const DocumentListPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDocuments();
+    fetchDocuments(currentFolderId);
+    fetchFolders(currentFolderId);
+    if (currentFolderId !== null) {
+      fetchFolderPath(currentFolderId);
+    } else {
+      setFolderPath([]);
+    }
     fetchCategories();
-  }, []);
+  }, [currentFolderId]);
 
   // Enhanced filtering and sorting logic
   useEffect(() => {
@@ -158,6 +245,12 @@ const DocumentListPage: React.FC = () => {
     }
     
     let filtered = [...documents];
+    
+    // Filter by current folder - documents are already filtered by the API, but double-check
+    filtered = filtered.filter(doc => {
+      const docFolderId = doc.parent_folder_id === null ? null : doc.parent_folder_id;
+      return docFolderId === currentFolderId;
+    });
     
     // Apply search filter
     if (searchTerm) {
@@ -219,7 +312,7 @@ const DocumentListPage: React.FC = () => {
     setFilteredDocuments(filtered);
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [documents, searchTerm, category, expiringFilter, sortBy, sortOrder]);
+  }, [documents, searchTerm, category, expiringFilter, sortBy, sortOrder, currentFolderId]);
 
 
   // Pagination calculations
@@ -360,6 +453,9 @@ const DocumentListPage: React.FC = () => {
     formData.append('description', description);
     formData.append('start_date', startDate);
     formData.append('end_date', endDate);
+    if (currentFolderId !== null) {
+      formData.append('parent_folder_id', currentFolderId.toString());
+    }
     
     try {
       const res = await fetchWithAuth('/api/documents', {
@@ -377,7 +473,7 @@ const DocumentListPage: React.FC = () => {
       setStartDate('');
       setEndDate('');
       setShowModal(false);
-      fetchDocuments();
+      fetchDocuments(currentFolderId);
     } catch (err: any) {
       setError(err.message || 'Failed to upload document');
     } finally {
@@ -395,9 +491,118 @@ const DocumentListPage: React.FC = () => {
       
       setDocuments(documents.filter(doc => doc.id !== id));
       setSuccess('Document deleted successfully!');
+      fetchDocuments(currentFolderId);
     } catch (err: any) {
       setError(err.message || 'Failed to delete document');
     }
+  };
+
+  const handleCreateFolder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFolderLoading(true);
+    setError(null);
+    
+    if (!folderName.trim()) {
+      setError('Folder name is required');
+      setFolderLoading(false);
+      return;
+    }
+    
+    try {
+      const res = await postWithAuth('/api/document-folders', {
+        name: folderName.trim(),
+        parent_folder_id: currentFolderId
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || 'Failed to create folder';
+        throw new Error(errorMessage);
+      }
+      
+      const newFolder = await res.json();
+      setFolders([...folders, newFolder]);
+      setFolderName('');
+      setShowFolderModal(false);
+      setSuccess('Folder created successfully!');
+      fetchFolders(currentFolderId);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to create folder';
+      setError(errorMessage);
+      console.error('Error creating folder:', err);
+    } finally {
+      setFolderLoading(false);
+    }
+  };
+
+  const handleDeleteFolder = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this folder? All subfolders and documents inside will also be deleted.')) return;
+    
+    try {
+      const res = await deleteWithAuth(`/api/document-folders/${id}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete folder');
+      }
+      
+      setFolders(folders.filter(folder => folder.id !== id));
+      setSuccess('Folder deleted successfully!');
+      fetchFolders(currentFolderId);
+      fetchDocuments(currentFolderId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete folder');
+    }
+  };
+
+  const handleRenameFolder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFolder || !editingFolderName.trim()) {
+      setError('Folder name is required');
+      return;
+    }
+
+    setFolderEditLoading(true);
+    setError(null);
+
+    try {
+      const res = await putWithAuth(`/api/document-folders/${editingFolder.id}`, {
+        name: editingFolderName.trim(),
+        parent_folder_id: editingFolder.parent_folder_id
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to rename folder');
+      }
+
+      const updatedFolder = await res.json();
+      setFolders(folders.map(f => f.id === editingFolder.id ? updatedFolder : f));
+      setEditingFolder(null);
+      setEditingFolderName('');
+      setSuccess('Folder renamed successfully!');
+      fetchFolders(currentFolderId);
+      
+      // Update folder path if we're currently viewing this folder
+      if (currentFolderId === editingFolder.id) {
+        fetchFolderPath(currentFolderId);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to rename folder');
+    } finally {
+      setFolderEditLoading(false);
+    }
+  };
+
+  const openRenameFolderModal = (folder: DocumentFolder) => {
+    setEditingFolder(folder);
+    setEditingFolderName(folder.name);
+    setError(null);
+  };
+
+  const navigateToFolder = (folderId: number | null) => {
+    setCurrentFolderId(folderId);
+    setCurrentPage(1);
   };
 
   // Category management functions
@@ -580,6 +785,13 @@ const DocumentListPage: React.FC = () => {
                   <span className="ml-1.5">Manage Categories</span>
                 </button>
                 <button
+                  onClick={() => setShowFolderModal(true)}
+                  className="inline-flex items-center px-2.5 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  <Icons.Folder />
+                  <span className="ml-1.5">New Folder</span>
+                </button>
+                <button
                   onClick={() => setShowModal(true)}
                   className="inline-flex items-center px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
@@ -593,6 +805,32 @@ const DocumentListPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb Navigation */}
+        {(currentFolderId !== null || folderPath.length > 0) && (
+          <div className="bg-white rounded-lg shadow mb-4 px-4 py-3">
+            <div className="flex items-center space-x-2 text-xs">
+              <button
+                onClick={() => navigateToFolder(null)}
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <Icons.Home />
+                <span className="ml-1">Home</span>
+              </button>
+              {folderPath.map((folder) => (
+                <React.Fragment key={folder.id}>
+                  <span className="text-gray-400">/</span>
+                  <button
+                    onClick={() => navigateToFolder(folder.id)}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    {folder.name}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 hidden">
           <div className="bg-white rounded-lg shadow p-6">
@@ -704,7 +942,20 @@ const DocumentListPage: React.FC = () => {
                   </div>
                 )}
 
-
+                {/* Toggle Filters Button */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="inline-flex items-center px-2.5 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  title={showFilters ? 'Hide filters' : 'Show filters'}
+                >
+                  <Icons.Filter />
+                  <span className="ml-1.5">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                  {showFilters ? (
+                    <Icons.ChevronDown />
+                  ) : (
+                    <Icons.ChevronRight />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -747,20 +998,30 @@ const DocumentListPage: React.FC = () => {
               </div>
             )}
 
-            {/* Filters - Always Visible */}
-            <div className="mt-4 bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-900">Filters</h3>
-                {(category || searchTerm || expiringFilter) && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Clear All Filters
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* Filters - Collapsible */}
+            {showFilters && (
+              <div className="mt-4 bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-900">Filters</h3>
+                  <div className="flex items-center space-x-2">
+                    {(category || searchTerm || expiringFilter) && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Clear All Filters
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      className="text-xs text-gray-600 hover:text-gray-800"
+                      title="Hide filters"
+                    >
+                      <Icons.X />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
                     <select
@@ -815,33 +1076,85 @@ const DocumentListPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+            )}
           </div>
         </div>
 
         {/* Content Area */}
-        {!Array.isArray(filteredDocuments) || filteredDocuments.length === 0 ? (
-          // Empty State
-          <div className="bg-white rounded-lg shadow text-center py-8">
-            <Icons.Document />
-            <h3 className="mt-3 text-sm font-medium text-gray-900">No documents found</h3>
-            <p className="mt-2 text-xs text-gray-500">
-              {searchTerm || category || expiringFilter
-                ? 'Try adjusting your search or filters'
-                : 'Get started by uploading your first document'}
-            </p>
-            {!searchTerm && !category && !expiringFilter && (
-              <button
-                onClick={() => setShowModal(true)}
-                className="mt-3 inline-flex items-center px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Icons.Plus />
-                <span className="ml-1.5">Upload Document</span>
-              </button>
-            )}
-          </div>
-        ) : (
-          // Table View
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Folders Section */}
+          {folders.length > 0 && (
+            <div className="border-b border-gray-200 p-4">
+              <h3 className="text-xs font-medium text-gray-700 mb-3">Folders</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                {folders.map((folder) => (
+                  <div
+                    key={folder.id}
+                    className="flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer group"
+                    onClick={() => navigateToFolder(folder.id)}
+                  >
+                    <div className="text-yellow-500 mb-2">
+                      <Icons.Folder />
+                    </div>
+                    <div className="text-[10px] font-medium text-gray-900 text-center truncate w-full" title={folder.name}>
+                      {folder.name}
+                    </div>
+                    <div className="mt-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRenameFolderModal(folder);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 p-1"
+                        title="Rename folder"
+                      >
+                        <Icons.Edit />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFolder(folder.id);
+                        }}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Delete folder"
+                      >
+                        <Icons.Trash />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Documents Section */}
+          {!Array.isArray(filteredDocuments) || filteredDocuments.length === 0 ? (
+            // Empty State
+            <div className="text-center py-8">
+              {folders.length === 0 && (
+                <>
+                  <Icons.Document />
+                  <h3 className="mt-3 text-sm font-medium text-gray-900">No documents found</h3>
+                  <p className="mt-2 text-xs text-gray-500">
+                    {searchTerm || category || expiringFilter
+                      ? 'Try adjusting your search or filters'
+                      : 'Get started by uploading your first document'}
+                  </p>
+                  {!searchTerm && !category && !expiringFilter && (
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="mt-3 inline-flex items-center px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      <Icons.Plus />
+                      <span className="ml-1.5">Upload Document</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            // Table View
+            <div className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -941,8 +1254,9 @@ const DocumentListPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {/* Pagination */}
         {Array.isArray(filteredDocuments) && filteredDocuments.length > 0 && (
@@ -1594,6 +1908,178 @@ const DocumentListPage: React.FC = () => {
                 </>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Folder Rename Modal */}
+      {editingFolder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Rename Folder</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Change the name of "{editingFolder.name}"
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingFolder(null);
+                  setEditingFolderName('');
+                  setError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={folderEditLoading}
+              >
+                <Icons.X />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleRenameFolder} className="px-4 py-4 space-y-4">
+              <div>
+                <label htmlFor="editFolderName" className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Folder Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="editFolderName"
+                  required
+                  value={editingFolderName}
+                  onChange={(e) => setEditingFolderName(e.target.value)}
+                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-xs"
+                  placeholder="Enter folder name"
+                  autoFocus
+                />
+              </div>
+
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                  <p className="text-xs text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingFolder(null);
+                    setEditingFolderName('');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={folderEditLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={folderEditLoading || !editingFolderName.trim()}
+                  className={`px-2.5 py-1 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors ${
+                    folderEditLoading || !editingFolderName.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {folderEditLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
+                      Renaming...
+                    </div>
+                  ) : (
+                    'Rename Folder'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Folder Creation Modal */}
+      {showFolderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Create New Folder</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {currentFolderId ? 'Create a folder inside the current folder' : 'Create a folder in the root'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowFolderModal(false);
+                  setFolderName('');
+                  setError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={folderLoading}
+              >
+                <Icons.X />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleCreateFolder} className="px-4 py-4 space-y-4">
+              <div>
+                <label htmlFor="folderName" className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Folder Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="folderName"
+                  required
+                  value={folderName}
+                  onChange={(e) => setFolderName(e.target.value)}
+                  className="block w-full px-2 py-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-xs"
+                  placeholder="Enter folder name"
+                  autoFocus
+                />
+              </div>
+
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                  <p className="text-xs text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFolderModal(false);
+                    setFolderName('');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={folderLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={folderLoading || !folderName.trim()}
+                  className={`px-2.5 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-colors ${
+                    folderLoading || !folderName.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {folderLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
+                      Creating...
+                    </div>
+                  ) : (
+                    'Create Folder'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

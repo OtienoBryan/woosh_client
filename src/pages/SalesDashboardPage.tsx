@@ -267,6 +267,7 @@ const SalesDashboardPage: React.FC = () => {
     { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/financial/create-customer-order', label: 'Add Order', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200', badge: newOrdersCount },
     { to: '/sales-reps', label: 'Sales Reps List', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { to: '/department-expenses/upload', label: 'Dept Expenses', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
     { to: '/instant-chat', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }
   ], [pendingLeavesCount, newOrdersCount]);
 

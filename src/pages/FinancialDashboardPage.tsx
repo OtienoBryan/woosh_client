@@ -195,6 +195,7 @@ const FinancialDashboardPage = () => {
     { to: '/create-invoice', label: 'Create Invoice', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/create-credit-note', label: 'Credit Note', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     { to: '/add-expense', label: 'Add Expense', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { to: '/department-expenses/upload', label: 'Dept Expenses', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
     { to: '/equity/entries', label: 'Equity Entries', icon: <CalculatorIcon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
     { to: '/add-journal-entry', label: 'Journal Entry', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     //{ to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
