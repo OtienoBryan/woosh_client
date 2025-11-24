@@ -95,6 +95,10 @@ import AttendanceHistoryPage from './pages/AttendanceHistoryPage';
 import EmployeeWarningsPage from './pages/EmployeeWarningsPage';
 import ExpiringContractsPage from './pages/ExpiringContractsPage';
 import EmployeeLeavesPage from './pages/EmployeeLeavesPage';
+import LeaveReportPage from './pages/LeaveReportPage';
+import MaternalLeaveReportPage from './pages/MaternalLeaveReportPage';
+import SickLeaveReportPage from './pages/SickLeaveReportPage';
+import CompassionateLeaveReportPage from './pages/CompassionateLeaveReportPage';
 import SalesReportPage from './pages/SalesReportPage';
 import VisibilityReportPage from './pages/VisibilityReportPage';
 import FeedbackReportPage from './pages/FeedbackReportPage';
@@ -262,6 +266,10 @@ const App = () => {
             <Route path="/dashboard/employee-warnings" element={<EmployeeWarningsPage />} />
             <Route path="/dashboard/expiring-contracts" element={<ExpiringContractsPage />} />
             <Route path="/dashboard/employee-leaves" element={<EmployeeLeavesPage />} />
+            <Route path="/dashboard/leave-report" element={<LeaveReportPage />} />
+            <Route path="/dashboard/maternal-leave-report" element={<MaternalLeaveReportPage />} />
+            <Route path="/dashboard/sick-leave-report" element={<SickLeaveReportPage />} />
+            <Route path="/dashboard/compassionate-leave-report" element={<CompassionateLeaveReportPage />} />
             <Route path="/sales-rep-leaves" element={<SalesRepLeavesPage />} />
             <Route path="/sales-rep-working-days" element={<SalesRepWorkingDaysPage />} />
             <Route path="/sales-rep-attendance" element={<SalesRepAttendancePage />} />

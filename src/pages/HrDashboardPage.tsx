@@ -247,6 +247,7 @@ const HrDashboardPage: React.FC = () => {
       { to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
       { to: '/dashboard/expiring-contracts', label: 'Expiring Contracts', icon: <AlertTriangleIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
       { to: '/dashboard/employee-leaves', label: 'Employee Leaves', icon: <CalendarIcon className="h-3 w-3" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+      { to: '/dashboard/leave-report', label: 'Leave Report', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
       //{ to: '/attendance-history', label: 'Attendance History', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
       { to: '/employee-working-hours', label: 'Attendance History', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
       { to: '/employee-working-days', label: 'Working Days', icon: <CalendarIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
