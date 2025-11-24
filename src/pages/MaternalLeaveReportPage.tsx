@@ -186,7 +186,7 @@ const MaternalLeaveReportPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-3 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-medium text-gray-600">Total Employees</p>
+                <p className="text-[10px] font-medium text-gray-600 hidden">Total Employees</p>
                 <p className="text-lg font-bold text-gray-900">{summary.total}</p>
               </div>
               <div className="p-2 bg-blue-100 rounded-lg">
