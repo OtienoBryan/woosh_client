@@ -175,6 +175,27 @@ export const useCreateGroup = () => {
   });
 };
 
+// Custom hook for creating private chat (direct message)
+export const useCreatePrivateChat = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ memberId }: { memberId: number }) => {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${API_BASE_URL}/chat/rooms`,
+        { name: null, is_group: false, memberIds: [memberId] },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch chat rooms
+      queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+    },
+  });
+};
+
 // Custom hook for removing a member from a room
 export const useRemoveMember = () => {
   const queryClient = useQueryClient();

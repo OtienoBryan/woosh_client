@@ -1614,16 +1614,19 @@ const StaffList: React.FC = () => {
                       <label htmlFor="designation" className="block text-[10px] font-medium text-gray-700 mb-2">
                         Designation *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         name="designation"
                         id="designation"
                         required
                         value={newStaff.designation || ''}
                         onChange={handleInputChange}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-[10px]"
-                        placeholder="e.g., Manager, Supervisor, Officer"
-                      />
+                      >
+                        <option value="">Select Designation</option>
+                        <option value="Executive">Executive</option>
+                        <option value="Head of Department">Head of Department</option>
+                        <option value="Staff Member">Staff Member</option>
+                      </select>
                     </div>
                     <div>
                       <label htmlFor="department_id" className="block text-[10px] font-medium text-gray-700 mb-2">

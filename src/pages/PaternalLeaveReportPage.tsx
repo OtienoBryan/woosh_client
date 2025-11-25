@@ -12,21 +12,19 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface LeaveReportItem {
+interface PaternalLeaveReportItem {
   id: number;
   name: string;
   employeeNumber: string;
   department: string;
-  balanceBefore: number;
   entitlement: number;
   takenDays: number;
   balance: number;
-  totalBalance: number;
 }
 
-const LeaveReportPage: React.FC = () => {
-  const [reportData, setReportData] = useState<LeaveReportItem[]>([]);
-  const [filteredData, setFilteredData] = useState<LeaveReportItem[]>([]);
+const PaternalLeaveReportPage: React.FC = () => {
+  const [reportData, setReportData] = useState<PaternalLeaveReportItem[]>([]);
+  const [filteredData, setFilteredData] = useState<PaternalLeaveReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +32,7 @@ const LeaveReportPage: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    fetchLeaveReport();
+    fetchPaternalLeaveReport();
   }, []);
 
   useEffect(() => {
@@ -50,16 +48,16 @@ const LeaveReportPage: React.FC = () => {
     }
   }, [searchTerm, reportData]);
 
-  const fetchLeaveReport = async () => {
+  const fetchPaternalLeaveReport = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/leave-requests/report');
+      const response = await api.get('/leave-requests/paternal-leave-report');
       setReportData(response.data);
       setFilteredData(response.data);
     } catch (err: any) {
-      console.error('Error fetching leave report:', err);
-      setError(err.message || 'Failed to fetch leave report');
+      console.error('Error fetching paternal leave report:', err);
+      setError(err.message || 'Failed to fetch paternal leave report');
     } finally {
       setLoading(false);
     }
@@ -87,15 +85,13 @@ const LeaveReportPage: React.FC = () => {
 
   const handleExport = () => {
     // Create CSV content
-    const headers = ['Employee Name', 'Department', 'Balance Before (Days)', 'Entitlement (Days)', 'Taken (Days)', 'Balance (Days)', 'Total Balance (Days)'];
+    const headers = ['Employee Name', 'Department', 'Entitlement (Days)', 'Taken (Days)', 'Balance (Days)'];
     const rows = filteredData.map(item => [
       item.name,
       item.department,
-      item.balanceBefore.toString(),
       item.entitlement.toString(),
       item.takenDays.toString(),
-      item.balance.toString(),
-      item.totalBalance.toString()
+      item.balance.toString()
     ]);
 
     const csvContent = [
@@ -108,7 +104,7 @@ const LeaveReportPage: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `leave-report-${currentYear}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.setAttribute('download', `paternal-leave-report-${currentYear}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -122,7 +118,7 @@ const LeaveReportPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-3 text-xs font-medium text-gray-900">Loading leave report...</p>
+              <p className="mt-3 text-xs font-medium text-gray-900">Loading paternal leave report...</p>
             </div>
           </div>
         </div>
@@ -138,7 +134,7 @@ const LeaveReportPage: React.FC = () => {
             <div className="text-center py-8">
               <p className="text-sm font-medium text-red-600">{error}</p>
               <button
-                onClick={fetchLeaveReport}
+                onClick={fetchPaternalLeaveReport}
                 className="mt-3 px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 Retry
@@ -158,40 +154,12 @@ const LeaveReportPage: React.FC = () => {
           <div className="py-3">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-base font-bold text-gray-900">Annual Leave Report</h1>
+                <h1 className="text-base font-bold text-gray-900">Paternal Leave Report</h1>
                 <p className="mt-1 text-xs text-gray-500">
-                  Annual leave entitlement, taken days, and remaining balance for {currentYear}
+                  Paternal leave entitlement, taken days, and remaining balance for {currentYear}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate('/dashboard/maternal-leave-report')}
-                  className="inline-flex items-center px-2.5 py-1 text-xs bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-                >
-                  <CalendarIcon className="h-3 w-3 mr-1.5" />
-                  Maternal Leave
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/sick-leave-report')}
-                  className="inline-flex items-center px-2.5 py-1 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                >
-                  <CalendarIcon className="h-3 w-3 mr-1.5" />
-                  Sick Leave
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/compassionate-leave-report')}
-                  className="inline-flex items-center px-2.5 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <CalendarIcon className="h-3 w-3 mr-1.5" />
-                  Compassionate Leave
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/paternal-leave-report')}
-                  className="inline-flex items-center px-2.5 py-1 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                >
-                  <CalendarIcon className="h-3 w-3 mr-1.5" />
-                  Paternal Leave
-                </button>
                 <button
                   onClick={handleExport}
                   className="inline-flex items-center px-2.5 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -200,7 +168,7 @@ const LeaveReportPage: React.FC = () => {
                   Export CSV
                 </button>
                 <button
-                  onClick={fetchLeaveReport}
+                  onClick={fetchPaternalLeaveReport}
                   className="inline-flex items-center px-2.5 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   <RefreshCwIcon className="h-3 w-3 mr-1.5" />
@@ -300,13 +268,10 @@ const LeaveReportPage: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                      Employee Name
+                      Staff Name
                     </th>
                     <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Department
-                    </th>
-                    <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                      Balance Before
                     </th>
                     <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Entitlement
@@ -316,9 +281,6 @@ const LeaveReportPage: React.FC = () => {
                     </th>
                     <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Balance
-                    </th>
-                    <th className="px-3 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                      Total Balance
                     </th>
                   </tr>
                 </thead>
@@ -337,17 +299,6 @@ const LeaveReportPage: React.FC = () => {
                         <span className="text-xs text-gray-600">{item.department}</span>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          item.balanceBefore >= 10 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : item.balanceBefore >= 5 
-                            ? 'bg-cyan-100 text-cyan-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {item.balanceBefore} days
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
                         <span className="text-xs font-medium text-gray-900">{item.entitlement} days</span>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-center">
@@ -363,22 +314,11 @@ const LeaveReportPage: React.FC = () => {
                             ? 'bg-green-100 text-green-800' 
                             : item.balance >= 5 
                             ? 'bg-yellow-100 text-yellow-800' 
+                            : item.balance >= 0
+                            ? 'bg-orange-100 text-orange-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
                           {item.balance} days
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          item.totalBalance >= 20 
-                            ? 'bg-emerald-100 text-emerald-800' 
-                            : item.totalBalance >= 10 
-                            ? 'bg-green-100 text-green-800' 
-                            : item.totalBalance >= 5 
-                            ? 'bg-yellow-100 text-yellow-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {item.totalBalance} days
                         </span>
                       </td>
                     </tr>
@@ -393,5 +333,5 @@ const LeaveReportPage: React.FC = () => {
   );
 };
 
-export default LeaveReportPage;
+export default PaternalLeaveReportPage;
 

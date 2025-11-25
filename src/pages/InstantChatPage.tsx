@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Pencil, Trash2, Plus, ChevronLeft, Check, X, Wifi, WifiOff, RefreshCw, Send, Users } from 'lucide-react';
+import { Pencil, Trash2, Plus, ChevronLeft, Check, X, Wifi, WifiOff, RefreshCw, Send, Users, MessageCircle } from 'lucide-react';
 import { DateTime } from 'luxon';
 import {
   useChatRooms,
@@ -9,6 +9,7 @@ import {
   useRoomMembers,
   useSendMessage,
   useCreateGroup,
+  useCreatePrivateChat,
   useEditMessage,
   useDeleteMessage,
   useRemoveMember,
@@ -24,6 +25,7 @@ interface ChatRoom {
   is_group: boolean;
   created_by: number;
   created_at: string;
+  other_member_name?: string | null; // For private chats, the name of the other person
 }
 
 interface Message {
@@ -124,6 +126,7 @@ const InstantChatPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const [showMembersPanel, setShowMembersPanel] = useState(false);
+  const [showStaffList, setShowStaffList] = useState(false);
   
   // Mention functionality state
   const [mentionQuery, setMentionQuery] = useState('');
@@ -147,6 +150,7 @@ const InstantChatPage: React.FC = () => {
   // Mutations
   const sendMessageMutation = useSendMessage();
   const createGroupMutation = useCreateGroup();
+  const createPrivateChatMutation = useCreatePrivateChat();
   const editMessageMutation = useEditMessage();
   const deleteMessageMutation = useDeleteMessage();
   const removeMemberMutation = useRemoveMember();
@@ -536,6 +540,52 @@ const InstantChatPage: React.FC = () => {
     }
   };
 
+  // Start private chat with a staff member
+  const handleStartPrivateChat = async (staffId: number) => {
+    try {
+      // Check if a private chat already exists with this staff member
+      const existingRoom = rooms.find((room: ChatRoom) => 
+        !room.is_group && roomMembers.some((member: any) => member.staff_id === staffId)
+      );
+
+      if (existingRoom) {
+        // If chat exists, just open it
+        handleRoomSelect(existingRoom);
+        setShowStaffList(false);
+        setSearchTerm('');
+        return;
+      }
+
+      // Otherwise create a new chat
+      const res = await createPrivateChatMutation.mutateAsync({
+        memberId: staffId,
+      });
+      
+      setShowStaffList(false);
+      setSearchTerm('');
+      
+      // Refetch rooms to get the new room
+      await refetchRooms();
+      
+      // Wait a bit for the rooms to update, then find and select the new room
+      setTimeout(async () => {
+        const updatedRooms = await refetchRooms();
+        if (updatedRooms.data) {
+          const newRoom = updatedRooms.data.find((r: ChatRoom) => r.id === res.roomId);
+          if (newRoom) {
+            handleRoomSelect(newRoom);
+          }
+        }
+      }, 500);
+      
+      setToast('Chat opened!');
+      setTimeout(() => setToast(null), 2000);
+    } catch (error) {
+      setToast('Failed to start chat. Please try again.');
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
   // Edit message handler
   const handleEditMessage = (msg: Message) => {
     setEditingMessageId(msg.id!);
@@ -640,11 +690,44 @@ const InstantChatPage: React.FC = () => {
     }
   };
 
-  // Filter rooms based on search term
-  const filteredRooms = rooms.filter((room: ChatRoom) => 
-    room.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (room.is_group ? 'group chat' : 'private chat').includes(searchTerm.toLowerCase())
-  );
+  // Helper function to get the other person's name for a private chat
+  const getPrivateChatName = (room: ChatRoom): string => {
+    if (room.is_group) {
+      return room.name || 'Group Chat';
+    }
+    
+    // Use the other_member_name from the backend if available
+    if (room.other_member_name) {
+      return room.other_member_name;
+    }
+    
+    // Fallback: try to find from roomMembers if this is the selected room
+    if (selectedRoom?.id === room.id && roomMembers.length > 0) {
+      const otherMember = roomMembers.find((member: any) => 
+        (member.id !== user?.id && member.staff_id !== user?.id) ||
+        (String(member.id) !== String(user?.id) && String(member.staff_id) !== String(user?.id))
+      );
+      if (otherMember) {
+        return otherMember.name || 'Unknown Staff';
+      }
+    }
+    
+    // Final fallback
+    return 'Private Chat';
+  };
+
+  // Filter rooms based on search term (only when not showing staff list)
+  const filteredRooms = !showStaffList ? rooms.filter((room: ChatRoom) => {
+    const roomName = room.is_group ? (room.name || 'Group Chat') : getPrivateChatName(room);
+    return roomName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           (room.is_group ? 'group chat' : 'private chat').includes(searchTerm.toLowerCase());
+  }) : [];
+
+  // Filter staff based on search term (only when showing staff list)
+  const filteredStaff = showStaffList ? allStaff.filter((staff: any) => 
+    staff.id !== user?.id &&
+    (staff.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  ) : [];
 
   return (
     <div className="flex h-[85vh] bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-2xl overflow-hidden border border-indigo-200">
@@ -686,6 +769,16 @@ const InstantChatPage: React.FC = () => {
                 </button>
               )}
               <button 
+                className={`text-white p-1.5 rounded-full transition-all backdrop-blur-sm ${showStaffList ? 'bg-white/40' : 'bg-white/20 hover:bg-white/30'}`}
+                onClick={() => {
+                  setShowStaffList(!showStaffList);
+                  setSearchTerm('');
+                }}
+                title={showStaffList ? "Show chats" : "Find staff to chat"}
+              >
+                <Users size={16} />
+              </button>
+              <button 
                 className="bg-white/20 text-white p-1.5 rounded-full hover:bg-white/30 transition-all backdrop-blur-sm"
                 onClick={() => setShowCreateModal(true)}
                 title="Create group"
@@ -697,7 +790,7 @@ const InstantChatPage: React.FC = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search chats..."
+              placeholder={showStaffList ? "Search staff..." : "Search chats..."}
               className="w-full p-1.5 pl-7 text-sm rounded-lg bg-white/90 backdrop-blur-sm border-none focus:ring-2 focus:ring-white shadow-sm text-gray-700 placeholder-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -718,28 +811,68 @@ const InstantChatPage: React.FC = () => {
           </div>
         </div>
         <div className="overflow-y-auto h-[calc(100%-110px)]">
-          {roomsLoading ? (
-            <div className="p-3 text-center text-gray-500">
-              <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-indigo-500" />
-              <p className="text-xs">Loading rooms...</p>
-            </div>
-          ) : roomsError ? (
-            <div className="p-3 text-center text-red-500">
-              <WifiOff className="w-5 h-5 mx-auto mb-1.5" />
-              <p className="text-xs mb-1.5">Failed to load rooms</p>
-              <button 
-                onClick={handleRetryConnection}
-                className="text-indigo-600 hover:underline text-xs font-medium"
-              >
-                Retry
-              </button>
-            </div>
-          ) : filteredRooms.length === 0 ? (
-            <div className="p-3 text-center text-gray-500">
-              <p className="text-xs">No chats found {searchTerm && `matching "${searchTerm}"`}</p>
-            </div>
+          {showStaffList ? (
+            // Staff list for starting new chats
+            <>
+              {staffError ? (
+                <div className="p-3 text-center text-red-500">
+                  <WifiOff className="w-5 h-5 mx-auto mb-1.5" />
+                  <p className="text-xs">Error loading staff</p>
+                </div>
+              ) : filteredStaff.length === 0 ? (
+                <div className="p-3 text-center text-gray-500">
+                  <p className="text-xs">{searchTerm ? 'No staff found' : 'No staff available'}</p>
+                </div>
+              ) : (
+                <div className="p-2">
+                  {filteredStaff.map((staff: any) => (
+                    <div
+                      key={staff.id}
+                      onClick={() => handleStartPrivateChat(staff.id)}
+                      className="flex items-center p-2.5 mb-2 rounded-lg cursor-pointer transition-all hover:bg-indigo-50 border border-transparent hover:border-indigo-200 shadow-sm hover:shadow-md"
+                    >
+                      <div className="rounded-full w-10 h-10 flex items-center justify-center mr-3 bg-gradient-to-br from-blue-400 to-indigo-500 text-white font-semibold text-sm shadow-md">
+                        {staff.name ? staff.name.charAt(0).toUpperCase() : 'S'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-gray-800 truncate">
+                          {staff.name || 'Unknown Staff'}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {staff.department || 'No department'}
+                        </div>
+                      </div>
+                      <MessageCircle className="w-5 h-5 text-indigo-400" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
-            filteredRooms.map((room: ChatRoom) => {
+            // Regular chat list
+            <>
+              {roomsLoading ? (
+                <div className="p-3 text-center text-gray-500">
+                  <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-indigo-500" />
+                  <p className="text-xs">Loading rooms...</p>
+                </div>
+              ) : roomsError ? (
+                <div className="p-3 text-center text-red-500">
+                  <WifiOff className="w-5 h-5 mx-auto mb-1.5" />
+                  <p className="text-xs mb-1.5">Failed to load rooms</p>
+                  <button 
+                    onClick={handleRetryConnection}
+                    className="text-indigo-600 hover:underline text-xs font-medium"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : filteredRooms.length === 0 ? (
+                <div className="p-3 text-center text-gray-500">
+                  <p className="text-xs">{searchTerm ? `No chats found matching "${searchTerm}"` : 'No chats yet. Click the Users icon to start chatting!'}</p>
+                </div>
+              ) : (
+                filteredRooms.map((room: ChatRoom) => {
               const canDeleteThisRoom = room.is_group && (
                 Number(room.created_by) === Number(user?.id) || 
                 String(room.created_by) === String(user?.id) ||
@@ -782,11 +915,11 @@ const InstantChatPage: React.FC = () => {
                   }`}>
                     {room.is_group ? 'G' : 'P'}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-gray-800 text-xs truncate">
-                        {room.is_group ? (room.name || 'Group Chat') : 'Private Chat'}
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-gray-800 text-xs truncate">
+                          {getPrivateChatName(room)}
+                        </div>
                       <div className="flex items-center gap-1">
                         {unreadCounts[room.id] > 0 && (
                           <div className="bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[18px] text-center font-semibold ml-1">
@@ -819,6 +952,8 @@ const InstantChatPage: React.FC = () => {
               );
             })
           )}
+            </>
+          )}
         </div>
       </div>
 
@@ -844,7 +979,7 @@ const InstantChatPage: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="font-semibold text-white text-sm">
-                    {selectedRoom.is_group ? (selectedRoom.name || 'Group Chat') : 'Private Chat'}
+                    {getPrivateChatName(selectedRoom)}
                   </h2>
                   <div className="text-[10px] text-indigo-100">
                     {unreadCounts[selectedRoom.id] > 0 

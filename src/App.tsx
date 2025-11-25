@@ -99,6 +99,7 @@ import LeaveReportPage from './pages/LeaveReportPage';
 import MaternalLeaveReportPage from './pages/MaternalLeaveReportPage';
 import SickLeaveReportPage from './pages/SickLeaveReportPage';
 import CompassionateLeaveReportPage from './pages/CompassionateLeaveReportPage';
+import PaternalLeaveReportPage from './pages/PaternalLeaveReportPage';
 import SalesReportPage from './pages/SalesReportPage';
 import VisibilityReportPage from './pages/VisibilityReportPage';
 import FeedbackReportPage from './pages/FeedbackReportPage';
@@ -270,6 +271,7 @@ const App = () => {
             <Route path="/dashboard/maternal-leave-report" element={<MaternalLeaveReportPage />} />
             <Route path="/dashboard/sick-leave-report" element={<SickLeaveReportPage />} />
             <Route path="/dashboard/compassionate-leave-report" element={<CompassionateLeaveReportPage />} />
+            <Route path="/dashboard/paternal-leave-report" element={<PaternalLeaveReportPage />} />
             <Route path="/sales-rep-leaves" element={<SalesRepLeavesPage />} />
             <Route path="/sales-rep-working-days" element={<SalesRepWorkingDaysPage />} />
             <Route path="/sales-rep-attendance" element={<SalesRepAttendancePage />} />
