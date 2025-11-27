@@ -96,7 +96,7 @@ const NoticesPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-4 px-2 sm:px-4">
+    <div className="max-w-7xl mx-auto py-4 px-2 sm:px-4">
       <div className="sticky top-0 z-10 bg-white rounded-lg shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 py-2 mb-4">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
           <div className="flex items-center gap-1.5">
@@ -142,7 +142,7 @@ const NoticesPage: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Content</th>
+                  <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider w-1/2">Content</th>
                   <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Country</th>
                   <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -155,7 +155,7 @@ const NoticesPage: React.FC = () => {
                       <div className="text-xs font-medium text-gray-900">{notice.title}</div>
                     </td>
                     <td className="px-4 py-2">
-                      <div className="text-xs text-gray-700 max-w-xs truncate" title={notice.content}>
+                      <div className="text-xs text-gray-700 max-w-2xl whitespace-normal break-words" title={notice.content}>
                         {notice.content}
                       </div>
                     </td>

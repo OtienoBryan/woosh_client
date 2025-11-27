@@ -22,7 +22,8 @@ import {
   ArrowUpRightIcon,
   ArrowDownRightIcon,
   AwardIcon,
-  TargetIcon
+  TargetIcon,
+  MapPinIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { API_CONFIG } from '../config/api';
@@ -365,11 +366,14 @@ const FinancialDashboardPage = () => {
     { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+    { to: '/dashboard/route-compliance', label: 'Sales Rep Compliance', icon: <MapPinIcon className="h-3.5 w-3.5" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
     { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     //{ to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+    { to: '/dashboard/leave-report', label: 'Employees Leave Report', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/instant-chat', label: 'Chat Room', icon: <ZapIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
     { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { to: '/dashboard/expiring-contracts', label: 'Expiring Contracts', icon: <AlertTriangleIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     //{ to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
     { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
