@@ -19,6 +19,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 // Debounce hook for search optimization
 const useDebounce = (value: string, delay: number) => {
@@ -39,16 +41,18 @@ const useDebounce = (value: string, delay: number) => {
 
 const MyVisibilityPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [reports, setReports] = useState<MyVisibilityReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOutlet, setSelectedOutlet] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedSalesRep, setSelectedSalesRep] = useState<string>('');
   const [outlets, setOutlets] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [salesReps, setSalesReps] = useState<string[]>([]);
+  const [defaultCountrySet, setDefaultCountrySet] = useState<boolean>(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     totalPages: 1,
@@ -81,6 +85,55 @@ const MyVisibilityPage: React.FC = () => {
     };
     loadFilterOptions();
   }, []);
+
+  // Fetch user's country and set default filter
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      // Only set default once
+      if (!user?.id || countries.length === 0 || defaultCountrySet) return;
+      
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        const response = await axios.get(`${API_BASE_URL}/staff/${user.id}`, { headers });
+        const staffData = response.data;
+        const userCountry = staffData.country || staffData.country_id || staffData.countryId;
+        
+        // Set default country based on user's country
+        // country = 1 means Kenya, country = 2 means Tanzania
+        if (userCountry === 1 || userCountry === '1') {
+          // Find Kenya in the countries list (countries are strings)
+          const kenyaCountry = countries.find(c => c.toLowerCase() === 'kenya');
+          if (kenyaCountry) {
+            setSelectedCountry(kenyaCountry);
+          } else {
+            setSelectedCountry('Kenya');
+          }
+          setDefaultCountrySet(true);
+        } else if (userCountry === 2 || userCountry === '2') {
+          // Find Tanzania in the countries list (countries are strings)
+          const tanzaniaCountry = countries.find(c => c.toLowerCase() === 'tanzania');
+          if (tanzaniaCountry) {
+            setSelectedCountry(tanzaniaCountry);
+          } else {
+            setSelectedCountry('Tanzania');
+          }
+          setDefaultCountrySet(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user country:', error);
+        // Default to Kenya if we can't fetch the user's country
+        if (!defaultCountrySet) {
+          setSelectedCountry('Kenya');
+          setDefaultCountrySet(true);
+        }
+      }
+    };
+    
+    fetchUserCountry();
+  }, [user?.id, countries, defaultCountrySet]);
 
   // Fetch reports with server-side filtering and pagination
   const fetchReports = useCallback(async (page: number = 1) => {

@@ -20,6 +20,8 @@ import {
   ChevronUp,
   User
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 interface ProductPerformance {
   product_id: number;
@@ -63,6 +65,7 @@ const StatsCard: React.FC<{
 
 
 const ProductPerformancePage: React.FC = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState<ProductPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +85,7 @@ const ProductPerformancePage: React.FC = () => {
   const [productType, setProductType] = useState<string>('');
   const [country, setCountry] = useState<string>('');
   const [countries, setCountries] = useState<string[]>([]);
+  const [defaultCountrySet, setDefaultCountrySet] = useState<boolean>(false);
   const [regions, setRegions] = useState<string[]>([]);
   const [region, setRegion] = useState<string>('');
   const [salesRep, setSalesRep] = useState<string>('');
@@ -222,7 +226,54 @@ const ProductPerformancePage: React.FC = () => {
     fetchCategories();
   }, []);
 
-
+  // Fetch user's country and set default filter
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      // Only set default once
+      if (!user?.id || countries.length === 0 || defaultCountrySet) return;
+      
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        const response = await axios.get(`${API_BASE_URL}/staff/${user.id}`, { headers });
+        const staffData = response.data;
+        const userCountry = staffData.country || staffData.country_id || staffData.countryId;
+        
+        // Set default country based on user's country
+        // country = 1 means Kenya, country = 2 means Tanzania
+        if (userCountry === 1 || userCountry === '1') {
+          // Find Kenya in the countries list (countries are strings)
+          const kenyaCountry = countries.find(c => c.toLowerCase() === 'kenya');
+          if (kenyaCountry) {
+            setCountry(kenyaCountry);
+          } else {
+            setCountry('Kenya');
+          }
+          setDefaultCountrySet(true);
+        } else if (userCountry === 2 || userCountry === '2') {
+          // Find Tanzania in the countries list (countries are strings)
+          const tanzaniaCountry = countries.find(c => c.toLowerCase() === 'tanzania');
+          if (tanzaniaCountry) {
+            setCountry(tanzaniaCountry);
+          } else {
+            setCountry('Tanzania');
+          }
+          setDefaultCountrySet(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user country:', error);
+        // Default to Kenya if we can't fetch the user's country
+        if (!defaultCountrySet) {
+          setCountry('Kenya');
+          setDefaultCountrySet(true);
+        }
+      }
+    };
+    
+    fetchUserCountry();
+  }, [user?.id, countries, defaultCountrySet]);
 
   // Filtered clients for modal based on temp search
   const filteredClientsForModal = useMemo(() => {

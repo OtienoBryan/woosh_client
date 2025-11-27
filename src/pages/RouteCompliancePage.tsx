@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { fetchRouteCompliance, RouteComplianceItem } from '../services/routeComplianceService';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Country {
   id: number;
@@ -10,15 +11,17 @@ interface Country {
 
 const RouteCompliancePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
   const [startDate, setStartDate] = useState<string>(today);
   const [endDate, setEndDate] = useState<string>(today);
-  const [country, setCountry] = useState<string>('Kenya');
+  const [country, setCountry] = useState<string>('');
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<RouteComplianceItem[]>([]);
   const [search, setSearch] = useState<string>('');
+  const [defaultCountrySet, setDefaultCountrySet] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -32,6 +35,51 @@ const RouteCompliancePage: React.FC = () => {
     };
     fetchCountries();
   }, []);
+
+  // Fetch user's country and set default filter
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      // Only set default once
+      if (!user?.id || countries.length === 0 || defaultCountrySet) return;
+      
+      try {
+        const response = await api.get(`/staff/${user.id}`);
+        const staffData = response.data;
+        const userCountry = staffData.country || staffData.country_id || staffData.countryId;
+        
+        // Set default country based on user's country
+        // country = 1 means Kenya, country = 2 means Tanzania
+        if (userCountry === 1 || userCountry === '1') {
+          // Find Kenya in the countries list
+          const kenyaCountry = countries.find(c => c.id === 1 || c.name.toLowerCase() === 'kenya');
+          if (kenyaCountry) {
+            setCountry(kenyaCountry.name);
+          } else {
+            setCountry('Kenya');
+          }
+          setDefaultCountrySet(true);
+        } else if (userCountry === 2 || userCountry === '2') {
+          // Find Tanzania in the countries list
+          const tanzaniaCountry = countries.find(c => c.id === 2 || c.name.toLowerCase() === 'tanzania');
+          if (tanzaniaCountry) {
+            setCountry(tanzaniaCountry.name);
+          } else {
+            setCountry('Tanzania');
+          }
+          setDefaultCountrySet(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user country:', error);
+        // Default to Kenya if we can't fetch the user's country
+        if (!defaultCountrySet) {
+          setCountry('Kenya');
+          setDefaultCountrySet(true);
+        }
+      }
+    };
+    
+    fetchUserCountry();
+  }, [user?.id, countries, defaultCountrySet]);
 
   useEffect(() => {
     setLoading(true);

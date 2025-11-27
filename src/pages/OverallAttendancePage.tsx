@@ -4,6 +4,7 @@ import axios from 'axios';
 import { DateTime } from 'luxon';
 import { salesService, Country, SalesRep } from '../services/salesService';
 import { Calendar, Users, MapPin, TrendingUp, Filter, Download, BarChart3, Activity, Navigation, FileText, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -56,6 +57,7 @@ interface DashboardStats {
 
 const OverallAttendancePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -76,9 +78,10 @@ const OverallAttendancePage: React.FC = () => {
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState('Kenya');
+  const [selectedCountry, setSelectedCountry] = useState('');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [pendingCountry, setPendingCountry] = useState('Kenya');
+  const [pendingCountry, setPendingCountry] = useState('');
+  const [defaultCountrySet, setDefaultCountrySet] = useState<boolean>(false);
   const [pendingStartDate, setPendingStartDate] = useState(defaultStart);
   const [pendingEndDate, setPendingEndDate] = useState(defaultEnd);
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
@@ -162,6 +165,56 @@ const OverallAttendancePage: React.FC = () => {
       });
     return () => controller.abort();
   }, []);
+
+  // Fetch user's country and set default filter
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      // Only set default once
+      if (!user?.id || countries.length === 0 || defaultCountrySet) return;
+      
+      try {
+        const response = await axios.get(`${API_BASE_URL}/staff/${user.id}`, { headers: getAuthHeaders() });
+        const staffData = response.data;
+        const userCountry = staffData.country || staffData.country_id || staffData.countryId;
+        
+        // Set default country based on user's country
+        // country = 1 means Kenya, country = 2 means Tanzania
+        if (userCountry === 1 || userCountry === '1') {
+          // Find Kenya in the countries list
+          const kenyaCountry = countries.find(c => c.id === 1 || c.name.toLowerCase() === 'kenya');
+          if (kenyaCountry) {
+            setSelectedCountry(kenyaCountry.name);
+            setPendingCountry(kenyaCountry.name);
+          } else {
+            setSelectedCountry('Kenya');
+            setPendingCountry('Kenya');
+          }
+          setDefaultCountrySet(true);
+        } else if (userCountry === 2 || userCountry === '2') {
+          // Find Tanzania in the countries list
+          const tanzaniaCountry = countries.find(c => c.id === 2 || c.name.toLowerCase() === 'tanzania');
+          if (tanzaniaCountry) {
+            setSelectedCountry(tanzaniaCountry.name);
+            setPendingCountry(tanzaniaCountry.name);
+          } else {
+            setSelectedCountry('Tanzania');
+            setPendingCountry('Tanzania');
+          }
+          setDefaultCountrySet(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user country:', error);
+        // Default to Kenya if we can't fetch the user's country
+        if (!defaultCountrySet) {
+          setSelectedCountry('Kenya');
+          setPendingCountry('Kenya');
+          setDefaultCountrySet(true);
+        }
+      }
+    };
+    
+    fetchUserCountry();
+  }, [user?.id, countries, defaultCountrySet]);
 
   // Lazy-load full clients only when needed (clients modal opens)
   useEffect(() => {

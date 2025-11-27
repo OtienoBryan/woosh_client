@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import SalesRepTargetsModal from '../components/SalesRepTargetsModal';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SalesRepModalProps {
   isOpen: boolean;
@@ -371,6 +372,7 @@ const AssignManagersModal: React.FC<{
 };
 
 const SalesRepsPage: React.FC = () => {
+  const { user } = useAuth();
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -381,7 +383,8 @@ const SalesRepsPage: React.FC = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedSalesRepId] = useState<number | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('Kenya'); // Default to Kenya
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [defaultCountrySet, setDefaultCountrySet] = useState<boolean>(false);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [routes, setRoutes] = useState<SalesRoute[]>([]);
@@ -520,6 +523,56 @@ const SalesRepsPage: React.FC = () => {
   useEffect(() => {
     salesService.getCountries().then(setCountries);
   }, []);
+
+  // Fetch user's country and set default filter
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      // Only set default once
+      if (!user?.id || countries.length === 0 || defaultCountrySet) return;
+      
+      try {
+        const response = await axios.get(`/api/staff/${user.id}`);
+        const staffData = response.data;
+        const userCountry = staffData.country || staffData.country_id || staffData.countryId;
+        
+        // Set default country based on user's country
+        // country = 1 means Kenya, country = 2 means Tanzania
+        if (userCountry === 1 || userCountry === '1') {
+          // Find Kenya in the countries list
+          const kenyaCountry = countries.find(c => c.id === 1 || c.name.toLowerCase() === 'kenya');
+          if (kenyaCountry) {
+            setSelectedCountry(kenyaCountry.name);
+            setPendingCountry(kenyaCountry.name);
+          } else {
+            setSelectedCountry('Kenya');
+            setPendingCountry('Kenya');
+          }
+          setDefaultCountrySet(true);
+        } else if (userCountry === 2 || userCountry === '2') {
+          // Find Tanzania in the countries list
+          const tanzaniaCountry = countries.find(c => c.id === 2 || c.name.toLowerCase() === 'tanzania');
+          if (tanzaniaCountry) {
+            setSelectedCountry(tanzaniaCountry.name);
+            setPendingCountry(tanzaniaCountry.name);
+          } else {
+            setSelectedCountry('Tanzania');
+            setPendingCountry('Tanzania');
+          }
+          setDefaultCountrySet(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user country:', error);
+        // Default to Kenya if we can't fetch the user's country
+        if (!defaultCountrySet) {
+          setSelectedCountry('Kenya');
+          setPendingCountry('Kenya');
+          setDefaultCountrySet(true);
+        }
+      }
+    };
+    
+    fetchUserCountry();
+  }, [user?.id, countries, defaultCountrySet]);
 
   useEffect(() => {
     if (selectedCountry) {

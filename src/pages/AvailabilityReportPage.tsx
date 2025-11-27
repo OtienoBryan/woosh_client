@@ -11,9 +11,12 @@ import {
   DownloadIcon,
   EyeIcon
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const AvailabilityReportPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -26,7 +29,7 @@ const AvailabilityReportPage: React.FC = () => {
   const [filters, setFilters] = useState<AvailabilityReportFilters>({
     startDate: getTodayDate(),
     endDate: getTodayDate(),
-    country: 'Kenya'
+    country: ''
   });
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -37,6 +40,7 @@ const AvailabilityReportPage: React.FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const [allReports, setAllReports] = useState<AvailabilityReport[]>([]);
   const [allFetchedReports, setAllFetchedReports] = useState<AvailabilityReport[]>([]); // Store all fetched reports for client-side filtering
+  const [defaultCountrySet, setDefaultCountrySet] = useState<boolean>(false);
 
   // Fetch reports only when filters change (not when search changes)
   useEffect(() => {
@@ -112,6 +116,55 @@ const AvailabilityReportPage: React.FC = () => {
       console.error('Error fetching filter data:', err);
     }
   };
+
+  // Fetch user's country and set default filter
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      // Only set default once
+      if (!user?.id || countries.length === 0 || defaultCountrySet) return;
+      
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        const response = await axios.get(`${API_BASE_URL}/staff/${user.id}`, { headers });
+        const staffData = response.data;
+        const userCountry = staffData.country || staffData.country_id || staffData.countryId;
+        
+        // Set default country based on user's country
+        // country = 1 means Kenya, country = 2 means Tanzania
+        if (userCountry === 1 || userCountry === '1') {
+          // Find Kenya in the countries list (countries are strings)
+          const kenyaCountry = countries.find(c => c.toLowerCase() === 'kenya');
+          if (kenyaCountry) {
+            setFilters(prev => ({ ...prev, country: kenyaCountry }));
+          } else {
+            setFilters(prev => ({ ...prev, country: 'Kenya' }));
+          }
+          setDefaultCountrySet(true);
+        } else if (userCountry === 2 || userCountry === '2') {
+          // Find Tanzania in the countries list (countries are strings)
+          const tanzaniaCountry = countries.find(c => c.toLowerCase() === 'tanzania');
+          if (tanzaniaCountry) {
+            setFilters(prev => ({ ...prev, country: tanzaniaCountry }));
+          } else {
+            setFilters(prev => ({ ...prev, country: 'Tanzania' }));
+          }
+          setDefaultCountrySet(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user country:', error);
+        // Default to Kenya if we can't fetch the user's country
+        if (!defaultCountrySet) {
+          setFilters(prev => ({ ...prev, country: 'Kenya' }));
+          setDefaultCountrySet(true);
+        }
+      }
+    };
+    
+    fetchUserCountry();
+  }, [user?.id, countries, defaultCountrySet]);
 
   const handleFilterChange = (key: keyof AvailabilityReportFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
