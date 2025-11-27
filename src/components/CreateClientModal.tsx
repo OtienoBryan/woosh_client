@@ -68,10 +68,18 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({
 
   const fetchLocationData = async () => {
     try {
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // Fetch countries and routes for dropdowns
       const [countriesRes, routesRes] = await Promise.all([
-        fetch('/api/sales/countries').then(res => res.json()).catch(() => ({ data: [] })),
-        fetch('/api/sales/routes').then(res => res.json()).catch(() => ({ data: [] }))
+        fetch('/api/sales/countries', { headers }).then(res => res.json()).catch(() => ({ data: [] })),
+        fetch('/api/sales/routes', { headers }).then(res => res.json()).catch(() => ({ data: [] }))
       ]);
 
       setCountries(countriesRes.data || countriesRes || []);
@@ -83,7 +91,15 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({
 
   const fetchRegionsByCountry = async (countryId: number) => {
     try {
-      const response = await fetch(`/api/sales/regions?country_id=${countryId}`);
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/sales/regions?country_id=${countryId}`, { headers });
       const regionsRes = await response.json();
       setRegions(regionsRes.data || regionsRes || []);
     } catch (error) {
