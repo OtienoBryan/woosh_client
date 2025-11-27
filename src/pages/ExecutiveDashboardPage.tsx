@@ -372,7 +372,7 @@ const FinancialDashboardPage = () => {
     { to: '/dashboard/leave-report', label: 'Employees Leave Report', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
     { to: '/instant-chat', label: 'Chat Room', icon: <ZapIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
     { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    //{ to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     { to: '/dashboard/expiring-contracts', label: 'Expiring Contracts', icon: <AlertTriangleIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
     { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
     //{ to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
