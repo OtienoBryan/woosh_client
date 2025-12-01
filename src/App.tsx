@@ -161,6 +161,7 @@ import CreditNoteDetailsPage from './pages/CreditNoteDetailsPage';
 import RoutesPage from './pages/RoutesPage';
 import UpliftSalesPage from './pages/UpliftSalesPage';
 import DepartmentExpenseUploadPage from './pages/DepartmentExpenseUploadPage';
+import MaintenancePage from './pages/MaintenancePage';
 
 // Protected route wrapper
 const ProtectedRoute = () => {
@@ -242,12 +243,14 @@ const App = () => {
       <AutoLogout />
       <Routes>
         {/* Public routes */}
+        <Route path="/" element={<MaintenancePage />} />
         <Route path="/login" element={<LoginRoute />} />
+        <Route path="/maintenance" element={<MaintenancePage />} />
         
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardWrapper />}>
-            <Route path="/" element={<RoleBasedDashboardRedirect />} />
+            <Route path="/dashboard" element={<RoleBasedDashboardRedirect />} />
             <Route path="/dashboard" element={<RoleBasedDashboardRedirect />} />
             <Route path="/financial" element={<RoleBasedDashboardRedirect />} />
             <Route path="/dashboard/unscheduled" element={<UnscheduledRequests />} />
@@ -710,7 +713,7 @@ const App = () => {
         </Route>
         
         {/* Catch all route */}
-        <Route path="*" element={<RoleBasedDashboardRedirect />} />
+        <Route path="*" element={<MaintenancePage />} />
       </Routes>
     </>
   );
