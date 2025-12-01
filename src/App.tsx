@@ -1,5 +1,4 @@
-import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import ClientDetailsPage from './pages/ClientDetailsPage';
 import UnscheduledRequests from './pages/UnscheduledRequests';
@@ -197,35 +196,9 @@ const RoleBasedDashboardRedirect = () => {
   }
 };
 
-// Redirect authenticated users away from login
+// Redirect to maintenance page
 const LoginRoute = () => {
-  const { user } = useAuth();
-  
-  // Test if Router context is available
-  try {
-    useLocation();
-  } catch (error) {
-    console.error('Router context not available in LoginRoute:', error);
-    return <div>Loading...</div>;
-  }
-
-  if (user) {
-    // Redirect users to their appropriate dashboard based on role
-    if (user.role === 'sales') {
-      return <Navigate to="/sales-dashboard" replace />;
-    } else if (user.role === 'hr') {
-      return <Navigate to="/hr-dashboard" replace />;
-    } else if (user.role === 'stock') {
-      return <Navigate to="/inventory-staff-dashboard" replace />;
-    } else if (user.role === 'executive') {
-      return <Navigate to="/executive-dashboard" replace />;
-    } else {
-      // Admin and other roles go to FinancialDashboard
-      return <Navigate to="/" replace />;
-    }
-  }
-
-  return <LoginPage />;
+  return <Navigate to="/" replace />;
 };
 
 // Dashboard layout wrapper
