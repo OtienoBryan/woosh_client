@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import ClientDetailsPage from './pages/ClientDetailsPage';
 import UnscheduledRequests from './pages/UnscheduledRequests';
@@ -196,9 +197,35 @@ const RoleBasedDashboardRedirect = () => {
   }
 };
 
-// Redirect to maintenance page
+// Redirect authenticated users away from login
 const LoginRoute = () => {
-  return <Navigate to="/" replace />;
+  const { user } = useAuth();
+  
+  // Test if Router context is available
+  try {
+    useLocation();
+  } catch (error) {
+    console.error('Router context not available in LoginRoute:', error);
+    return <div>Loading...</div>;
+  }
+
+  if (user) {
+    // Redirect users to their appropriate dashboard based on role
+    if (user.role === 'sales') {
+      return <Navigate to="/sales-dashboard" replace />;
+    } else if (user.role === 'hr') {
+      return <Navigate to="/hr-dashboard" replace />;
+    } else if (user.role === 'stock') {
+      return <Navigate to="/inventory-staff-dashboard" replace />;
+    } else if (user.role === 'executive') {
+      return <Navigate to="/executive-dashboard" replace />;
+    } else {
+      // Admin and other roles go to FinancialDashboard
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
+
+  return <LoginPage />;
 };
 
 // Dashboard layout wrapper
@@ -216,7 +243,7 @@ const App = () => {
       <AutoLogout />
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<MaintenancePage />} />
+        <Route path="/" element={<LoginRoute />} />
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/maintenance" element={<MaintenancePage />} />
         
@@ -224,6 +251,7 @@ const App = () => {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardWrapper />}>
             <Route path="/dashboard" element={<RoleBasedDashboardRedirect />} />
+            <Route path="/financial" element={<RoleBasedDashboardRedirect />} />
             <Route path="/dashboard" element={<RoleBasedDashboardRedirect />} />
             <Route path="/financial" element={<RoleBasedDashboardRedirect />} />
             <Route path="/dashboard/unscheduled" element={<UnscheduledRequests />} />
@@ -686,7 +714,7 @@ const App = () => {
         </Route>
         
         {/* Catch all route */}
-        <Route path="*" element={<MaintenancePage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
   );
