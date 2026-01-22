@@ -57,9 +57,9 @@ const CreateCreditNotePage: React.FC = () => {
   const [items, setItems] = useState<CreditNoteItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [availableProducts, setAvailableProducts] = useState<Map<number, any[]>>(new Map());
-  const [scenarioType, setScenarioType] = useState<'faulty_no_stock' | 'faulty_with_stock'>('faulty_no_stock');
-  const [damageStoreId, setDamageStoreId] = useState<number | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
+  const [deltaCornerStoreId, setDeltaCornerStoreId] = useState<number | null>(null);
+  const [damagedFaultyStoreId, setDamagedFaultyStoreId] = useState<number | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomerIndex, setSelectedCustomerIndex] = useState(-1);
@@ -121,7 +121,35 @@ const CreateCreditNotePage: React.FC = () => {
         setProducts(productsRes.data || []);
       }
       if (storesRes.success) {
-        setStores(storesRes.data || []);
+        const storesData = storesRes.data || [];
+        setStores(storesData);
+        
+        // Find Delta Corner Store
+        const deltaCornerStore = storesData.find(store => 
+          store.store_name.toLowerCase().includes('delta corner') || 
+          store.store_name.toLowerCase().includes('delta warehouse') ||
+          store.store_code.toLowerCase().includes('delta')
+        );
+        if (deltaCornerStore) {
+          setDeltaCornerStoreId(deltaCornerStore.id);
+        }
+        
+        // Find Damaged/Faulty Store
+        const damagedFaultyStore = storesData.find(store => 
+          store.store_name.toLowerCase().includes('damaged') || 
+          store.store_name.toLowerCase().includes('faulty') ||
+          store.store_name.toLowerCase().includes('damage') ||
+          store.store_name.toLowerCase().includes('damaged/faulty')
+        );
+        if (damagedFaultyStore) {
+          setDamagedFaultyStoreId(damagedFaultyStore.id);
+        } else {
+          console.warn('Damaged/Faulty store not found. Please ensure a store with "damaged" or "faulty" in the name exists.');
+        }
+        
+        if (!deltaCornerStore) {
+          console.warn('Delta Corner store not found. Please ensure a store with "delta corner" or "delta warehouse" in the name exists.');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch data');
@@ -215,7 +243,9 @@ const CreateCreditNotePage: React.FC = () => {
       invoice_id: firstInvoiceId,
       quantity: firstAvailableProduct.quantity,
       unit_price: firstAvailableProduct.unit_price,
-      total_price: firstAvailableProduct.total_price
+      total_price: firstAvailableProduct.total_price,
+      condition: undefined,
+      return_store_id: null
     };
     
     setItems([...items, newItem]);
@@ -233,6 +263,17 @@ const CreateCreditNotePage: React.FC = () => {
   const updateItem = (index: number, field: keyof CreditNoteItem, value: any) => {
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
+
+    // Handle condition change - auto-assign return store
+    if (field === 'condition') {
+      if (value === 'good' && deltaCornerStoreId) {
+        updatedItems[index].return_store_id = deltaCornerStoreId;
+      } else if (value === 'damaged' && damagedFaultyStoreId) {
+        updatedItems[index].return_store_id = damagedFaultyStoreId;
+      } else {
+        updatedItems[index].return_store_id = null;
+      }
+    }
 
     // Calculate total price
     if (field === 'quantity' || field === 'unit_price') {
@@ -255,8 +296,16 @@ const CreateCreditNotePage: React.FC = () => {
             return; // Don't update the item
           }
           
+          // Use remaining quantity as default quantity
+          const remainingQty = product.remaining_quantity !== undefined 
+            ? product.remaining_quantity 
+            : (product.original_quantity !== undefined 
+              ? (product.original_quantity - (product.credited_quantity || 0))
+              : Number(product.quantity) || 0);
+          
           updatedItems[index].unit_price = Number(product.unit_price) || 0;
-          updatedItems[index].total_price = (Number(updatedItems[index].quantity) || 0) * (Number(product.unit_price) || 0);
+          updatedItems[index].quantity = remainingQty; // Set to remaining quantity
+          updatedItems[index].total_price = remainingQty * (Number(product.unit_price) || 0);
           setError(null); // Clear any previous error
         }
       }
@@ -299,24 +348,56 @@ const CreateCreditNotePage: React.FC = () => {
       const allItems: CreditNoteItem[] = [];
       const newAvailableProducts = new Map<number, any[]>();
       
-      // Load items from all selected invoices
+      // Load items from all selected invoices with credited quantities
       for (const invoiceId of selectedInvoices) {
-        const response = await invoiceService.getById(invoiceId);
+        // Fetch invoice items with credited quantities
+        const creditedResponse = await creditNoteService.getInvoiceItemsWithCreditedQuantities(invoiceId);
         
-        if (response.success && response.data && response.data.items) {
-          // Store available products for this invoice
-          newAvailableProducts.set(invoiceId, response.data.items);
+        if (creditedResponse.success && creditedResponse.data && creditedResponse.data.length > 0) {
+          // Store available products with credited quantities
+          newAvailableProducts.set(invoiceId, creditedResponse.data);
           
-          // Convert invoice items to credit note items
-          const creditNoteItems: CreditNoteItem[] = response.data.items.map((item: any) => ({
-            product_id: item.product_id,
-            invoice_id: invoiceId,
-            quantity: Number(item.quantity) || 0,
-            unit_price: Number(item.unit_price) || 0,
-            total_price: Number(item.total_price) || 0
-          }));
+          // Convert invoice items to credit note items, using remaining quantity
+          const creditNoteItems: CreditNoteItem[] = creditedResponse.data
+            .filter((item: any) => item.remaining_quantity > 0) // Only include items with remaining quantity
+            .map((item: any) => ({
+              product_id: item.product_id,
+              invoice_id: invoiceId,
+              quantity: item.remaining_quantity, // Use remaining quantity as default
+              unit_price: Number(item.unit_price) || 0,
+              total_price: item.remaining_quantity * (Number(item.unit_price) || 0),
+              condition: undefined, // Will be set by user
+              return_store_id: null, // Will be set based on condition
+              original_quantity: item.original_quantity,
+              credited_quantity: item.credited_quantity,
+              remaining_quantity: item.remaining_quantity
+            }));
           
           allItems.push(...creditNoteItems);
+        } else {
+          // Fallback to regular invoice items if new endpoint fails
+          const response = await invoiceService.getById(invoiceId);
+          
+          if (response.success && response.data && response.data.items) {
+            // Store available products for this invoice
+            newAvailableProducts.set(invoiceId, response.data.items);
+            
+            // Convert invoice items to credit note items
+            const creditNoteItems: CreditNoteItem[] = response.data.items.map((item: any) => ({
+              product_id: item.product_id,
+              invoice_id: invoiceId,
+              quantity: Number(item.quantity) || 0,
+              unit_price: Number(item.unit_price) || 0,
+              total_price: Number(item.total_price) || 0,
+              condition: undefined,
+              return_store_id: null,
+              original_quantity: Number(item.quantity) || 0,
+              credited_quantity: 0,
+              remaining_quantity: Number(item.quantity) || 0
+            }));
+            
+            allItems.push(...creditNoteItems);
+          }
         }
       }
       
@@ -333,7 +414,9 @@ const CreateCreditNotePage: React.FC = () => {
             invoice_id: invoiceId,
             quantity: 1,
             unit_price: Number(invoice?.total_amount) || 0,
-            total_price: Number(invoice?.total_amount) || 0
+            total_price: Number(invoice?.total_amount) || 0,
+            condition: undefined,
+            return_store_id: null
           };
         });
         setItems(fallbackItems);
@@ -348,7 +431,9 @@ const CreateCreditNotePage: React.FC = () => {
           invoice_id: invoiceId,
           quantity: 1,
           unit_price: Number(invoice?.total_amount) || 0,
-          total_price: Number(invoice?.total_amount) || 0
+          total_price: Number(invoice?.total_amount) || 0,
+          condition: undefined,
+          return_store_id: null
         };
       });
       setItems(fallbackItems);
@@ -451,14 +536,20 @@ const CreateCreditNotePage: React.FC = () => {
       return;
     }
 
-    // Validate that quantities don't exceed invoice quantities
+    // Validate that quantities don't exceed remaining quantities
     for (const item of items) {
       const invoiceProducts = availableProducts.get(item.invoice_id);
       if (invoiceProducts) {
         const invoiceProduct = invoiceProducts.find(p => p.product_id === item.product_id);
-        if (invoiceProduct && item.quantity > Number(invoiceProduct.quantity)) {
-          setError(`Quantity for product ${invoiceProduct.product_name || 'Unknown'} cannot exceed ${invoiceProduct.quantity} (invoice quantity)`);
-          return;
+        if (invoiceProduct) {
+          const remainingQty = invoiceProduct.remaining_quantity !== undefined 
+            ? invoiceProduct.remaining_quantity 
+            : (Number(invoiceProduct.quantity) || 0);
+          
+          if (item.quantity > remainingQty) {
+            setError(`Quantity for product ${invoiceProduct.product_name || 'Unknown'} cannot exceed ${remainingQty} (remaining quantity available for credit)`);
+            return;
+          }
         }
       }
     }
@@ -474,9 +565,15 @@ const CreateCreditNotePage: React.FC = () => {
       productInvoiceCombinations.add(combination);
     }
 
-    // Validate scenario 2 requires store
-    if (scenarioType === 'faulty_with_stock' && !damageStoreId) {
-      setError('Store selection is required for expired/damaged/faulty products from stock scenario');
+    // Validate that all items have a condition selected
+    if (items.some(item => !item.condition)) {
+      setError('Please select a condition (good or damaged) for all items');
+      return;
+    }
+
+    // Validate that all items have a return store assigned
+    if (items.some(item => !item.return_store_id)) {
+      setError('Some items are missing return store assignment. Please ensure all items have a condition selected.');
       return;
     }
 
@@ -489,9 +586,7 @@ const CreateCreditNotePage: React.FC = () => {
         credit_note_date: creditNoteDate,
         reason: reason || undefined,
         original_invoice_ids: Array.from(selectedInvoices),
-        items: items,
-        scenario_type: scenarioType,
-        damage_store_id: scenarioType === 'faulty_with_stock' ? damageStoreId : null
+        items: items
       };
 
       const response = await creditNoteService.create(creditNoteData);
@@ -506,8 +601,6 @@ const CreateCreditNotePage: React.FC = () => {
         setItems([]);
         setCustomerInvoices([]);
         setAvailableProducts(new Map());
-        setScenarioType('faulty_no_stock');
-        setDamageStoreId(null);
         setCustomerSearch('');
         setShowCustomerDropdown(false);
         setSelectedCustomerIndex(-1);
@@ -536,40 +629,40 @@ const CreateCreditNotePage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-8">
               <div className="w-full px-6 sm:px-8 lg:px-10">
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FileText className="h-8 w-8 text-blue-600" />
+        <div className="mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FileText className="h-6 w-6 text-blue-600" />
             </div>
                           <div>
-                <h1 className="text-3xl font-bold text-gray-900">Create Credit Note</h1>
-                <p className="text-base text-gray-500">Generate a credit note for a client from multiple invoices - only products and quantities from selected invoices are allowed</p>
+                <h1 className="text-2xl font-bold text-gray-900">Create Credit Note</h1>
+                <p className="text-sm text-gray-500">Generate a credit note for a client from multiple invoices - only products and quantities from selected invoices are allowed</p>
               </div>
           </div>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <AlertCircle className="h-6 w-6 text-red-400 mr-3" />
-              <p className="text-red-700 text-base">{error}</p>
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
         )}
 
         {success && (
-          <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-lg">
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center">
-              <CheckCircle className="h-6 w-6 text-green-400 mr-3" />
-              <p className="text-green-700 text-base">{success}</p>
+              <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+              <p className="text-green-700 text-sm">{success}</p>
             </div>
           </div>
         )}
 
         {/* Customer Selection */}
-        <div className="mb-8">
-          <label className="block text-base font-medium text-gray-700 mb-3">
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Customer *
           </label>
           <div className="relative w-full max-w-lg">
@@ -620,7 +713,7 @@ const CreateCreditNotePage: React.FC = () => {
                 }
               }}
               placeholder="Search customers by name, code, contact, or email..."
-              className="w-full pl-12 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base text-gray-900 bg-white"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 bg-white"
             required
             />
             {clientId && (
@@ -662,7 +755,7 @@ const CreateCreditNotePage: React.FC = () => {
                             setItems([]);
                           }}
                         >
-                          <div className="font-medium text-base text-gray-900">{displayName}</div>
+                          <div className="font-medium text-sm text-gray-900">{displayName}</div>
                           {customer.contact || customer.contact_person ? (
                             <div className="text-sm text-gray-500 mt-1">Contact: {customer.contact || customer.contact_person}</div>
                           ) : null}
@@ -698,7 +791,7 @@ const CreateCreditNotePage: React.FC = () => {
                             setItems([]);
                           }}
                         >
-                          <div className="font-medium text-base text-gray-900">{displayName}</div>
+                          <div className="font-medium text-sm text-gray-900">{displayName}</div>
                           {customer.contact || customer.contact_person ? (
                             <div className="text-sm text-gray-500 mt-1">Contact: {customer.contact || customer.contact_person}</div>
                           ) : null}
@@ -720,7 +813,7 @@ const CreateCreditNotePage: React.FC = () => {
               {(() => {
                 const selectedCustomer = customers.find(c => c.id === parseInt(clientId));
                 return selectedCustomer ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-base">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Customer:</span>
                       <span className="ml-2 font-medium text-gray-900">
@@ -747,23 +840,23 @@ const CreateCreditNotePage: React.FC = () => {
         </div>
 
         {/* Two Panel Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-16">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left Panel - Invoices List */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 xl:col-span-1">
-            <div className="px-8 py-6 border-b border-gray-200">
-              <h2 className="text-xl font-medium text-gray-900 flex items-center">
-                <Receipt className="h-6 w-6 mr-3 text-blue-600" />
+            <div className="px-4 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                <Receipt className="h-5 w-5 mr-2 text-blue-600" />
                 Available Invoices
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Select multiple invoices to include in the credit note. Only products and quantities from these invoices can be used.
               </p>
               {clientId && customerInvoices && Array.isArray(customerInvoices) && customerInvoices.length > 0 && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <div className="text-base text-blue-700">
+                    <div className="text-sm text-blue-700">
                       <span className="font-medium">Total Available Credit:</span>
-                      <span className="ml-2 text-xl font-bold">
+                      <span className="ml-2 text-lg font-bold">
                         {(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices.reduce((sum, inv) => sum + (Number(inv.remaining_amount) || 0), 0) : 0).toFixed(2)}
                       </span>
                     </div>
@@ -776,9 +869,9 @@ const CreateCreditNotePage: React.FC = () => {
               {selectedInvoices.size > 0 && (
                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <div className="text-base text-green-700">
+                    <div className="text-sm text-green-700">
                       <span className="font-medium">Selected Invoices:</span>
-                      <span className="ml-2 text-xl font-bold">
+                      <span className="ml-2 text-lg font-bold">
                         {selectedInvoices.size} invoice{selectedInvoices.size !== 1 ? 's' : ''}
                       </span>
                     </div>
@@ -801,15 +894,15 @@ const CreateCreditNotePage: React.FC = () => {
                         <div className="grid grid-cols-3 gap-6 text-sm">
                           <div className="text-center">
                             <div className="text-green-600 font-medium">Total Products</div>
-                            <div className="text-xl font-bold text-green-700">{totalAvailableProducts}</div>
+                            <div className="text-lg font-bold text-green-700">{totalAvailableProducts}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-orange-600 font-medium">Credited</div>
-                            <div className="text-xl font-bold text-orange-700">{totalCreditedProducts}</div>
+                            <div className="text-lg font-bold text-orange-700">{totalCreditedProducts}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-blue-600 font-medium">Available</div>
-                            <div className="text-xl font-bold text-blue-700">{uncreditedProducts}</div>
+                            <div className="text-lg font-bold text-blue-700">{uncreditedProducts}</div>
                           </div>
                         </div>
                       </div>
@@ -821,42 +914,42 @@ const CreateCreditNotePage: React.FC = () => {
             
             {/* Search and Filter */}
             {clientId && customerInvoices && Array.isArray(customerInvoices) && customerInvoices.length > 0 && (
-              <div className="px-8 py-4 border-b border-gray-200">
+              <div className="px-4 py-3 border-b border-gray-200">
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Search invoices by number or date..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                   <Search className="absolute left-4 top-3 h-5 w-5 text-gray-400" />
                 </div>
               </div>
             )}
             
-            <div className="p-8">
+            <div className="p-4">
               {!clientId ? (
                  <div className="text-center py-12">
                    <Receipt className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-                   <p className="text-gray-500 text-base">Please select a customer first</p>
+                   <p className="text-gray-500 text-sm">Please select a customer first</p>
                  </div>
                ) : loading ? (
-                 <div className="text-center py-12">
-                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-6"></div>
-                   <p className="text-gray-500 text-base">Loading customer invoices...</p>
+                 <div className="text-center py-8">
+                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                   <p className="text-gray-500 text-sm">Loading customer invoices...</p>
                  </div>
                ) : !customerInvoices || !Array.isArray(customerInvoices) || customerInvoices.length === 0 ? (
-                <div className="text-center py-12">
-                  <Receipt className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-                  <p className="text-gray-500 text-base">No invoices available for this customer</p>
+                <div className="text-center py-8">
+                  <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-sm">No invoices available for this customer</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {(customerInvoices && Array.isArray(customerInvoices) ? customerInvoices : []).map((invoice) => (
                     <div
                       key={invoice.id}
-                      className={`p-6 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                         selectedInvoices.has(invoice.id)
                           ? 'border-green-500 bg-green-50'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -876,14 +969,14 @@ const CreateCreditNotePage: React.FC = () => {
                         
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-3">
-                            <h3 className="text-base font-medium text-gray-900">
+                            <h3 className="text-sm font-medium text-gray-900">
                               {invoice.invoice_number}
                             </h3>
                             <span className="px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-full">
                               Active
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-6 text-base">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                               <p className="text-gray-500">Invoice Date</p>
                               <p className="text-gray-700 font-medium">
@@ -897,7 +990,7 @@ const CreateCreditNotePage: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="mt-4 grid grid-cols-3 gap-6 text-base">
+                          <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
                             <div>
                               <p className="text-gray-500">Total Amount</p>
                               <p className="text-gray-900 font-semibold">
@@ -963,7 +1056,7 @@ const CreateCreditNotePage: React.FC = () => {
                         <div className="flex flex-col items-end space-y-2">
                           <div className="text-right">
                             <div className="text-xs text-gray-500 mb-1">Available for Credit</div>
-                            <div className="text-lg font-bold text-green-600">
+                            <div className="text-base font-bold text-green-600">
                               {(Number(invoice.remaining_amount) || 0).toFixed(2)}
                             </div>
                           </div>
@@ -978,118 +1071,47 @@ const CreateCreditNotePage: React.FC = () => {
 
           {/* Right Panel - Credit Note Form */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 xl:col-span-2">
-            <div className="px-8 py-6 border-b border-gray-200">
-              <h2 className="text-xl font-medium text-gray-900 flex items-center">
-                <FileText className="h-6 w-6 mr-3 text-green-600" />
+            <div className="px-4 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-green-600" />
                 Credit Note Details
               </h2>
               {selectedInvoices.size > 0 && (
-                <p className="text-base text-gray-500 mt-2">
+                <p className="text-sm text-gray-500 mt-1">
                   Creating credit note from {selectedInvoices.size} selected invoice{selectedInvoices.size !== 1 ? 's' : ''}
                 </p>
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* Date and Reason */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-base font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Credit Note Date *
                   </label>
                   <input
                     type="date"
                     value={creditNoteDate}
                     onChange={(e) => setCreditNoteDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Reason for Credit Note
                 </label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   placeholder="Enter the reason for this credit note..."
                 />
               </div>
-
-              {/* Scenario Selection */}
-              <div>
-                <label className="block text-base font-medium text-gray-700 mb-3">
-                  Credit Note Scenario *
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      name="scenario"
-                      value="faulty_no_stock"
-                      checked={scenarioType === 'faulty_no_stock'}
-                      onChange={(e) => {
-                        setScenarioType(e.target.value as 'faulty_no_stock');
-                        setDamageStoreId(null);
-                      }}
-                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Scenario 1: Faulty Products (No Stock Return)</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        Dr. Damages/Faulty Account (P&L), Dr. Sales VAT, Cr. Debtors Account
-                      </div>
-                    </div>
-                  </label>
-                  <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      name="scenario"
-                      value="faulty_with_stock"
-                      checked={scenarioType === 'faulty_with_stock'}
-                      onChange={(e) => setScenarioType(e.target.value as 'faulty_with_stock')}
-                      className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Scenario 2: Expired/Damaged/Faulty Products from Stock</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        Dr. Faulty Account (P&L), Cr. Store (Inventory), Cr. Cost of Sale Account
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Store Selection (Required for Scenario 2) */}
-              {scenarioType === 'faulty_with_stock' && (
-                <div>
-                  <label className="block text-base font-medium text-gray-700 mb-3">
-                    Damage/Faulty Store * <span className="text-red-500">(Required for Scenario 2)</span>
-                  </label>
-                  <select
-                    value={damageStoreId || ''}
-                    onChange={(e) => setDamageStoreId(e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                    required={scenarioType === 'faulty_with_stock'}
-                  >
-                    <option value="">Select a store for damaged/faulty products</option>
-                    {stores
-                      .filter(store => store.is_active)
-                      .map((store) => (
-                        <option key={store.id} value={store.id}>
-                          {store.store_name} ({store.store_code})
-                        </option>
-                      ))}
-                  </select>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Products will be returned to this store's inventory. Normal invoicing should have "Delta Warehouse" as mandatory.
-                  </p>
-                </div>
-              )}
 
               {/* Invoice Items Loading Indicator */}
               {loadingInvoiceItems && (
@@ -1101,8 +1123,8 @@ const CreateCreditNotePage: React.FC = () => {
 
               {/* Items Section */}
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-medium text-gray-900">Credit Note Items</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Credit Note Items</h3>
                   <div className="flex items-center space-x-3">
                     {(() => {
                       const totalAvailableProducts = Array.from(availableProducts.values()).reduce((total, products) => total + products.length, 0);
@@ -1129,7 +1151,7 @@ const CreateCreditNotePage: React.FC = () => {
                         const uncreditedProducts = getUncreditedProductsCount();
                         return selectedInvoices.size === 0 || uncreditedProducts === 0;
                       })()}
-                      className="flex items-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                      className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       title={(() => {
                         if (selectedInvoices.size === 0) return 'Please select at least one invoice first';
                         const uncreditedProducts = getUncreditedProductsCount();
@@ -1144,9 +1166,9 @@ const CreateCreditNotePage: React.FC = () => {
                 </div>
 
                 {items.length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                    <Package className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-                    <p className="text-gray-500 text-base">
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 text-sm">
                       {selectedInvoices.size > 0 ? 'Select invoices to load items' : 'No invoices selected'}
                     </p>
                   </div>
@@ -1157,16 +1179,16 @@ const CreateCreditNotePage: React.FC = () => {
                       const availableProductsForInvoice = invoiceProducts || [];
                       
                       return (
-                        <div key={index} className="border border-gray-200 rounded-lg p-6">
-                          <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
                             <div>
-                              <label className="block text-base font-medium text-gray-700 mb-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Invoice
                               </label>
                               <select
                                 value={item.invoice_id}
                                 onChange={(e) => updateItem(index, 'invoice_id', parseInt(e.target.value))}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                                 required
                               >
                                 <option value={0}>Select invoice</option>
@@ -1188,21 +1210,29 @@ const CreateCreditNotePage: React.FC = () => {
                               <select
                                 value={item.product_id}
                                 onChange={(e) => updateItem(index, 'product_id', parseInt(e.target.value))}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                                 required
                               >
                                 <option value={0}>Select a product</option>
                                 {availableProductsForInvoice.map((product) => {
                                   const isAlreadyCredited = isProductInvoiceCredited(product.product_id, item.invoice_id, index);
+                                  const remainingQty = product.remaining_quantity !== undefined 
+                                    ? product.remaining_quantity 
+                                    : (product.original_quantity !== undefined 
+                                      ? (product.original_quantity - (product.credited_quantity || 0))
+                                      : Number(product.quantity) || 0);
                                   
                                   return (
                                     <option 
                                       key={product.product_id} 
                                       value={product.product_id}
-                                      disabled={isAlreadyCredited}
+                                      disabled={isAlreadyCredited || remainingQty <= 0}
                                     >
                                       {product.product_name || `Product ${product.product_id}`}
-                                      {isAlreadyCredited ? ' (Already credited)' : ''}
+                                      {remainingQty > 0 
+                                        ? ` (Remaining: ${remainingQty.toFixed(2)})` 
+                                        : ' (Fully credited)'}
+                                      {isAlreadyCredited ? ' (In this credit note)' : ''}
                                     </option>
                                   );
                                 })}
@@ -1218,19 +1248,71 @@ const CreateCreditNotePage: React.FC = () => {
                                 min="0"
                                 max={(() => {
                                   const selectedProduct = availableProductsForInvoice.find(p => p.product_id === item.product_id);
-                                  return selectedProduct ? Number(selectedProduct.quantity) : 0;
+                                  if (selectedProduct) {
+                                    return selectedProduct.remaining_quantity !== undefined 
+                                      ? selectedProduct.remaining_quantity 
+                                      : Number(selectedProduct.quantity) || 0;
+                                  }
+                                  return 0;
                                 })()}
                                 step="0.01"
                                 value={item.quantity}
                                 onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                               />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Max: {(() => {
-                                  const selectedProduct = availableProductsForInvoice.find(p => p.product_id === item.product_id);
-                                  return selectedProduct ? selectedProduct.quantity : 0;
-                                })()}
-                              </p>
+                              {(() => {
+                                const selectedProduct = availableProductsForInvoice.find(p => p.product_id === item.product_id);
+                                if (selectedProduct && (selectedProduct.credited_quantity !== undefined || selectedProduct.original_quantity !== undefined)) {
+                                  const originalQty = selectedProduct.original_quantity !== undefined ? selectedProduct.original_quantity : Number(selectedProduct.quantity) || 0;
+                                  const creditedQty = selectedProduct.credited_quantity || 0;
+                                  const remainingQty = selectedProduct.remaining_quantity !== undefined ? selectedProduct.remaining_quantity : (originalQty - creditedQty);
+                                  
+                                  return (
+                                    <div className="text-xs mt-1 space-y-1">
+                                      <p className="text-gray-500">
+                                        Max: <span className="font-medium text-green-600">{remainingQty.toFixed(2)}</span>
+                                      </p>
+                                      <p className="text-gray-400">
+                                        Original: {originalQty.toFixed(2)} | 
+                                        Credited: <span className="text-orange-600">{creditedQty.toFixed(2)}</span> | 
+                                        Remaining: <span className="text-green-600 font-medium">{remainingQty.toFixed(2)}</span>
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Max: {(() => {
+                                      const selectedProduct = availableProductsForInvoice.find(p => p.product_id === item.product_id);
+                                      return selectedProduct ? Number(selectedProduct.quantity) : 0;
+                                    })()}
+                                  </p>
+                                );
+                              })()}
+                            </div>
+
+                            <div>
+                              <label className="block text-base font-medium text-gray-700 mb-2">
+                                Condition *
+                              </label>
+                              <select
+                                value={item.condition || ''}
+                                onChange={(e) => updateItem(index, 'condition', e.target.value || undefined)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                required
+                              >
+                                <option value="">Select condition</option>
+                                <option value="good">Good</option>
+                                <option value="damaged">Damaged</option>
+                              </select>
+                              {item.condition && item.return_store_id && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Return to: {(() => {
+                                    const store = stores.find(s => s.id === item.return_store_id);
+                                    return store ? store.store_name : 'Unknown store';
+                                  })()}
+                                </p>
+                              )}
                             </div>
 
                             <div>
@@ -1243,7 +1325,7 @@ const CreateCreditNotePage: React.FC = () => {
                                 step="0.01"
                                 value={item.unit_price}
                                 onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                               />
                             </div>
 
@@ -1251,7 +1333,7 @@ const CreateCreditNotePage: React.FC = () => {
                               <label className="block text-base font-medium text-gray-700 mb-2">
                                 Total Price
                               </label>
-                              <div className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-base">
+                              <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm">
                                 {(Number(item.total_price) || 0).toFixed(2)}
                               </div>
                             </div>
@@ -1260,7 +1342,7 @@ const CreateCreditNotePage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => removeItem(index)}
-                                className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
@@ -1275,21 +1357,21 @@ const CreateCreditNotePage: React.FC = () => {
 
               {/* Totals */}
               {items.length > 0 && (
-                <div className="bg-gray-50 rounded-lg p-8">
-                  <h3 className="text-xl font-medium text-gray-900 mb-6">Credit Note Summary</h3>
-                  <div className="space-y-3">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Credit Note Summary</h3>
+                  <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-base text-gray-600">Subtotal (Net):</span>
-                      <span className="text-base font-medium">{(Number(calculateSubtotal()) || 0).toFixed(2)}</span>
+                      <span className="text-sm text-gray-600">Subtotal (Net):</span>
+                      <span className="text-sm font-medium">{(Number(calculateSubtotal()) || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-base text-gray-600">Tax (16%):</span>
-                      <span className="text-base font-medium">{(Number(calculateTaxTotal()) || 0).toFixed(2)}</span>
+                      <span className="text-sm text-gray-600">Tax (16%):</span>
+                      <span className="text-sm font-medium">{(Number(calculateTaxTotal()) || 0).toFixed(2)}</span>
                     </div>
-                    <div className="border-t border-gray-300 pt-3">
+                    <div className="border-t border-gray-300 pt-2">
                       <div className="flex justify-between">
-                        <span className="text-xl font-semibold text-gray-900">Total Credit Amount:</span>
-                        <span className="text-xl font-semibold text-gray-900">{(Number(calculateTotal()) || 0).toFixed(2)}</span>
+                        <span className="text-base font-semibold text-gray-900">Total Credit Amount:</span>
+                        <span className="text-base font-semibold text-gray-900">{(Number(calculateTotal()) || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -1297,18 +1379,18 @@ const CreateCreditNotePage: React.FC = () => {
               )}
 
               {/* Submit Button */}
-              <div className="flex justify-end space-x-6">
+              <div className="flex justify-end space-x-4">
                 <button
                   type="button"
                   onClick={() => window.history.back()}
-                  className="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-base"
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || items.length === 0 || selectedInvoices.size === 0}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-base"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm"
                 >
                   {submitting ? (
                     <>

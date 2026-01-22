@@ -23,6 +23,11 @@ export interface CreditNoteItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  condition?: 'good' | 'damaged'; // Condition of the item
+  return_store_id?: number | null; // Store ID where item should be returned
+  original_quantity?: number; // Original quantity from invoice
+  credited_quantity?: number; // Already credited quantity
+  remaining_quantity?: number; // Remaining quantity available for credit
 }
 
 export interface CreateCreditNoteForm {
@@ -111,6 +116,12 @@ export const creditNoteService = {
   // Get credit notes for a specific customer
   getCustomerCreditNotes: async (customerId: number): Promise<ApiResponse<CreditNote[]>> => {
     const response = await axios.get(`${API_BASE_URL}/financial/customers/${customerId}/credit-notes`);
+    return response.data;
+  },
+
+  // Get invoice items with credited quantities
+  getInvoiceItemsWithCreditedQuantities: async (invoiceId: number): Promise<ApiResponse<any[]>> => {
+    const response = await axios.get(`${API_BASE_URL}/financial/invoices/${invoiceId}/items-with-credited`);
     return response.data;
   }
 }; 

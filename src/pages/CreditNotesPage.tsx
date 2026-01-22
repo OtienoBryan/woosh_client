@@ -26,7 +26,6 @@ const CreditNotesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterScenario, setFilterScenario] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,12 +81,10 @@ const CreditNotesPage: React.FC = () => {
     
     const matchesStatus = filterStatus === 'all' || creditNote.status === filterStatus;
     
-    const matchesScenario = filterScenario === 'all' || creditNote.scenario_type === filterScenario;
-    
     const matchesDate = (!startDate || new Date(creditNote.credit_note_date) >= new Date(startDate)) &&
                         (!endDate || new Date(creditNote.credit_note_date) <= new Date(endDate));
     
-    return matchesSearch && matchesStatus && matchesScenario && matchesDate;
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   // Pagination
@@ -100,7 +97,7 @@ const CreditNotesPage: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1); // Reset to first page when filters change
     setShowAll(false); // Reset show all when filters change
-  }, [searchTerm, filterStatus, filterScenario, startDate, endDate]);
+  }, [searchTerm, filterStatus, startDate, endDate]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -122,15 +119,15 @@ const CreditNotesPage: React.FC = () => {
     );
   };
 
-  const getScenarioBadge = (scenarioType?: string) => {
-    if (!scenarioType) return null;
+  const getConditionBadge = (condition?: string) => {
+    if (!condition) return null;
     
-    const scenarioConfig = {
-      faulty_no_stock: { color: 'bg-orange-100 text-orange-800', label: 'Faulty (No Stock)' },
-      faulty_with_stock: { color: 'bg-purple-100 text-purple-800', label: 'Faulty (With Stock)' }
+    const conditionConfig = {
+      good: { color: 'bg-green-100 text-green-800', label: 'Good' },
+      damaged: { color: 'bg-red-100 text-red-800', label: 'Damaged' }
     };
     
-    const config = scenarioConfig[scenarioType as keyof typeof scenarioConfig];
+    const config = conditionConfig[condition as keyof typeof conditionConfig];
     if (!config) return null;
     
     return (
@@ -199,21 +196,6 @@ const CreditNotesPage: React.FC = () => {
                     <dt className="text-[10px] font-medium text-gray-500">Status</dt>
                     <dd className="text-[10px] text-gray-900">{getStatusBadge(selectedCreditNote.status)}</dd>
                   </div>
-                  {selectedCreditNote.scenario_type && (
-                    <div>
-                      <dt className="text-[10px] font-medium text-gray-500">Scenario</dt>
-                      <dd className="text-[10px] text-gray-900">{getScenarioBadge(selectedCreditNote.scenario_type)}</dd>
-                    </div>
-                  )}
-                  {selectedCreditNote.damage_store_name && (
-                    <div>
-                      <dt className="text-[10px] font-medium text-gray-500">Damage Store</dt>
-                      <dd className="text-[10px] text-gray-900 flex items-center">
-                        <Store className="h-2.5 w-2.5 mr-0.5 text-gray-400" />
-                        {selectedCreditNote.damage_store_name}
-                      </dd>
-                  </div>
-                  )}
                 </dl>
               </div>
               <div>
@@ -263,6 +245,9 @@ const CreditNotesPage: React.FC = () => {
                       <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Invoice
                       </th>
+                      <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                        Condition
+                      </th>
                       <th className="px-3 py-1.5 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Quantity
                       </th>
@@ -289,6 +274,9 @@ const CreditNotesPage: React.FC = () => {
                           <div className="text-[10px] text-gray-900">
                             {item.invoice_number || item.so?.so_number || `Invoice ${item.invoice_id}`}
                           </div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {getConditionBadge(item.condition)}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-right">
                           <div className="text-[10px] text-gray-900">{item.quantity}</div>
@@ -379,21 +367,6 @@ const CreditNotesPage: React.FC = () => {
                 <option value="active">Active</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="applied">Applied</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-medium text-gray-700 mb-1">
-                Scenario
-              </label>
-              <select
-                value={filterScenario}
-                onChange={(e) => setFilterScenario(e.target.value)}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">All Scenarios</option>
-                <option value="faulty_no_stock">Faulty (No Stock)</option>
-                <option value="faulty_with_stock">Faulty (With Stock)</option>
               </select>
             </div>
 
@@ -492,9 +465,6 @@ const CreditNotesPage: React.FC = () => {
                       Date
                     </th>
                     <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                      Scenario
-                    </th>
-                    <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
                     <th className="px-3 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
@@ -548,17 +518,6 @@ const CreditNotesPage: React.FC = () => {
                           <span className="text-[10px] text-gray-900">
                             {formatDate(creditNote.credit_note_date)}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="flex flex-col space-y-0.5">
-                          {getScenarioBadge(creditNote.scenario_type)}
-                          {creditNote.damage_store_name && (
-                            <div className="flex items-center text-[10px] text-gray-500">
-                              <Store className="h-2.5 w-2.5 mr-0.5" />
-                              {creditNote.damage_store_name}
-                            </div>
-                          )}
                         </div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">

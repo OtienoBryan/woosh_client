@@ -301,6 +301,8 @@ const App = () => {
             <Route path="/dashboard/reports/trial-balance" element={<TrialBalanceReportPage />} />
             <Route path="/dashboard/reports/general-ledger" element={<GeneralLedgerReportPage />} />
             <Route path="/dashboard/reports/chart-of-accounts" element={<ChartOfAccountsPage />} />
+            <Route path="/dashboard/reports/sales-tax" element={<SalesTaxReportPage />} />
+            <Route path="/dashboard/reports/collection-report" element={<CollectionReportPage />} />
             <Route path="/dashboard/reports/sales-report" element={<SalesReportPage />} />
             <Route path="/dashboard/reports/product-performance" element={<ProductPerformancePage />} />
             <Route path="/dashboard/reports/product-performance-graph" element={<ProductPerformanceGraphPage />} />

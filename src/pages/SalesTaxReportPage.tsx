@@ -149,29 +149,29 @@ const SalesTaxReportPage: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <TaxIcon className="w-8 h-8 mr-3 text-blue-600" />
+              <h1 className="text-xl font-bold text-gray-900 flex items-center">
+                <TaxIcon className="w-5 h-5 mr-2 text-blue-600" />
                 Sales Tax Report
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 Sales Tax Payable (Account 35) - {startDate} to {endDate}
               </p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button
                 onClick={handleExportPDF}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3 h-3 mr-1.5" />
                 Export PDF
               </button>
               <button
                 onClick={handleExportExcel}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="w-3 h-3 mr-1.5" />
                 Export Excel
               </button>
             </div>
@@ -181,40 +181,40 @@ const SalesTaxReportPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-2 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="w-3 h-3 mr-1.5" />
               Filters
             </button>
             
             {showFilters && (
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <Calendar className="w-3 h-3 text-gray-400" />
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="border border-gray-300 rounded-md px-2 py-1 text-xs"
                   />
-                  <span className="text-gray-500">to</span>
+                  <span className="text-xs text-gray-500">to</span>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="border border-gray-300 rounded-md px-2 py-1 text-xs"
                   />
                 </div>
                 
                 <button
                   onClick={fetchSalesTaxReport}
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className="inline-flex items-center px-2 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <RefreshCw className="w-3 h-3 mr-1.5" />
                   Refresh
                 </button>
               </div>
@@ -222,13 +222,13 @@ const SalesTaxReportPage: React.FC = () => {
             
             <div className="flex-1 max-w-md">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                 <input
                   type="text"
                   placeholder="Search entries..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -238,20 +238,20 @@ const SalesTaxReportPage: React.FC = () => {
 
       {/* Summary Cards */}
       {reportData && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+              <div className="p-3">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Calculator className="h-6 w-6 text-green-600" />
+                    <Calculator className="h-4 w-4 text-green-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ml-3 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-xs font-medium text-gray-500 truncate">
                         Total Credit
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-sm font-medium text-gray-900">
                         {formatCurrency(reportData.summary.total_credit)}
                       </dd>
                     </dl>
@@ -261,17 +261,17 @@ const SalesTaxReportPage: React.FC = () => {
             </div>
 
             <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+              <div className="p-3">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Calculator className="h-6 w-6 text-red-600" />
+                    <Calculator className="h-4 w-4 text-red-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ml-3 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-xs font-medium text-gray-500 truncate">
                         Total Debit
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-sm font-medium text-gray-900">
                         {formatCurrency(reportData.summary.total_debit)}
                       </dd>
                     </dl>
@@ -281,16 +281,16 @@ const SalesTaxReportPage: React.FC = () => {
             </div>
 
             <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+              <div className="p-3">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ml-3 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-xs font-medium text-gray-500 truncate">
                         Net Tax Payable
                       </dt>
-                      <dd className={`text-lg font-medium ${reportData.summary.net_tax_payable >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <dd className={`text-sm font-medium ${reportData.summary.net_tax_payable >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(reportData.summary.net_tax_payable)}
                       </dd>
                     </dl>
@@ -300,17 +300,17 @@ const SalesTaxReportPage: React.FC = () => {
             </div>
 
             <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
+              <div className="p-3">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <BarChart3 className="h-6 w-6 text-purple-600" />
+                    <BarChart3 className="h-4 w-4 text-purple-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ml-3 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-xs font-medium text-gray-500 truncate">
                         Total Entries
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-sm font-medium text-gray-900">
                         {reportData.summary.entry_count}
                       </dd>
                     </dl>
@@ -324,17 +324,17 @@ const SalesTaxReportPage: React.FC = () => {
 
       {/* Error State */}
       {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
             <div className="flex">
               <div className="flex-shrink-0">
-                <Info className="h-5 w-5 text-red-400" />
+                <Info className="h-4 w-4 text-red-400" />
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
+              <div className="ml-2">
+                <h3 className="text-xs font-medium text-red-800">
                   Error loading sales tax report
                 </h3>
-                <div className="mt-2 text-sm text-red-700">
+                <div className="mt-1 text-xs text-red-700">
                   <p>{error}</p>
                 </div>
               </div>
@@ -345,22 +345,22 @@ const SalesTaxReportPage: React.FC = () => {
 
       {/* Entries Table */}
       {reportData && !error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
+            <div className="px-3 py-3 sm:px-4 border-b border-gray-200">
+              <h3 className="text-sm leading-6 font-medium text-gray-900">
                 Sales Tax Entries
               </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+              <p className="mt-1 max-w-2xl text-xs text-gray-500">
                 All journal entry lines for Sales Tax Payable account
               </p>
             </div>
             
             {filteredEntries.length === 0 ? (
-              <div className="text-center py-12">
-                <Receipt className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No entries found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+              <div className="text-center py-8">
+                <Receipt className="mx-auto h-8 w-8 text-gray-400" />
+                <h3 className="mt-2 text-xs font-medium text-gray-900">No entries found</h3>
+                <p className="mt-1 text-xs text-gray-500">
                   {searchTerm ? 'Try adjusting your search terms.' : 'No sales tax entries found for the selected date range.'}
                 </p>
               </div>
@@ -369,25 +369,25 @@ const SalesTaxReportPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Entry Details
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Reference
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Description
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Debit
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Credit
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -395,26 +395,26 @@ const SalesTaxReportPage: React.FC = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredEntries.map((entry) => (
                       <tr key={entry.line_id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
                           {entry.entry_number}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                           {formatDate(entry.entry_date)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                           {entry.reference || '-'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                        <td className="px-3 py-2 text-xs text-gray-500 max-w-xs truncate">
                           {entry.line_description || entry.journal_description}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                           {entry.debit_amount > 0 ? formatCurrency(entry.debit_amount) : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                           {entry.credit_amount > 0 ? formatCurrency(entry.credit_amount) : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${
                             entry.status === 'posted' 
                               ? 'bg-green-100 text-green-800' 
                               : entry.status === 'draft'

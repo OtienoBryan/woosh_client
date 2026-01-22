@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { salesOrdersService } from '../services/financialService';
 import { receiptsService } from '../services/financialService';
 import { SalesOrder } from '../types/financial';
 import { Search, Filter, Download, Eye, FileText, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 const InvoiceListPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,10 +23,14 @@ const InvoiceListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
 
-  // Fetch orders when component mounts or when status filter changes
+  // Get client_id from URL params
+  const clientIdParam = searchParams.get('client_id');
+  const clientId = clientIdParam ? parseInt(clientIdParam, 10) : undefined;
+
+  // Fetch orders when component mounts or when status filter or client_id changes
   useEffect(() => {
     fetchSalesOrders();
-  }, [statusFilter]);
+  }, [statusFilter, clientId]);
 
   // Apply client-side filters (search and date only)
   useEffect(() => {
@@ -46,10 +52,13 @@ const InvoiceListPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Pass status filter to API - only fetch what's needed
+      // Pass status filter and client_id to API - only fetch what's needed
       const params: any = {};
       if (statusFilter !== 'all') {
         params.status = statusFilter;
+      }
+      if (clientId) {
+        params.client_id = clientId;
       }
       
       console.log('Fetching orders with params:', params);
@@ -237,7 +246,7 @@ const InvoiceListPage: React.FC = () => {
     const config = statusConfig[myStatus as keyof typeof statusConfig];
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config?.color || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium ${config?.color || 'bg-gray-100 text-gray-800'}`}>
         {config?.label || `STATUS ${myStatus}`}
       </span>
     );
@@ -286,7 +295,7 @@ const InvoiceListPage: React.FC = () => {
       <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading sales orders...</p>
+          <p className="mt-4 text-xs text-gray-600">Loading sales orders...</p>
         </div>
       </div>
     );
@@ -296,11 +305,11 @@ const InvoiceListPage: React.FC = () => {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">Error</div>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-base mb-4">Error</div>
+          <p className="text-xs text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchSalesOrders}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-xs"
           >
             Retry
           </button>
@@ -316,14 +325,14 @@ const InvoiceListPage: React.FC = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Invoice List</h1>
+              <h1 className="text-lg font-bold text-gray-900">Invoice List</h1>
                
             </div>
             <div className="flex items-center space-x-3">
               <button
                 onClick={refreshAmountsPaid}
                 disabled={loadingAmounts}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className={`h-4 w-4 mr-2 ${loadingAmounts ? 'animate-spin' : ''}`}>
                   {loadingAmounts ? (
@@ -336,7 +345,7 @@ const InvoiceListPage: React.FC = () => {
               </button>
               <button
                 onClick={exportToCSV}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
@@ -347,93 +356,93 @@ const InvoiceListPage: React.FC = () => {
 
         {/* Summary - Shows data for selected status only */}
         {salesOrders.length > 0 ? (
-          <div className="bg-white rounded-lg shadow mb-6 p-6">
+          <div className="bg-white rounded-lg shadow mb-3 p-3">
             {/* Status-specific Summary */}
-            <div className="mb-6">
-              <h3 className="text-sm text-gray-600 text-center mb-4">
+            <div className="mb-3">
+              <h3 className="text-[10px] text-gray-600 text-center mb-2">
                 {statusFilter === 'all' ? 'All Statuses' : 
                  statusFilter === '1' ? 'Approved Orders Summary' :
                  statusFilter === '2' ? 'Assigned Orders Summary' :
                  statusFilter === '3' ? 'In Transit Orders Summary' : 
                  `Status ${statusFilter} Summary`}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">
+                  <div className="text-sm font-bold text-gray-900">
                     {salesOrders.length}
                   </div>
-                  <div className="text-sm text-gray-600">Total Orders</div>
+                  <div className="text-[10px] text-gray-600">Total Orders</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-sm font-bold text-green-600">
                     {formatCurrency(salesOrders.reduce((sum, order) => sum + safeNumber(order.total_amount), 0))}
                   </div>
-                  <div className="text-sm text-gray-600">Total Value</div>
+                  <div className="text-[10px] text-gray-600">Total Value</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-sm font-bold text-blue-600">
                     {formatCurrency(salesOrders.reduce((sum, order) => sum + safeNumber(order.tax_amount), 0))}
                   </div>
-                  <div className="text-sm text-gray-600">Total Tax</div>
+                  <div className="text-[10px] text-gray-600">Total Tax</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-emerald-600">
+                  <div className="text-sm font-bold text-emerald-600">
                     {formatCurrency(salesOrders.reduce((sum, order) => sum + safeNumber(amountsPaid[order.id]), 0))}
                   </div>
-                  <div className="text-sm text-gray-600">Total Paid</div>
+                  <div className="text-[10px] text-gray-600">Total Paid</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
+                  <div className="text-sm font-bold text-orange-600">
                     {formatCurrency(salesOrders.reduce((sum, order) => sum + (safeNumber(order.total_amount) - safeNumber(amountsPaid[order.id])), 0))}
                   </div>
-                  <div className="text-sm text-gray-600">Outstanding</div>
+                  <div className="text-[10px] text-gray-600">Outstanding</div>
                 </div>
               </div>
             </div>
 
             {/* Client-side Filtered Results (Search/Date) */}
             {filteredOrders.length !== salesOrders.length && (
-              <div className="mb-6 pt-6 border-t border-gray-200">
-                <h3 className="text-sm text-gray-600 text-center mb-4">After Search/Date Filters</h3>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              <div className="mb-0 pt-3 border-t border-gray-200">
+                <h3 className="text-[10px] text-gray-600 text-center mb-2">After Search/Date Filters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-700">
+                    <div className="text-sm font-bold text-gray-700">
                       {filteredOrders.length}
                     </div>
-                    <div className="text-sm text-gray-600">Filtered Orders</div>
+                    <div className="text-[10px] text-gray-600">Filtered Orders</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-700">
+                    <div className="text-sm font-bold text-green-700">
                       {formatCurrency(filteredOrders.reduce((sum, order) => sum + safeNumber(order.total_amount), 0))}
                     </div>
-                    <div className="text-sm text-gray-600">Filtered Value</div>
+                    <div className="text-[10px] text-gray-600">Filtered Value</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-700">
+                    <div className="text-sm font-bold text-blue-700">
                       {formatCurrency(filteredOrders.reduce((sum, order) => sum + safeNumber(order.tax_amount), 0))}
                     </div>
-                    <div className="text-sm text-gray-600">Filtered Tax</div>
+                    <div className="text-[10px] text-gray-600">Filtered Tax</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-emerald-700">
+                    <div className="text-sm font-bold text-emerald-700">
                       {formatCurrency(filteredOrders.reduce((sum, order) => sum + safeNumber(amountsPaid[order.id]), 0))}
                     </div>
-                    <div className="text-sm text-gray-600">Filtered Paid</div>
+                    <div className="text-[10px] text-gray-600">Filtered Paid</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-700">
+                    <div className="text-sm font-bold text-orange-700">
                       {formatCurrency(filteredOrders.reduce((sum, order) => sum + (safeNumber(order.total_amount) - safeNumber(amountsPaid[order.id])), 0))}
                     </div>
-                    <div className="text-sm text-gray-600">Filtered Outstanding</div>
+                    <div className="text-[10px] text-gray-600">Filtered Outstanding</div>
                   </div>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow mb-6 p-6">
+          <div className="bg-white rounded-lg shadow mb-3 p-3">
             <div className="text-center text-gray-500">
-              <p>No sales orders available to display summary</p>
+              <p className="text-xs">No sales orders available to display summary</p>
             </div>
           </div>
         )}
@@ -443,7 +452,7 @@ const InvoiceListPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Search</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -451,18 +460,18 @@ const InvoiceListPage: React.FC = () => {
                   placeholder="Search SO number, customer, or sales rep..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
                 />
               </div>
             </div>
 
             {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Approval Status</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Approval Status</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
               >
                 <option value="all">All Approval Statuses</option>
                 <option value="1">Approved (1)</option>
@@ -473,11 +482,11 @@ const InvoiceListPage: React.FC = () => {
 
             {/* Date Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Date Range</label>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
               >
                 <option value="all">All Time</option>
                 <option value="today">Today</option>
@@ -491,27 +500,27 @@ const InvoiceListPage: React.FC = () => {
             {dateFilter === 'custom' && (
               <div className="col-span-2 grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="inline w-4 h-4 mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-3 h-3 mr-1" />
                     Start Date
                   </label>
                   <input
                     type="date"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="inline w-4 h-4 mr-1" />
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-3 h-3 mr-1" />
                     End Date
                   </label>
                   <input
                     type="date"
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
                   />
                 </div>
               </div>
@@ -519,8 +528,8 @@ const InvoiceListPage: React.FC = () => {
 
             {/* Results Count */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Results</label>
-              <div className="text-lg font-semibold text-gray-900">
+              <label className="block text-xs font-medium text-gray-700 mb-2">Results</label>
+              <div className="text-sm font-semibold text-gray-900">
                 {filteredOrders.length} of {salesOrders.length}
               </div>
             </div>
@@ -533,40 +542,40 @@ const InvoiceListPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     SO Number
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Customer
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Sales Rep
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Order Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Approval Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Subtotal
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Tax
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Total Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Amount Paid
                     {loadingAmounts && (
                       <div className="inline-block ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
                     )}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Balance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -576,8 +585,8 @@ const InvoiceListPage: React.FC = () => {
                   <tr>
                     <td colSpan={11} className="px-6 py-12 text-center text-gray-500">
                       <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                      <p className="text-lg font-medium text-gray-900 mb-2">No sales orders found</p>
-                      <p className="text-gray-600">
+                      <p className="text-sm font-medium text-gray-900 mb-2">No sales orders found</p>
+                      <p className="text-xs text-gray-600">
                         {searchTerm || statusFilter !== 'all' || dateFilter !== 'all' 
                           ? 'Try adjusting your filters or search terms'
                           : 'Sales orders with approval status 1, 2, or 3 will appear here'
@@ -588,31 +597,31 @@ const InvoiceListPage: React.FC = () => {
                 ) : (
                   currentOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
                         {order.so_number}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {order.customer_name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {order.salesrep || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {formatDate(order.order_date)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(order.my_status || 0)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {formatCurrency(safeNumber(order.total_amount) - safeNumber(order.tax_amount))}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {formatCurrency(safeNumber(order.tax_amount))}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-gray-900">
                         {formatCurrency(safeNumber(order.total_amount))}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {loadingAmounts ? (
                           <div className="animate-pulse bg-gray-200 h-4 w-16 rounded"></div>
                         ) : (
@@ -621,7 +630,7 @@ const InvoiceListPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                         {loadingAmounts ? (
                           <div className="animate-pulse bg-gray-200 h-4 w-16 rounded"></div>
                         ) : (
@@ -630,7 +639,7 @@ const InvoiceListPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-medium">
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => window.open(`/sales-orders/${order.id}`, '_blank')}
@@ -656,7 +665,7 @@ const InvoiceListPage: React.FC = () => {
                 <button
                   onClick={() => goToPage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
@@ -670,7 +679,7 @@ const InvoiceListPage: React.FC = () => {
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-xs text-gray-700">
                     Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
                     <span className="font-medium">{Math.min(endIndex, filteredOrders.length)}</span> of{' '}
                     <span className="font-medium">{filteredOrders.length}</span> results
@@ -681,7 +690,7 @@ const InvoiceListPage: React.FC = () => {
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="sr-only">Previous</span>
                       <ChevronLeft className="h-5 w-5" />
@@ -716,7 +725,7 @@ const InvoiceListPage: React.FC = () => {
                         <button
                           key={page}
                           onClick={() => goToPage(page)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            className={`relative inline-flex items-center px-4 py-2 border text-xs font-medium ${
                             currentPage === page
                               ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                               : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
@@ -730,7 +739,7 @@ const InvoiceListPage: React.FC = () => {
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="sr-only">Next</span>
                       <ChevronRight className="h-5 w-5" />

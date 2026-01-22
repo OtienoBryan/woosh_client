@@ -340,18 +340,18 @@ const PurchaseOrderPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex justify-between items-center py-3">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Create Purchase Order</h1>
-              <p className="text-gray-600 mt-1">Create a new purchase order from suppliers</p>
+              <h1 className="text-lg font-bold text-gray-900">Create Purchase Order</h1>
+              <p className="text-xs text-gray-600 mt-0.5">Create a new purchase order from suppliers</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button 
                 onClick={() => window.history.back()}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center"
+                className="bg-gray-600 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 flex items-center text-xs"
               >
-                <X className="w-4 h-4 mr-2" />
+                <X className="w-3 h-3 mr-1" />
                 Cancel
               </button>
             </div>
@@ -360,31 +360,31 @@ const PurchaseOrderPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2">
               <div className="flex">
-                <div className="text-red-600 text-sm">{error}</div>
+                <div className="text-red-600 text-xs">{error}</div>
               </div>
             </div>
           )}
 
           {/* Purchase Order Details */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-lg shadow p-3">
+            <h2 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
+              <FileText className="w-4 h-4 mr-1.5" />
               Purchase Order Details
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Supplier Selection */}
               <div className="relative supplier-search-container">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Supplier <span className="text-red-500">*</span>
                   {selectedSupplier && (
-                    <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
                       Selected
                     </span>
                   )}
@@ -396,7 +396,7 @@ const PurchaseOrderPage: React.FC = () => {
                     onChange={(e) => handleSupplierSearchChange(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onFocus={() => setShowSupplierDropdown(true)}
-                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${
+                    className={`w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-8 ${
                       selectedSupplier ? 'bg-green-50 border-green-300' : ''
                     }`}
                     placeholder="Search by company name, contact person, email, phone, or supplier code..."
@@ -416,19 +416,19 @@ const PurchaseOrderPage: React.FC = () => {
                                  {showSupplierDropdown && filteredSuppliers.length > 0 && (
                    <div ref={dropdownRef} className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
                     {supplierSearchTerm.trim() === '' && (
-                      <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                      <div className="px-2 py-1.5 text-[10px] text-gray-500 border-b border-gray-200">
                         {filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''} available
                       </div>
                     )}
                     {supplierSearchTerm.trim() !== '' && (
-                      <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                      <div className="px-2 py-1.5 text-[10px] text-gray-500 border-b border-gray-200">
                         {filteredSuppliers.length} result{filteredSuppliers.length !== 1 ? 's' : ''} for "{supplierSearchTerm}"
                       </div>
                     )}
                                          {filteredSuppliers.map((supplier, index) => (
                        <div
                          key={supplier.id}
-                         className={`px-4 py-2 cursor-pointer hover:bg-blue-50 ${
+                         className={`px-2 py-1.5 cursor-pointer hover:bg-blue-50 text-xs ${
                            index === highlightedIndex ? 'bg-blue-100' : ''
                          }`}
                          onClick={(e) => {
@@ -439,35 +439,35 @@ const PurchaseOrderPage: React.FC = () => {
                          onMouseDown={(e) => e.preventDefault()}
                        >
                         <div className="font-medium">{supplier.company_name || 'N/A'}</div>
-                        <div className="text-sm text-gray-500">Code: {supplier.supplier_code || 'N/A'}</div>
+                        <div className="text-xs text-gray-500">Code: {supplier.supplier_code || 'N/A'}</div>
                         {supplier.contact_person && (
-                          <div className="text-sm text-gray-600">{supplier.contact_person}</div>
+                          <div className="text-xs text-gray-600">{supplier.contact_person}</div>
                         )}
                         {supplier.email && (
-                          <div className="text-sm text-gray-500">{supplier.email}</div>
+                          <div className="text-xs text-gray-500">{supplier.email}</div>
                         )}
                         {supplier.phone && (
-                          <div className="text-sm text-gray-500">{supplier.phone}</div>
+                          <div className="text-[10px] text-gray-500">{supplier.phone}</div>
                         )}
                         {supplier.address && (
-                          <div className="text-sm text-gray-500">{supplier.address}</div>
+                          <div className="text-[10px] text-gray-500">{supplier.address}</div>
                         )}
                         {supplier.tax_id && (
-                          <div className="text-sm text-gray-500">Tax ID: {supplier.tax_id}</div>
+                          <div className="text-[10px] text-gray-500">Tax ID: {supplier.tax_id}</div>
                         )}
-                        <div className="text-sm text-gray-500">
+                        <div className="text-[10px] text-gray-500">
                           Payment Terms: {supplier.payment_terms || 'N/A'} days
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-[10px] text-gray-500">
                           Credit Limit: ${(supplier.credit_limit || 0).toLocaleString()}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-[10px] text-gray-500">
                           Status: {supplier.is_active ? 'Active' : 'Inactive'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-[10px] text-gray-500">
                           Created: {supplier.created_at ? new Date(supplier.created_at).toLocaleDateString() : 'N/A'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-[10px] text-gray-500">
                           Updated: {supplier.updated_at ? new Date(supplier.updated_at).toLocaleDateString() : 'N/A'}
                         </div>
                       </div>
@@ -478,8 +478,8 @@ const PurchaseOrderPage: React.FC = () => {
                   <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
                     <div className="px-4 py-3 text-center">
                       <div className="text-gray-500 mb-2">Start typing to search suppliers...</div>
-                      <div className="text-sm text-gray-400">Search by company name, contact person, email, phone, or supplier code</div>
-                      <div className="text-sm text-gray-400 mt-1">You can also browse all available suppliers below</div>
+                      <div className="text-xs text-gray-400">Search by company name, contact person, email, phone, or supplier code</div>
+                      <div className="text-xs text-gray-400 mt-1">You can also browse all available suppliers below</div>
                     </div>
                   </div>
                 )}
@@ -487,7 +487,7 @@ const PurchaseOrderPage: React.FC = () => {
                   <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
                     <div className="px-4 py-3 text-center">
                       <div className="text-gray-500 mb-2">No suppliers found matching "{supplierSearchTerm}"</div>
-                      <div className="text-sm text-gray-400">Try searching by company name, contact person, email, phone, or supplier code</div>
+                      <div className="text-xs text-gray-400">Try searching by company name, contact person, email, phone, or supplier code</div>
                     </div>
                   </div>
                 )}
@@ -495,7 +495,7 @@ const PurchaseOrderPage: React.FC = () => {
                   <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
                     <div className="px-4 py-3 text-center">
                       <div className="text-gray-500 mb-2">No suppliers available</div>
-                      <div className="text-sm text-gray-400">Please add suppliers first before creating purchase orders</div>
+                      <div className="text-xs text-gray-400">Please add suppliers first before creating purchase orders</div>
                     </div>
                   </div>
                 )}
@@ -506,47 +506,47 @@ const PurchaseOrderPage: React.FC = () => {
                         <div className="font-medium text-green-800">
                           {suppliers.find(s => s.id === selectedSupplier)?.company_name || 'N/A'}
                         </div>
-                        <div className="text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           Code: {suppliers.find(s => s.id === selectedSupplier)?.supplier_code || 'N/A'}
                         </div>
                         {suppliers.find(s => s.id === selectedSupplier)?.contact_person && (
-                          <div className="text-sm text-green-600">
+                          <div className="text-xs text-green-600">
                             Contact: {suppliers.find(s => s.id === selectedSupplier)?.contact_person}
                           </div>
                         )}
                         {suppliers.find(s => s.id === selectedSupplier)?.email && (
-                          <div className="text-sm text-green-600">
+                          <div className="text-xs text-green-600">
                             Email: {suppliers.find(s => s.id === selectedSupplier)?.email}
                           </div>
                         )}
                         {suppliers.find(s => s.id === selectedSupplier)?.phone && (
-                          <div className="text-sm text-green-600">
+                          <div className="text-xs text-green-600">
                             Phone: {suppliers.find(s => s.id === selectedSupplier)?.phone}
                           </div>
                         )}
                         {suppliers.find(s => s.id === selectedSupplier)?.address && (
-                          <div className="text-sm text-green-600">
+                          <div className="text-xs text-green-600">
                             Address: {suppliers.find(s => s.id === selectedSupplier)?.address}
                           </div>
                         )}
                         {suppliers.find(s => s.id === selectedSupplier)?.tax_id && (
-                          <div className="text-sm text-green-600">
+                          <div className="text-xs text-green-600">
                             Tax ID: {suppliers.find(s => s.id === selectedSupplier)?.tax_id}
                           </div>
                         )}
-                        <div className="text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           Payment Terms: {suppliers.find(s => s.id === selectedSupplier)?.payment_terms || 'N/A'} days
                         </div>
-                        <div className="text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           Credit Limit: ${(suppliers.find(s => s.id === selectedSupplier)?.credit_limit || 0).toLocaleString()}
                         </div>
-                        <div className="text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           Status: {suppliers.find(s => s.id === selectedSupplier)?.is_active ? 'Active' : 'Inactive'}
                         </div>
-                        <div className="text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           Created: {suppliers.find(s => s.id === selectedSupplier)?.created_at ? new Date(suppliers.find(s => s.id === selectedSupplier)?.created_at || '').toLocaleDateString() : 'N/A'}
                         </div>
-                        <div className="text-sm text-green-600">
+                        <div className="text-xs text-green-600">
                           Updated: {suppliers.find(s => s.id === selectedSupplier)?.updated_at ? new Date(suppliers.find(s => s.id === selectedSupplier)?.updated_at || '').toLocaleDateString() : 'N/A'}
                         </div>
                       </div>
@@ -565,42 +565,42 @@ const PurchaseOrderPage: React.FC = () => {
 
               {/* Order Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-2">
                   Order Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   value={orderDate}
                   onChange={(e) => setOrderDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
               {/* Expected Delivery Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-2">
                   Expected Delivery Date
                 </label>
                 <input
                   type="date"
                   value={expectedDeliveryDate}
                   onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Notes */}
             <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-2">
                 Notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter any additional notes..."
               />
             </div>
@@ -616,7 +616,7 @@ const PurchaseOrderPage: React.FC = () => {
               <button
                 type="button"
                 onClick={addItem}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item
@@ -646,13 +646,13 @@ const PurchaseOrderPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                       {/* Product Selection */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           Product <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={item.product_id}
                           onChange={(e) => updateItem(index, 'product_id', Number(e.target.value))}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
                         >
                           <option value={0}>Select a product</option>
@@ -666,7 +666,7 @@ const PurchaseOrderPage: React.FC = () => {
 
                       {/* Quantity */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           Quantity <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -684,14 +684,14 @@ const PurchaseOrderPage: React.FC = () => {
                               }
                             }
                           }}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
                         />
                       </div>
 
                       {/* Unit Price */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                            Unit Price (excl. tax) <span className="text-red-500">*</span>
                         </label>
                           <input
@@ -712,20 +712,20 @@ const PurchaseOrderPage: React.FC = () => {
                                }
                              }
                            }}
-                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             required
                           />
                       </div>
 
                       {/* Tax Type */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           Tax Type
                         </label>
                         <select
                           value={item.tax_type}
                           onChange={(e) => updateItem(index, 'tax_type', e.target.value as TaxType)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                           <option value={'16%'}>16%</option>
                           <option value={'zero_rated'}>Zero rated</option>
@@ -735,14 +735,14 @@ const PurchaseOrderPage: React.FC = () => {
 
                       {/* Total Price */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
                            Total Price (incl. tax)
                         </label>
                           <input
                             type="number"
                             value={item.total_price.toFixed(2)}
                             readOnly
-                           className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900"
+                           className="w-full border border-gray-300 rounded-lg px-2 py-1.5 bg-gray-50 text-gray-900"
                           />
                       </div>
                     </div>

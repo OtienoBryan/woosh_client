@@ -256,18 +256,18 @@ const FinancialReportsIndexPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex justify-between items-center py-3">
             <div>
-              <h1 className="text-xl font-bold text-gray-600">Moonsun Trade International</h1>
-              <h2 className="text-xl font-bold text-gray-600">Financial Reports</h2>
-              <p className="text-sm text-gray-600 mt-1">Comprehensive financial reporting and analysis tools</p>
+              <h1 className="text-base font-bold text-gray-600">Moonsun Trade International</h1>
+              <h2 className="text-base font-bold text-gray-600">Financial Reports</h2>
+              <p className="text-xs text-gray-600 mt-0.5">Comprehensive financial reporting and analysis tools</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
                
               <Link
                 to="/financial"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
                 
                 Back to Dashboard
@@ -278,7 +278,7 @@ const FinancialReportsIndexPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
         {/* Quick Actions */}
         {/* <div className="mb-8">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
@@ -304,21 +304,21 @@ const FinancialReportsIndexPage: React.FC = () => {
         </div> */}
 
         {/* Reports Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
           {reports.map((report) => (
             <div key={report.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
               {/* Header */}
-              <div className={`${report.color} p-3`}>
+              <div className={`${report.color} p-2`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1.5">
                     <div className="text-white">
-                      {report.icon}
+                      {React.cloneElement(report.icon as React.ReactElement, { className: 'w-4 h-4' })}
                     </div>
-                    <h3 className="text-sm font-semibold text-white">{report.title}</h3>
+                    <h3 className="text-xs font-semibold text-white">{report.title}</h3>
                   </div>
                   <Link
                     to={report.route}
-                    className="bg-white bg-opacity-20 text-white px-2 py-0.5 rounded text-xs font-medium hover:bg-opacity-30 transition-colors"
+                    className="bg-white bg-opacity-20 text-white px-1.5 py-0.5 rounded text-[10px] font-medium hover:bg-opacity-30 transition-colors"
                   >
                     View
                   </Link>
@@ -326,15 +326,15 @@ const FinancialReportsIndexPage: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="p-3">
-                <p className="text-gray-600 text-xs mb-3">{report.description}</p>
+              <div className="p-2">
+                <p className="text-gray-600 text-[10px] mb-2 leading-tight">{report.description}</p>
                 
-                <div className="mb-3">
-                  <h4 className="text-xs font-medium text-gray-900 mb-1.5">Key Features:</h4>
+                <div className="mb-2">
+                  <h4 className="text-[10px] font-medium text-gray-900 mb-1">Key Features:</h4>
                   <ul className="space-y-0.5">
                     {report.features.map((feature, index) => (
-                      <li key={index} className="text-[10px] text-gray-600 flex items-center">
-                        <div className="w-0.5 h-0.5 bg-gray-400 rounded-full mr-1.5"></div>
+                      <li key={index} className="text-[9px] text-gray-600 flex items-center">
+                        <div className="w-0.5 h-0.5 bg-gray-400 rounded-full mr-1"></div>
                         {feature}
                       </li>
                     ))}
@@ -345,13 +345,13 @@ const FinancialReportsIndexPage: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="bg-gray-50 px-3 py-2 border-t">
+              <div className="bg-gray-50 px-2 py-1.5 border-t">
                 <div className="flex justify-between items-center">
                   <Link
                     to={report.route}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center"
+                    className="text-[10px] font-medium text-blue-600 hover:text-blue-700 flex items-center"
                   >
-                    <Eye className="w-3 h-3 mr-1" />
+                    <Eye className="w-2.5 h-2.5 mr-0.5" />
                     View Full Report
                   </Link>
                   {/* <button className="text-sm text-gray-500 hover:text-gray-700 flex items-center">

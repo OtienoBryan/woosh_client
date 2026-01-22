@@ -1229,6 +1229,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                           <tr>
                             <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                             <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                            <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
                             <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                             <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
                             <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Price</th>
@@ -1248,6 +1249,19 @@ const CreditNoteSummaryPage: React.FC = () => {
                                   <Receipt className="h-3 w-3 text-gray-400 mr-1.5" />
                                   <span>Invoice {item.invoice_id}</span>
                                 </div>
+                              </td>
+                              <td className="px-3 py-2 text-xs text-gray-900">
+                                {item.condition ? (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                    item.condition === 'good' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {item.condition === 'good' ? 'Good' : 'Damaged'}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
                               </td>
                               <td className="px-3 py-2 text-xs text-gray-900">{item.quantity}</td>
                               <td className="px-3 py-2 text-xs text-gray-900">{formatCurrency(item.unit_price)}</td>

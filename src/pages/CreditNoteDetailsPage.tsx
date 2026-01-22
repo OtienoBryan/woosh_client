@@ -26,6 +26,7 @@ interface CreditNoteItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  condition?: 'good' | 'damaged';
 }
 
 interface CreditNote {
@@ -341,6 +342,7 @@ const CreditNoteDetailsPage: React.FC = () => {
                   <tr>
                     <th className="item-col">Item</th>
                     <th className="invoice-col">Original Invoice</th>
+                    <th className="condition-col">Condition</th>
                     <th className="qty-col">Qty</th>
                     <th className="price-col">Unit Price</th>
                     <th className="total-col">Total</th>
@@ -359,6 +361,19 @@ const CreditNoteDetailsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="invoice-col">#{item.invoice_id}</td>
+                      <td className="condition-col">
+                        {item.condition ? (
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            item.condition === 'good' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {item.condition === 'good' ? 'Good' : 'Damaged'}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
                       <td className="qty-col">{item.quantity}</td>
                       <td className="price-col">{formatCurrency(item.unit_price)}</td>
                       <td className="total-col">{formatCurrency(item.total_price)}</td>

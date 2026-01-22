@@ -86,46 +86,51 @@ const StatCard: React.FC<StatCardProps> = memo(({
   change,
   prefix = '',
   suffix = '',
-  bgColor = 'bg-gradient-to-r from-blue-600 to-blue-700',
-  textColor = 'text-white',
+  bgColor = 'bg-blue-50',
+  textColor = 'text-gray-800',
   onClick,
   badge
 }) => {
+  // Extract icon color from bgColor for consistency
+  const iconBgColor = bgColor.replace('-50', '-100');
+  const iconColor = bgColor.includes('blue') ? 'text-blue-600' :
+                   bgColor.includes('purple') ? 'text-purple-600' :
+                   bgColor.includes('yellow') ? 'text-yellow-600' :
+                   bgColor.includes('green') ? 'text-green-600' :
+                   bgColor.includes('red') ? 'text-red-600' :
+                   'text-gray-600';
+
   return (
     <div className="relative">
       <div
-        className={`${bgColor} overflow-hidden shadow-lg rounded-xl cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl`}
+        className={`${bgColor} overflow-hidden shadow-md rounded-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl`}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
       >
         <div className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className={`text-[9px] font-medium ${textColor} opacity-90`}>
-                {title}
-              </p>
-              <p className={`text-xs font-bold ${textColor} mt-0.5`}>
-                {prefix}{value}{suffix}
-              </p>
-              {change && (
-                <div className="flex items-center mt-1">
-                  {change.positive ? (
-                    <ArrowUpRightIcon className="h-2.5 w-2.5 text-green-300" />
-                  ) : (
-                    <ArrowDownRightIcon className="h-2.5 w-2.5 text-red-300" />
-                  )}
-                  <span className={`text-[9px] font-medium ml-0.5 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
-                    {change.positive ? '+' : ''}{change.value}%
-                  </span>
-                </div>
-              )}
+          <div className="flex flex-col items-center text-center">
+            <div className={`${iconBgColor} ${iconColor} p-1.5 rounded-md mb-1.5 shadow-sm`}>
+              {icon}
             </div>
-            <div className="flex-shrink-0">
-              <div className={`p-1.5 rounded-lg ${textColor} bg-white bg-opacity-20`}>
-                {icon}
+            <p className={`text-[10px] font-medium ${textColor} mb-0.5`}>
+              {title}
+            </p>
+            <p className={`text-base font-bold ${textColor}`}>
+              {prefix}{value}{suffix}
+            </p>
+            {change && (
+              <div className="flex items-center mt-1">
+                {change.positive ? (
+                  <ArrowUpRightIcon className="h-2.5 w-2.5 text-green-600" />
+                ) : (
+                  <ArrowDownRightIcon className="h-2.5 w-2.5 text-red-600" />
+                )}
+                <span className={`text-[9px] font-medium ml-0.5 ${change.positive ? 'text-green-600' : 'text-red-600'}`}>
+                  {change.positive ? '+' : ''}{change.value}%
+                </span>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -163,7 +168,7 @@ const fetchWithCache = async (key: string, fetcher: () => Promise<any>, ttl: num
   return data;
 };
 
-const FinancialDashboardPage = () => {
+const ExecutiveDashboardPage = () => {
   const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
   const [newCreditNotesCount, setNewCreditNotesCount] = useState<number>(0);
   const [hasNewChat, setHasNewChat] = useState<boolean>(false);
@@ -344,41 +349,37 @@ const FinancialDashboardPage = () => {
 
   // Memoized navigation items to prevent unnecessary re-renders
   const navigationItems = useMemo(() => [
-    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-3 w-3" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-3 w-3" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
-    //{ to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/overall-stock', label: 'Store Inventory', icon: <PackageIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/expense-summary', label: 'Expenses Summary', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/department-expenses/upload', label: 'Dept Expenses', icon: <DollarSignIcon className="h-3 w-3" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/products', label: 'Products', icon: <BoxIcon className="h-3 w-3" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/dashboard/reports/product-performance', label: 'Products Performance', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/payables', label: 'Payables', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-3 w-3" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/dashboard/route-compliance', label: 'Sales Rep Compliance', icon: <MapPinIcon className="h-3.5 w-3.5" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
-    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    //{ to: '/chat-room', label: 'Chat Room', icon: <NotebookIcon className="h-3 w-3" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/dashboard/leave-report', label: 'Employees Leave Report', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/instant-chat', label: 'Chat Room', icon: <ZapIcon className="h-3 w-3" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    //{ to: '/tasks', label: 'Tasks', icon: <TargetIcon className="h-3 w-3" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/dashboard/expiring-contracts', label: 'Expiring Contracts', icon: <AlertTriangleIcon className="h-3 w-3" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-3 w-3" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    //{ to: '/document-list', label: 'Documents', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/employee-working-hours', label: 'Employees Attendance', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/employee-working-days', label: 'Employees Working Days', icon: <FileTextIcon className="h-3 w-3" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-4 w-4" />, bgColor: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/overall-stock', label: 'Store Inventory', icon: <PackageIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/expense-summary', label: 'Expenses Summary', icon: <BarChart3Icon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/department-expenses/upload', label: 'Dept Expenses', icon: <DollarSignIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/products', label: 'Products', icon: <BoxIcon className="h-4 w-4" />, bgColor: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-4 w-4" />, bgColor: 'bg-blue-50', iconColor: 'text-blue-600' },
+    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/credit-note-summary', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/dashboard/reports/product-performance', label: 'Products Performance', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-4 w-4" />, bgColor: 'bg-blue-50', iconColor: 'text-blue-600' },
+    { to: '/payables', label: 'Payables', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/sales-rep-performance', label: 'Sales Rep Performance', icon: <TrendingUpIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/overall-attendance', label: 'Sales Rep Report', icon: <BarChart3Icon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/uplift-sales', label: 'Uplift Sales', icon: <TrendingUpIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/dashboard/route-compliance', label: 'Sales Rep Compliance', icon: <MapPinIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/sales-reps', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/dashboard/leave-report', label: 'Employees Leave Report', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/instant-chat', label: 'Chat Room', icon: <ZapIcon className="h-4 w-4" />, bgColor: 'bg-blue-50', iconColor: 'text-blue-600' },
+    { to: '/notices', label: 'Notices', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/dashboard/expiring-contracts', label: 'Expiring Contracts', icon: <AlertTriangleIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/master-sales', label: 'Master Sales Report', icon: <AwardIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/dashboard/staff-list', label: 'Employees', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/employee-working-hours', label: 'Employees Attendance', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/employee-working-days', label: 'Employees Working Days', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
   ], []);
 
   // Memoized skeleton components for better loading experience
@@ -537,7 +538,7 @@ const FinancialDashboardPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-purple-50 flex items-center justify-center">
         <div className="text-center">
           <AlertTriangleIcon className="h-8 w-8 text-red-500 mx-auto mb-3" />
           <p className="text-red-600 font-semibold text-xs">{error}</p>
@@ -553,7 +554,7 @@ const FinancialDashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-purple-50">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
 
         {/* Stats Cards */}
@@ -669,10 +670,14 @@ const FinancialDashboardPage = () => {
               <Link
                 key={index}
                 to={item.to}
-                className={`${item.color} relative flex flex-col items-center justify-center p-2 rounded-lg font-medium text-[9px] transition-all duration-200 hover:scale-105 hover:shadow-md`}
+                className={`${item.bgColor} relative rounded-lg p-3 flex flex-col items-center justify-center transition-all duration-200 shadow-md hover:scale-105 hover:shadow-xl`}
               >
-                {item.icon}
-                <span className="mt-1 text-center">{item.label}</span>
+                <div className={`${item.iconColor} mb-1.5`}>
+                  {item.icon}
+                </div>
+                <span className={`${item.iconColor} text-[10px] font-medium text-center leading-tight`}>
+                  {item.label}
+                </span>
                 {item.to === '/financial/customer-orders' && newOrdersCount > 0 && (
                   <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[9px] font-semibold bg-red-600 text-white shadow">
                     {newOrdersCount}
@@ -1145,4 +1150,4 @@ const FinancialDashboardPage = () => {
   );
 };
 
-export default FinancialDashboardPage;
+export default ExecutiveDashboardPage;

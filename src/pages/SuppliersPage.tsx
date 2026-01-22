@@ -53,27 +53,27 @@ const exportToCSV = (data: any[], filename: string) => {
 // Icons for the UI
 const Icons = {
   Search: () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   ),
   Plus: () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
     </svg>
   ),
   Building: () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
     </svg>
   ),
   Users: () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
     </svg>
   ),
   Currency: () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
     </svg>
   ),
@@ -116,18 +116,18 @@ const StatCard: React.FC<{
 
   return (
     <div 
-      className={`${colorClasses[color]} rounded-xl shadow-lg p-6 text-white transition-all duration-200 ${onClick ? 'cursor-pointer hover:shadow-xl' : ''} ${activeClasses}`}
+      className={`${colorClasses[color]} rounded-xl shadow-lg p-4 text-white transition-all duration-200 ${onClick ? 'cursor-pointer hover:shadow-xl' : ''} ${activeClasses}`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-blue-50">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-xs font-medium text-blue-50">{title}</p>
+          <p className="text-xl font-bold">{value}</p>
           {filterText && (
             <p className="text-xs text-blue-100 mt-1">{filterText}</p>
           )}
         </div>
-        <div className="bg-white bg-opacity-20 rounded-lg p-3">
+        <div className="bg-white bg-opacity-20 rounded-lg p-2">
           {icon}
         </div>
       </div>
@@ -604,6 +604,7 @@ const SuppliersPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [balanceFilter, setBalanceFilter] = useState<'all' | 'with_balance' | 'zero_balance'>('all');
+  const [balanceSort, setBalanceSort] = useState<'asc' | 'desc' | null>(null);
   const navigate = useNavigate();
 
   const fetchSuppliers = async () => {
@@ -648,8 +649,23 @@ const SuppliersPage: React.FC = () => {
       base = base.filter((s: any) => (Number(s.balance) || 0) === 0);
     }
     
+    // Apply balance sorting
+    if (balanceSort === 'asc') {
+      base = [...base].sort((a: any, b: any) => {
+        const balanceA = Number(a.balance) || 0;
+        const balanceB = Number(b.balance) || 0;
+        return balanceA - balanceB;
+      });
+    } else if (balanceSort === 'desc') {
+      base = [...base].sort((a: any, b: any) => {
+        const balanceA = Number(a.balance) || 0;
+        const balanceB = Number(b.balance) || 0;
+        return balanceB - balanceA;
+      });
+    }
+    
     return base;
-  }, [suppliers, search, balanceFilter]);
+  }, [suppliers, search, balanceFilter, balanceSort]);
 
   const paginatedSuppliers = useMemo(() => {
     if (pageSize === filtered.length) {
@@ -698,6 +714,17 @@ const SuppliersPage: React.FC = () => {
     setCurrentPage(1); // Reset to first page when filtering
   };
 
+  const handleBalanceSort = () => {
+    if (balanceSort === null) {
+      setBalanceSort('asc');
+    } else if (balanceSort === 'asc') {
+      setBalanceSort('desc');
+    } else {
+      setBalanceSort(null);
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
   const handleTotalSuppliersClick = () => {
     setSearch(''); // Clear search
     setBalanceFilter('all'); // Clear balance filter
@@ -717,27 +744,27 @@ const SuppliersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full py-8 px-2 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Suppliers</h1>
-              <p className="text-gray-600 mt-2">Manage supplier profiles and monitor financial relationships</p>
+              <h1 className="text-xl font-bold text-gray-900">Suppliers</h1>
+              <p className="text-xs text-gray-600 mt-1">Manage supplier profiles and monitor financial relationships</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => exportToCSV(filtered, `suppliers_${new Date().toISOString().split('T')[0]}`)}
                 disabled={filtered.length === 0}
-                className="px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Export CSV
               </button>
               <button
-                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-lg"
+                className="px-3 py-1.5 text-xs bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-1.5 shadow-lg"
                 onClick={() => setAddOpen(true)}
               >
                 <Icons.Plus />
@@ -748,9 +775,9 @@ const SuppliersPage: React.FC = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="relative max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
               <Icons.Search />
             </div>
             <input
@@ -758,13 +785,13 @@ const SuppliersPage: React.FC = () => {
               placeholder="Search suppliers..."
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="block w-full pl-8 pr-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <StatCard
             title="Total Suppliers"
             value={suppliers.length}
@@ -831,64 +858,86 @@ const SuppliersPage: React.FC = () => {
           /* Table View */
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full divide-y divide-gray-200">
+              <table className="w-full divide-y divide-gray-200 min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax ID</th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                    <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax ID</th>
+                    <th 
+                      className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200 select-none"
+                      onClick={handleBalanceSort}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Balance
+                        {balanceSort === 'asc' && (
+                          <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        )}
+                        {balanceSort === 'desc' && (
+                          <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        )}
+                        {balanceSort === null && (
+                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedSuppliers.map((supplier: any) => (
                     <tr key={supplier.id} className="hover:bg-gray-50 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{supplier.company_name}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900 font-mono">
                         {supplier.supplier_code || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                         {supplier.contact_person || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                         {supplier.email || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                         {supplier.phone || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                         {supplier.tax_id || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <td className="px-3 py-3 whitespace-nowrap text-right">
                         <div className="text-sm font-semibold text-blue-600">
                           {supplier.balance != null && !isNaN(Number(supplier.balance))
                             ? Number(supplier.balance).toLocaleString(undefined, { style: 'currency', currency: 'KES' })
                             : 'KES\u00A00.00'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleViewInvoices(supplier)}
-                            className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100 transition-colors duration-200"
+                            className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded hover:bg-blue-100 transition-colors duration-200"
                           >
                             Invoices
                           </button>
                           <button
                             onClick={() => handleViewLedger(supplier)}
-                            className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100 transition-colors duration-200"
+                            className="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded hover:bg-purple-100 transition-colors duration-200"
                           >
                             Ledger
                           </button>
                           <button
                             onClick={() => handleEdit(supplier)}
-                            className="px-3 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded hover:bg-yellow-100 transition-colors duration-200"
+                            className="px-2 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded hover:bg-yellow-100 transition-colors duration-200"
                           >
                             Edit
                           </button>

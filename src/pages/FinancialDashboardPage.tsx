@@ -29,7 +29,9 @@ import {
   EyeIcon,
   ArrowUpRightIcon,
   ArrowDownRightIcon,
-  ShoppingBasketIcon
+  ShoppingBasketIcon,
+  MessageSquareIcon,
+  ArrowUpIcon
 } from 'lucide-react';
 import { dashboardService } from '../services/financialService';
 import { API_CONFIG } from '../config/api';
@@ -39,73 +41,41 @@ interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  change?: {
-    value: number;
-    positive: boolean;
-  };
-  prefix?: string;
-  suffix?: string;
   bgColor?: string;
+  iconColor?: string;
+  iconBgColor?: string;
   textColor?: string;
   onClick?: () => void;
-  badge?: React.ReactNode;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   icon,
-  change,
-  prefix = '',
-  suffix = '',
-  bgColor = 'bg-gradient-to-r from-blue-600 to-blue-700',
-  textColor = 'text-white',
-  onClick,
-  badge
+  bgColor = 'bg-blue-50',
+  iconColor = 'text-blue-600',
+  iconBgColor = 'bg-blue-100',
+  textColor = 'text-gray-700',
+  onClick
 }) => {
   return (
-    <div className="relative">
-      <div
-        className={`${bgColor} overflow-hidden shadow-md rounded-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg`}
-        onClick={onClick}
-        role={onClick ? 'button' : undefined}
-        tabIndex={onClick ? 0 : undefined}
-      >
-        <div className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className={`text-xs font-medium ${textColor} opacity-90`}>
-                {title}
-              </p>
-              <p className={`text-lg font-bold ${textColor} mt-0.5`}>
-                {prefix}{value}{suffix}
-              </p>
-              {change && (
-                <div className="flex items-center mt-0.5">
-                  {change.positive ? (
-                    <ArrowUpRightIcon className="h-3 w-3 text-green-300" />
-                  ) : (
-                    <ArrowDownRightIcon className="h-3 w-3 text-red-300" />
-                  )}
-                  <span className={`text-xs font-medium ml-1 ${change.positive ? 'text-green-300' : 'text-red-300'}`}>
-                    {change.positive ? '+' : ''}{change.value}%
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="flex-shrink-0">
-              <div className={`p-1.5 rounded-lg ${textColor} bg-white bg-opacity-20`}>
-                {icon}
-              </div>
-            </div>
-          </div>
+    <div
+      className={`${bgColor} rounded-lg p-3 cursor-pointer transform transition-all duration-200 shadow-md hover:scale-105 hover:shadow-xl`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
+      <div className="flex flex-col items-center text-center">
+        <div className={`${iconBgColor} ${iconColor} p-1.5 rounded-md mb-1.5 shadow-sm`}>
+          {icon}
         </div>
+        <p className={`text-[10px] font-medium ${textColor} mb-0.5`}>
+          {title}
+        </p>
+        <p className={`text-base font-bold ${textColor}`}>
+          {value}
+        </p>
       </div>
-      {badge && (
-        <div className="absolute -top-2 -right-2">
-          {badge}
-        </div>
-      )}
     </div>
   );
 };
@@ -189,41 +159,45 @@ const FinancialDashboardPage = () => {
   };
 
   const navigationItems = [
-    { to: '/financial/purchase-order', label: 'New Purchase', icon: <ShoppingCartIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/financial/create-customer-order', label: 'Create Order', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/create-invoice', label: 'Create Invoice', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/create-credit-note', label: 'Credit Note', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/add-expense', label: 'Add Expense', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
-    { to: '/department-expenses/upload', label: 'Dept Expenses', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/equity/entries', label: 'Equity Entries', icon: <CalculatorIcon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/add-journal-entry', label: 'Journal Entry', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    //{ to: '/chart-of-accounts', label: 'Chart of Accounts', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
-    { to: '/riders', label: 'Riders', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-3.5 w-3.5" />, color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
-    { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-3.5 w-3.5" />, color: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
-    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-3.5 w-3.5" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/asset-purchase-order', label: 'New Asset PO', icon: <ShoppingBasketIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/asset-purchase-orders', label: 'Asset POs', icon: <ShoppingBasketIcon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    //{ to: '/expenses', label: 'Expenses', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
-    { to: '/expense-summary', label: 'Expense Summary', icon: <BarChart3Icon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/products', label: 'Products', icon: <BoxIcon className="h-3.5 w-3.5" />, color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
-    { to: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCartIcon className="h-3.5 w-3.5" />, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-    { to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
-    { to: '/invoice-list', label: 'Invoice List', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/credit-notes', label: 'View Credit Notes', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-    { to: '/financial/view-receipts', label: 'Receipts', icon: <ReceiptIcon className="h-3.5 w-3.5" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-    { to: '/payroll-management', label: 'Payroll', icon: <CreditCardIcon className="h-3.5 w-3.5" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { to: '/journal-entries', label: 'Journal Entries', icon: <FileTextIcon className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { to: '/payables', label: 'Payables', icon: <DollarSignIcon className="h-3.5 w-3.5" />, color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
-    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/unconfirmed-payments', label: 'Unconfirmed Payments', icon: <ClockIcon className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-    { to: '/cash-equivalents', label: 'Cash & Equivalents', icon: <PiggyBankIcon className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
-    { to: '/instant-chat', label: 'Chat Room', icon: <NotebookIcon className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
-    { to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-3.5 w-3.5" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' }
+    // Row 1
+    { to: '/purchase-orders', label: 'Purchases', icon: <ShoppingCartIcon className="h-4 w-4" />, bgColor: 'bg-blue-50', iconColor: 'text-blue-600' },
+    { to: '/financial/create-customer-order', label: 'Create Order', icon: <PackageIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/riders', label: 'Sales Reps', icon: <UsersIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/financial/customer-orders', label: 'Customer Orders', icon: <PackageIcon className="h-4 w-4" />, bgColor: 'bg-indigo-50', iconColor: 'text-indigo-600', badge: newOrdersCount },
+    
+    // Row 2
+    { to: '/add-journal-entry', label: 'Journal Entry', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/reports', label: 'Financial Reports', icon: <BarChart3Icon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/suppliers', label: 'Vendors', icon: <BuildingIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/clients', label: 'Customers', icon: <UsersIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    
+    // Row 3
+    { to: '/create-credit-note', label: 'Create Credit Note', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/invoice-list', label: 'Sub-Category Invoices', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/add-expense', label: 'Add Expense', icon: <DollarSignIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/equity/entries', label: 'Equity Entries', icon: <CalculatorIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    
+    // Row 4
+    { to: '/store-inventory', label: 'Store Inventory', icon: <PackageIcon className="h-4 w-4" />, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { to: '/assets', label: 'Assets', icon: <BoxIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/expense-summary', label: 'Expenses', icon: <DollarSignIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/products', label: 'Products', icon: <BoxIcon className="h-4 w-4" />, bgColor: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+    
+    // Row 5
+    { to: '/all-orders', label: 'Sales Orders', icon: <DollarSignIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/credit-notes', label: 'Credit Notes', icon: <FileTextIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600', badge: newCreditNotesCount },
+    { to: '/payables', label: 'Payables', icon: <DollarSignIcon className="h-4 w-4" />, bgColor: 'bg-red-50', iconColor: 'text-red-600' },
+    { to: '/receivables', label: 'Receivables', icon: <PiggyBankIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    
+    // Row 6
+    { to: '/cash-equivalents', label: 'Cash & Equivalents', icon: <PiggyBankIcon className="h-4 w-4" />, bgColor: 'bg-cyan-50', iconColor: 'text-cyan-600' },
+    { to: '/instant-chat', label: 'Team Chat', icon: <MessageSquareIcon className="h-4 w-4" />, bgColor: 'bg-blue-50', iconColor: 'text-blue-600', badge: hasNewChat ? 1 : 0 },
+    { to: '/pending-payments', label: 'Pending Payments', icon: <ClockIcon className="h-4 w-4" />, bgColor: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+    { to: '/financial/purchase-order', label: 'Post Uplift Sale', icon: <ArrowUpIcon className="h-4 w-4" />, bgColor: 'bg-pink-50', iconColor: 'text-pink-600' },
+    
+    // Row 7
+    { to: '/store-inventory', label: 'Outlets Stock', icon: <PackageIcon className="h-4 w-4" />, bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { to: '/settings', label: 'Settings', icon: <SettingsIcon className="h-4 w-4" />, bgColor: 'bg-gray-100', iconColor: 'text-gray-600' }
   ];
 
   if (loading) {
@@ -249,494 +223,76 @@ const FinancialDashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        {/* Header */}
-        <div className="mb-2">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="text-xl font-bold text-gray-900">Financial Dashboard</h4>
-              </div>
-             
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 opacity-70">
+    <div className="min-h-screen bg-purple-50">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        {/* Financial Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <StatCard
             title="Total Sales"
-            value={stats ? formatCurrency(stats.totalSales) : '$0.00'}
-            icon={<DollarSignIcon className="h-4 w-4" />}
-            bgColor="bg-gradient-to-r from-green-600 to-green-700"
+            value={stats ? formatCurrency(stats.totalSales) : 'Ksh 0.00'}
+            icon={<DollarSignIcon className="h-5 w-5" />}
+            bgColor="bg-blue-50"
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-100"
+            textColor="text-gray-800"
             onClick={() => navigate('/reports')}
-            change={{ value: 12.5, positive: true }}
           />
           
           <StatCard
-            title="Total Purchases"
-            value={stats ? formatCurrency(stats.totalPurchases) : '$0.00'}
-            icon={<ShoppingCartIcon className="h-4 w-4" />}
-            bgColor="bg-gradient-to-r from-blue-600 to-blue-700"
+            title="Cost of Goods"
+            value={stats ? formatCurrency(stats.totalPurchases) : 'Ksh 0.00'}
+            icon={<ShoppingCartIcon className="h-5 w-5" />}
+            bgColor="bg-purple-50"
+            iconColor="text-purple-600"
+            iconBgColor="bg-purple-100"
+            textColor="text-gray-800"
             onClick={() => navigate('/purchase-orders')}
-            change={{ value: 8.3, positive: true }}
           />
 
           <StatCard
-            title="Receivables"
-            value={stats ? formatCurrency(stats.totalReceivables) : '$0.00'}
-            icon={<PiggyBankIcon className="h-4 w-4" />}
-            bgColor="bg-gradient-to-r from-amber-600 to-amber-700"
-            onClick={() => navigate('/receivables')}
-            change={{ value: 5.2, positive: false }}
+            title="Expenses"
+            value="Ksh 0.00"
+            icon={<FileTextIcon className="h-5 w-5" />}
+            bgColor="bg-yellow-50"
+            iconColor="text-yellow-600"
+            iconBgColor="bg-yellow-100"
+            textColor="text-gray-800"
+            onClick={() => navigate('/expense-summary')}
           />
 
           <StatCard
-            title="Payables"
-            value={stats ? formatCurrency(stats.totalPayables) : '$0.00'}
-            icon={<DollarSignIcon className="h-4 w-4" />}
-            bgColor="bg-gradient-to-r from-red-600 to-red-700"
-            onClick={() => navigate('/payables')}
-            change={{ value: 3.1, positive: false }}
+            title="Gross Profit"
+            value={stats ? formatCurrency(stats.totalSales - stats.totalPurchases) : 'Ksh 0.00'}
+            icon={<BarChart3Icon className="h-5 w-5" />}
+            bgColor="bg-green-50"
+            iconColor="text-green-600"
+            iconBgColor="bg-green-100"
+            textColor="text-gray-800"
+            onClick={() => navigate('/reports')}
           />
         </div>
 
-        {/* Quick Actions Row */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8 hidden">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-            <ZapIcon className="w-5 h-5 text-amber-500" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            <button 
-              onClick={() => navigate('/financial/purchase-order')}
-              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
+        {/* Navigation Grid */}
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+          {navigationItems.map((item, index) => (
+            <Link
+              key={index}
+              to={item.to}
+              className={`${item.bgColor} relative rounded-lg p-3 flex flex-col items-center justify-center transition-all duration-200 shadow-md hover:scale-105 hover:shadow-xl`}
             >
-              <ShoppingCartIcon className="w-5 h-5 text-blue-600 mb-2" />
-              <span className="text-xs font-medium text-center text-blue-700">New Purchase</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/financial/create-customer-order')}
-              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300"
-            >
-              <PackageIcon className="w-5 h-5 text-green-600 mb-2" />
-              <span className="text-xs font-medium text-center text-green-700">Create Order</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/create-invoice')}
-              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300"
-            >
-              <FileTextIcon className="w-5 h-5 text-emerald-600 mb-2" />
-              <span className="text-xs font-medium text-center text-emerald-700">Create Invoice</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/invoice-list')}
-              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-teal-200 bg-teal-50 hover:bg-teal-100 hover:border-teal-300"
-            >
-              <FileTextIcon className="w-5 h-5 text-teal-600 mb-2" />
-              <span className="text-xs font-medium text-center text-teal-700">Invoice List</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/add-expense')}
-              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300"
-            >
-              <DollarSignIcon className="w-5 h-5 text-red-600 mb-2" />
-              <span className="text-xs font-medium text-center text-red-700">Add Expense</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/add-journal-entry')}
-              className="group flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 border border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300"
-            >
-              <FileTextIcon className="w-5 h-5 text-purple-600 mb-2" />
-              <span className="text-xs font-medium text-center text-purple-700">Journal Entry</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-            {navigationItems.map((item, index) => (
-              <Link
-                key={index}
-                to={item.to}
-                className={`${item.color} relative flex flex-col items-center justify-center p-3 rounded-lg font-medium text-xs transition-all duration-200 hover:scale-105 hover:shadow-md`}
-              >
+              <div className={`${item.iconColor} mb-1.5`}>
                 {item.icon}
-                <span className="mt-1 text-center leading-tight">{item.label}</span>
-                {item.to === '/financial/customer-orders' && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-red-600 text-white shadow">
-                    {newOrdersCount}
-                  </span>
-                )}
-                {item.to === '/credit-note-summary' && newCreditNotesCount > 0 && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 min-w-[1.5rem] px-2 rounded-full text-xs font-semibold bg-orange-600 text-white shadow">
-                    {newCreditNotesCount}
-                  </span>
-                )}
-                {item.to === '/chat-room' && hasNewChat && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-3 w-3 rounded-full bg-emerald-500 shadow ring-2 ring-white" />
-                )}
-              </Link>
-            ))}
-          </div>
-            </div>
-
-        
-
-        {/* Quick Actions & Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 hidden">
-          {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-                <ZapIcon className="w-5 h-5 text-amber-500" />
               </div>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <button 
-                  onClick={() => navigate('/financial/purchase-order')}
-                  className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
-                >
-                  <div className="p-2 rounded-lg mb-2 bg-blue-200 group-hover:bg-blue-300">
-                    <ShoppingCartIcon className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium text-center text-blue-700">New Purchase</span>
-                </button>
-                
-                <button 
-                  onClick={() => navigate('/financial/create-customer-order')}
-                  className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300"
-                >
-                  <div className="p-2 rounded-lg mb-2 bg-green-200 group-hover:bg-green-300">
-                    <PackageIcon className="w-5 h-5 text-green-600" />
-                  </div>
-                  <span className="text-sm font-medium text-center text-green-700">Create Order</span>
-                </button>
-                
-                <button 
-                  onClick={() => navigate('/create-invoice')}
-                  className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300"
-                >
-                  <div className="p-2 rounded-lg mb-2 bg-emerald-200 group-hover:bg-emerald-300">
-                    <FileTextIcon className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <span className="text-sm font-medium text-center text-emerald-700">Create Invoice</span>
-                </button>
-                
-                <button 
-                  onClick={() => navigate('/add-expense')}
-                  className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300"
-                >
-                  <div className="p-2 rounded-lg mb-2 bg-red-200 group-hover:bg-red-300">
-                    <DollarSignIcon className="w-5 h-5 text-red-600" />
-                  </div>
-                  <span className="text-sm font-medium text-center text-red-700">Add Expense</span>
-                </button>
-                
-                <button 
-                  onClick={() => navigate('/equity/entries')}
-                  className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300"
-                >
-                  <div className="p-2 rounded-lg mb-2 bg-purple-200 group-hover:bg-purple-300">
-                    <CalculatorIcon className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <span className="text-sm font-medium text-center text-purple-700">Equity Entries</span>
-                </button>
-                
-                  <button 
-                  onClick={() => navigate('/add-journal-entry')}
-                  className="group flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300"
-                >
-                  <div className="p-2 rounded-lg mb-2 bg-amber-200 group-hover:bg-amber-300">
-                    <FileTextIcon className="w-5 h-5 text-amber-600" />
-                    </div>
-                  <span className="text-sm font-medium text-center text-amber-700">Journal Entry</span>
-                  </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-                <ActivityIcon className="w-5 h-5 text-blue-500" />
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">New sale recorded</p>
-                    <p className="text-xs text-gray-500">Invoice #INV-2024-001 • $2,450.00</p>
-                    <p className="text-xs text-gray-400">2 minutes ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Purchase order created</p>
-                    <p className="text-xs text-gray-500">PO #PO-2024-032 • Supplier ABC</p>
-                    <p className="text-xs text-gray-400">15 minutes ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Payment received</p>
-                    <p className="text-xs text-gray-500">Customer XYZ • $1,200.00</p>
-                    <p className="text-xs text-gray-400">1 hour ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Inventory update</p>
-                    <p className="text-xs text-gray-500">12 items marked as low stock</p>
-                    <p className="text-xs text-gray-400">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Expense recorded</p>
-                    <p className="text-xs text-gray-500">Office supplies • $350.00</p>
-                    <p className="text-xs text-gray-400">3 hours ago</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Financial Management Cards */}
-        <div className="mb-8 hidden">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Financial Management</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <button
-              onClick={() => navigate('/payables')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md hover:border-rose-300 transition-all duration-200"
-            >
-              <div className="text-4xl mb-3">💸</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Payables</h3>
-              <p className="text-sm text-gray-600 mb-3">View & manage supplier payables</p>
-              <div className="flex items-center justify-center text-sm text-gray-500 group-hover:text-gray-700">
-                <span>View details</span>
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/receivables')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md hover:border-emerald-300 transition-all duration-200"
-            >
-              <div className="text-4xl mb-3">💰</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Receivables</h3>
-              <p className="text-sm text-gray-600 mb-3">View & manage customer receivables</p>
-              <div className="flex items-center justify-center text-sm text-gray-500 group-hover:text-gray-700">
-                <span>View details</span>
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/financial/customer-orders')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md hover:border-indigo-300 transition-all duration-200"
-            >
-              <div className="text-4xl mb-3">📦</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Customer Orders</h3>
-              <p className="text-sm text-gray-600 mb-3">View all customer orders</p>
-              <div className="flex items-center justify-center text-sm text-gray-500 group-hover:text-gray-700">
-                <span>View details</span>
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/pending-payments')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md hover:border-amber-300 transition-all duration-200"
-            >
-              <div className="text-4xl mb-3">⏰</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Pending Payments</h3>
-              <p className="text-sm text-gray-600 mb-3">Review & confirm payments</p>
-              <div className="flex items-center justify-center text-sm text-gray-500 group-hover:text-gray-700">
-                <span>View details</span>
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-              <button
-              onClick={() => navigate('/cash-equivalents')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md hover:border-blue-300 transition-all duration-200"
-            >
-              <div className="text-4xl mb-3">🏦</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Cash & Equivalents</h3>
-              <p className="text-sm text-gray-600 mb-3">View all cash accounts</p>
-              <div className="flex items-center justify-center text-sm text-gray-500 group-hover:text-gray-700">
-                  <span>View details</span>
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
-                </div>
-              </button>
-          </div>
-        </div>
-
-        {/* Business Operations */}
-        <div hidden>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Operations</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <button
-              onClick={() => navigate('/chart-of-accounts')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-indigo-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-indigo-100 rounded-xl group-hover:bg-indigo-200 transition-colors">
-                  <BarChart3Icon className="w-6 h-6 text-indigo-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Chart of Accounts</h3>
-              <p className="text-sm text-gray-600 mb-4">Manage accounting structure</p>
-              <div className="flex items-center text-sm text-indigo-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/reports')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
-                  <BarChart3Icon className="w-6 h-6 text-blue-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Financial Reports</h3>
-              <p className="text-sm text-gray-600 mb-4">View financial reporting</p>
-              <div className="flex items-center text-sm text-blue-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/suppliers')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-slate-100 rounded-xl group-hover:bg-slate-200 transition-colors">
-                  <BuildingIcon className="w-6 h-6 text-slate-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Vendors</h3>
-              <p className="text-sm text-gray-600 mb-4">Manage vendor information</p>
-              <div className="flex items-center text-sm text-slate-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/clients')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-green-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
-                  <UsersIcon className="w-6 h-6 text-green-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Customers</h3>
-              <p className="text-sm text-gray-600 mb-4">Manage customer database</p>
-              <div className="flex items-center text-sm text-green-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/store-inventory')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-purple-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
-                  <PackageIcon className="w-6 h-6 text-purple-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Store Inventory</h3>
-              <p className="text-sm text-gray-600 mb-4">Track inventory levels</p>
-              <div className="flex items-center text-sm text-purple-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/assets')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-teal-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-teal-100 rounded-xl group-hover:bg-teal-200 transition-colors">
-                  <BoxIcon className="w-6 h-6 text-teal-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Assets</h3>
-              <p className="text-sm text-gray-600 mb-4">View and manage all assets</p>
-              <div className="flex items-center text-sm text-teal-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/expenses')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-red-300 transition-all duration-200 text-left"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-red-100 rounded-xl group-hover:bg-red-200 transition-colors">
-                  <DollarSignIcon className="w-6 h-6 text-red-600" />
-                </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Expenses</h3>
-              <p className="text-sm text-gray-600 mb-4">View all expenses</p>
-              <div className="flex items-center text-sm text-red-600 font-medium">
-                <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-              </div>
-            </button>
-
-              <button
-              onClick={() => navigate('/products')}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-teal-300 transition-all duration-200 text-left"
-              >
-                <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-teal-100 rounded-xl group-hover:bg-teal-200 transition-colors">
-                  <BoxIcon className="w-6 h-6 text-teal-600" />
-                  </div>
-                <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Products</h3>
-              <p className="text-sm text-gray-600 mb-4">View and manage all products</p>
-              <div className="flex items-center text-sm text-teal-600 font-medium">
-                  <span>Access now</span>
-                <TrendingUpIcon className="w-4 h-4 ml-1" />
-                </div>
-              </button>
-          </div>
+              <span className={`${item.iconColor} text-[10px] font-medium text-center leading-tight`}>
+                {item.label}
+              </span>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[10px] font-semibold bg-red-600 text-white shadow-lg">
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

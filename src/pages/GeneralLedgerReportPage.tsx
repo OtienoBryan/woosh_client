@@ -28,6 +28,8 @@ const GeneralLedgerReportPage: React.FC = () => {
   const [accounts, setAccounts] = useState<ChartOfAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,12 +74,20 @@ const GeneralLedgerReportPage: React.FC = () => {
     }
   };
 
-  // Filter entries by selected account and search term
+  // Filter entries by selected account, date range, and search term
   const accountFilteredEntries = selectedAccount
     ? entries.filter(e => e.account_code === selectedAccount)
     : entries;
 
-  const searchFilteredEntries = accountFilteredEntries.filter(e => {
+  const dateFilteredEntries = accountFilteredEntries.filter(e => {
+    if (!startDate && !endDate) return true;
+    const entryDate = e.date;
+    if (startDate && entryDate < startDate) return false;
+    if (endDate && entryDate > endDate) return false;
+    return true;
+  });
+
+  const searchFilteredEntries = dateFilteredEntries.filter(e => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -137,8 +147,8 @@ const GeneralLedgerReportPage: React.FC = () => {
             </div>
           </div>
         )}
-        {/* Account Filter and Search */}
-        <div className="mb-3 flex flex-col md:flex-row md:items-center gap-3">
+        {/* Filters */}
+        <div className="mb-3 flex flex-col md:flex-row md:items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <label htmlFor="account-select" className="text-xs font-medium text-gray-700">Account:</label>
             <select
@@ -156,6 +166,26 @@ const GeneralLedgerReportPage: React.FC = () => {
             </select>
           </div>
           <div className="flex items-center gap-2">
+            <label htmlFor="start-date" className="text-xs font-medium text-gray-700">Start Date:</label>
+            <input
+              id="start-date"
+              type="date"
+              className="border border-gray-300 rounded px-2 py-1.5 text-xs"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="end-date" className="text-xs font-medium text-gray-700">End Date:</label>
+            <input
+              id="end-date"
+              type="date"
+              className="border border-gray-300 rounded px-2 py-1.5 text-xs"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
             <label htmlFor="search-input" className="text-xs font-medium text-gray-700">Search:</label>
             <input
               id="search-input"
@@ -166,6 +196,17 @@ const GeneralLedgerReportPage: React.FC = () => {
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
+          {(startDate || endDate) && (
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Clear Dates
+            </button>
+          )}
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           {loading ? (

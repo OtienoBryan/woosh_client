@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { salesService, MasterSalesData } from '../services/salesService';
 import { Search, Download, Filter, TrendingUp, Users, DollarSign, Calendar, BarChart3, X, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 
@@ -20,6 +21,7 @@ const useDebounce = (value: string, delay: number) => {
 };
 
 const MasterSalesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [salesData, setSalesData] = useState<MasterSalesData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -408,13 +410,11 @@ const MasterSalesPage: React.FC = () => {
     });
     
     if (monthValue > 0) {
-      console.log('[handleCellClick] Opening modal for client:', client.client_name);
-      setSelectedClient({ id: client.client_id, name: client.client_name });
-      setSelectedMonth(month);
-      setShowSalesDetailModal(true);
-      await fetchSalesDetails(client.client_id, month);
+      console.log('[handleCellClick] Navigating to invoices for client:', client.client_name);
+      // Navigate to invoice list with client_id filter
+      navigate(`/invoice-list?client_id=${client.client_id}`);
     } else {
-      console.log('[handleCellClick] No sales data for this month, not opening modal');
+      console.log('[handleCellClick] No sales data for this month, not navigating');
     }
   };
 
@@ -785,14 +785,11 @@ const MasterSalesPage: React.FC = () => {
                             });
                             
                             if (totalValue > 0) {
-                              console.log('[Total Column Click] Opening modal for yearly sales');
-                              setSelectedClient({ id: client.client_id, name: client.client_name });
-                              setSelectedMonth('total');
-                              setShowSalesDetailModal(true);
-                              // Fetch all sales for the year (pass 'total' as month indicator)
-                              fetchSalesDetails(client.client_id, 'total');
+                              console.log('[Total Column Click] Navigating to invoices for client:', client.client_name);
+                              // Navigate to invoice list with client_id filter
+                              navigate(`/invoice-list?client_id=${client.client_id}`);
                             } else {
-                              console.log('[Total Column Click] No sales data, not opening modal');
+                              console.log('[Total Column Click] No sales data, not navigating');
                             }
                           }}
                         >

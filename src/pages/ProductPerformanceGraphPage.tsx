@@ -177,9 +177,9 @@ const ProductPerformanceGraphPage: React.FC = () => {
   return (
     <div className="max-w-8xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 sm:px-0 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Product Performance Graph</h1>
+        <h1 className="text-lg font-semibold text-gray-900">Product Performance Graph</h1>
         <button
-          className="ml-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="ml-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm"
           onClick={() => {
             setTempStartDate(startDate);
             setTempEndDate(endDate);
@@ -204,32 +204,32 @@ const ProductPerformanceGraphPage: React.FC = () => {
             >
               &times;
             </button>
-            <h2 className="text-lg font-semibold mb-4">Filter Product Performance</h2>
+            <h2 className="text-base font-semibold mb-4">Filter Product Performance</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={tempStartDate}
                   onChange={e => setTempStartDate(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
                 <input
                   type="date"
                   value={tempEndDate}
                   onChange={e => setTempEndDate(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Product Type</label>
                 <select
                   value={tempProductType}
                   onChange={e => setTempProductType(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
                 >
                   <option value="">All</option>
                   <option value="vape">Vapes</option>
@@ -237,11 +237,11 @@ const ProductPerformanceGraphPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
                 <select
                   value={tempCountry}
                   onChange={e => setTempCountry(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
                 >
                   <option value="">All</option>
                   {countries.map((c: string) => (
@@ -250,11 +250,11 @@ const ProductPerformanceGraphPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Region</label>
                 <select
                   value={tempRegion}
                   onChange={e => setTempRegion(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
                 >
                   <option value="">All</option>
                   {regions.map((r: string) => (
@@ -263,7 +263,7 @@ const ProductPerformanceGraphPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
                 <div className="relative client-dropdown-container">
                   <input
                     type="text"
@@ -271,7 +271,7 @@ const ProductPerformanceGraphPage: React.FC = () => {
                     value={clientSearchQuery}
                     onChange={e => handleClientSearchChange(e.target.value)}
                     onFocus={() => setIsClientDropdownOpen(true)}
-                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 pr-8"
+                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 pr-8 text-sm"
                   />
                   <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
                   
@@ -279,7 +279,7 @@ const ProductPerformanceGraphPage: React.FC = () => {
                   {isClientDropdownOpen && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto">
                       <div
-                        className="px-3 py-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50"
+                        className="px-3 py-2 text-xs text-gray-500 cursor-pointer hover:bg-gray-50"
                         onClick={() => handleClientSelect('', 'All Clients')}
                       >
                         All Clients
@@ -287,14 +287,14 @@ const ProductPerformanceGraphPage: React.FC = () => {
                       {filteredClients.map((clientItem) => (
                         <div
                           key={clientItem.id}
-                          className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                          className="px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                           onClick={() => handleClientSelect(clientItem.id.toString(), clientItem.name)}
                         >
                           {clientItem.name}
                         </div>
                       ))}
                       {filteredClients.length === 0 && clientSearchQuery && (
-                        <div className="px-3 py-2 text-sm text-gray-500">
+                        <div className="px-3 py-2 text-xs text-gray-500">
                           No clients found matching "{clientSearchQuery}"
                         </div>
                       )}
@@ -303,11 +303,11 @@ const ProductPerformanceGraphPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Category)</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">SKU (Category)</label>
                 <select
                   value={tempSku}
                   onChange={e => setTempSku(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
                 >
                   <option value="">All SKUs</option>
                   {categories.map((category) => (
@@ -318,7 +318,7 @@ const ProductPerformanceGraphPage: React.FC = () => {
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-sm"
                 onClick={() => {
                   setStartDate(''); setEndDate(''); setProductType(''); setCountry(''); setRegion(''); setClient(''); setClientSearchQuery(''); setIsClientDropdownOpen(false); setSku(''); setModalOpen(false);
                 }}
@@ -326,7 +326,7 @@ const ProductPerformanceGraphPage: React.FC = () => {
                 Clear
               </button>
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
                 onClick={() => {
                   setStartDate(tempStartDate);
                   setEndDate(tempEndDate);
@@ -345,20 +345,20 @@ const ProductPerformanceGraphPage: React.FC = () => {
         </div>
       )}
       <div className="mt-8 bg-white rounded shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Sales Value by Product</h2>
+        <h2 className="text-base font-semibold mb-4">Sales Value by Product</h2>
         {loading ? (
-          <div>Loading chart...</div>
+          <div className="text-sm">Loading chart...</div>
         ) : error ? (
-          <div className="text-red-500">{error}</div>
+          <div className="text-red-500 text-sm">{error}</div>
         ) : (
           <ResponsiveContainer width="100%" height={500}>
             <BarChart data={products} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="product_name" angle={-30} textAnchor="end" interval={0} height={80} />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip />
-              <Legend />
+              <XAxis dataKey="product_name" angle={-30} textAnchor="end" interval={0} height={80} tick={{ fontSize: 10 }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} />
+              <Tooltip contentStyle={{ fontSize: '11px' }} labelStyle={{ fontSize: '11px' }} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
               <Bar yAxisId="left" dataKey="total_sales_value" fill="#7CB9E8" name="Total Sales Value" />
               <Bar yAxisId="right" dataKey="total_quantity_sold" fill="#34D399" name="Quantity Sold" />
             </BarChart>
