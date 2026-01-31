@@ -31,8 +31,23 @@ export const authService = {
   },
 
   logout: async (): Promise<void> => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+    try {
+      // Call logout API endpoint to log the activity
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          await api.post('/auth/logout');
+        } catch (error) {
+          // Don't block logout if API call fails
+          console.error('Error calling logout API:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
   },
 
   getCurrentUser: async (): Promise<any> => {

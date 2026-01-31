@@ -38,12 +38,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    // Redirect to login page after logout
-    window.location.href = '/login';
+  const logout = async () => {
+    try {
+      // Call logout API endpoint to log the activity
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (error) {
+          // Don't block logout if API call fails
+          console.error('Error calling logout API:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      // Redirect to login page after logout
+      window.location.href = '/login';
+    }
   };
 
   return (

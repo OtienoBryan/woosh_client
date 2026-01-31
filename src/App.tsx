@@ -15,6 +15,7 @@ import ClientsList from './pages/ClientsPage';
 import ClaimsPage from './pages/ClaimsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import AuditTrailPage from './pages/AuditTrailPage';
 import Layout from './components/Layout/Layout';
 import { useAuth } from './contexts/AuthContext';
 import PendingRequests from './pages/PendingRequests';
@@ -711,6 +712,11 @@ const App = () => {
           <Route path="/settings" element={
             <Layout>
               <SettingsPage />
+            </Layout>
+          } />
+          <Route path="/audit-trail" element={
+            <Layout>
+              <AuditTrailPage />
             </Layout>
           } />
         </Route>
