@@ -22,6 +22,16 @@ const SalesRepPerformancePage: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewType, setViewType] = useState<'sales' | 'quantity'>('sales');
+  const [showInvoicesModal, setShowInvoicesModal] = useState(false);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [selectedInvoiceData, setSelectedInvoiceData] = useState<{
+    salesRepId: number;
+    salesRepName: string;
+    month: number;
+    monthName: string;
+    year: number;
+  } | null>(null);
 
   const months = [
     'january', 'february', 'march', 'april', 'may', 'june',
@@ -122,6 +132,32 @@ const SalesRepPerformancePage: React.FC = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  const handleMonthClick = async (salesRepId: number, salesRepName: string, monthIndex: number) => {
+    console.log('Month clicked:', { salesRepId, salesRepName, monthIndex });
+    const monthName = monthLabels[monthIndex];
+    setSelectedInvoiceData({
+      salesRepId,
+      salesRepName,
+      month: monthIndex + 1,
+      monthName,
+      year: selectedYear
+    });
+    setShowInvoicesModal(true);
+    setInvoicesLoading(true);
+    
+    try {
+      console.log('Fetching invoices for:', { salesRepId, month: monthIndex + 1, year: selectedYear });
+      const data = await salesService.getSalesRepMonthInvoices(salesRepId, monthIndex + 1, selectedYear);
+      console.log('Received invoices:', data);
+      setInvoices(data);
+    } catch (err: any) {
+      console.error('Error fetching invoices:', err);
+      setInvoices([]);
+    } finally {
+      setInvoicesLoading(false);
+    }
   };
 
   if (loading) {
@@ -692,7 +728,7 @@ const SalesRepPerformancePage: React.FC = () => {
                       </td>
                       {viewType === 'quantity' ? (
                         // Quantity view: Show vapes and pouches stacked vertically for each month with targets
-                        months.map((month) => {
+                        months.map((month, monthIndex) => {
                           const vapesValue = parseFloat(String((rep as any)[`${month}_vapes`])) || 0;
                           const pouchesValue = parseFloat(String((rep as any)[`${month}_pouches`])) || 0;
                           const vapesTarget = parseFloat(String((rep as any)[`${month}_vapes_target`])) || 0;
@@ -702,7 +738,17 @@ const SalesRepPerformancePage: React.FC = () => {
                           const pouchesPercentage = pouchesTarget > 0 ? (pouchesValue / pouchesTarget) * 100 : 0;
                           
                           return (
-                            <td key={month} className="px-2 py-2 text-center text-[10px] text-gray-900">
+                            <td 
+                              key={month} 
+                              className="px-2 py-2 text-center text-[10px] text-gray-900 cursor-pointer hover:bg-blue-200 transition-all active:bg-blue-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMonthClick(rep.sales_rep_id, rep.sales_rep_name, monthIndex);
+                              }}
+                              title="Click to view invoices for this month"
+                              role="button"
+                              tabIndex={0}
+                            >
                               <div className="space-y-1.5">
                                 {/* Vapes */}
                                 <div className="space-y-0.5">
@@ -749,14 +795,23 @@ const SalesRepPerformancePage: React.FC = () => {
                         })
                       ) : (
                         // Sales view: Show single value for each month
-                        months.map((month) => {
+                        months.map((month, monthIndex) => {
                           const monthValue = parseFloat(String((rep as any)[month])) || 0;
                           return (
                             <td 
                               key={month} 
-                              className="whitespace-nowrap px-2 py-2 text-[10px] text-right text-gray-900"
+                              className="whitespace-nowrap px-2 py-2 text-[10px] text-right text-gray-900 cursor-pointer hover:bg-blue-200 hover:font-semibold transition-all active:bg-blue-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMonthClick(rep.sales_rep_id, rep.sales_rep_name, monthIndex);
+                              }}
+                              title="Click to view invoices for this month"
+                              role="button"
+                              tabIndex={0}
                             >
-                              {formatCurrency(monthValue)}
+                              <div className="hover:underline">
+                                {formatCurrency(monthValue)}
+                              </div>
                             </td>
                           );
                         })
@@ -950,6 +1005,136 @@ const SalesRepPerformancePage: React.FC = () => {
                 >
                   Next
                   <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Invoices Modal */}
+        {showInvoicesModal && selectedInvoiceData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-bold text-gray-900">
+                      Invoices - {selectedInvoiceData.salesRepName}
+                    </h2>
+                    <p className="text-[10px] text-gray-600 mt-0.5">
+                      {selectedInvoiceData.monthName} {selectedInvoiceData.year}
+                    </p>
+                  </div>
+                  <button
+                    className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => {
+                      setShowInvoicesModal(false);
+                      setInvoices([]);
+                      setSelectedInvoiceData(null);
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="px-4 py-3 max-h-[70vh] overflow-y-auto">
+                {invoicesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-600 border-t-transparent"></div>
+                    <p className="ml-3 text-xs text-gray-600">Loading invoices...</p>
+                  </div>
+                ) : invoices.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-xs text-gray-600">No invoices found for this month</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-900 uppercase">Invoice #</th>
+                          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-900 uppercase">Date</th>
+                          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-900 uppercase">Client</th>
+                          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-900 uppercase">Products</th>
+                          <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-900 uppercase">Quantity</th>
+                          <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-900 uppercase">Amount</th>
+                          <th className="px-3 py-2 text-center text-[10px] font-semibold text-gray-900 uppercase">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {invoices.map((invoice, index) => (
+                          <tr key={invoice.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="px-3 py-2 text-[10px] text-gray-900 whitespace-nowrap">
+                              {invoice.so_number || invoice.id}
+                            </td>
+                            <td className="px-3 py-2 text-[10px] text-gray-600 whitespace-nowrap">
+                              {new Date(invoice.order_date).toLocaleDateString()}
+                            </td>
+                            <td className="px-3 py-2 text-[10px] text-gray-900">
+                              <div>{invoice.client_name}</div>
+                              {invoice.client_phone && (
+                                <div className="text-gray-500">{invoice.client_phone}</div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-[10px] text-gray-600 max-w-xs truncate" title={invoice.products}>
+                              {invoice.products || 'N/A'}
+                            </td>
+                            <td className="px-3 py-2 text-[10px] text-gray-900 text-right whitespace-nowrap">
+                              {invoice.total_quantity?.toLocaleString() || 0}
+                            </td>
+                            <td className="px-3 py-2 text-[10px] text-gray-900 text-right whitespace-nowrap font-medium">
+                              {formatCurrency(parseFloat(invoice.total_amount) || 0)}
+                            </td>
+                            <td className="px-3 py-2 text-[10px] text-center whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                invoice.status === 1 ? 'bg-green-100 text-green-700' :
+                                invoice.status === 2 ? 'bg-blue-100 text-blue-700' :
+                                invoice.status === 3 ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {invoice.status === 1 ? 'Confirmed' :
+                                 invoice.status === 2 ? 'Dispatched' :
+                                 invoice.status === 3 ? 'Delivered' :
+                                 invoice.status === 7 ? 'Invoiced' :
+                                 'Unknown'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-100">
+                        <tr>
+                          <td colSpan={4} className="px-3 py-2 text-[10px] font-bold text-gray-900">
+                            Total ({invoices.length} invoices)
+                          </td>
+                          <td className="px-3 py-2 text-[10px] font-bold text-gray-900 text-right">
+                            {invoices.reduce((sum, inv) => sum + (parseFloat(inv.total_quantity) || 0), 0).toLocaleString()}
+                          </td>
+                          <td className="px-3 py-2 text-[10px] font-bold text-gray-900 text-right">
+                            {formatCurrency(invoices.reduce((sum, inv) => sum + (parseFloat(inv.total_amount) || 0), 0))}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowInvoicesModal(false);
+                    setInvoices([]);
+                    setSelectedInvoiceData(null);
+                  }}
+                  className="px-3 py-1.5 text-[10px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Close
                 </button>
               </div>
             </div>
