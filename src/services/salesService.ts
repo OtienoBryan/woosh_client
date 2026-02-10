@@ -360,5 +360,13 @@ export const salesService = {
       params: { clientId, year }
     });
     return response.data;
+  },
+
+  // Get invoices for a specific sales rep and month
+  getSalesRepMonthInvoices: async (salesRepId: number, month: number, year: number): Promise<any[]> => {
+    const response = await axios.get(`${API_BASE_URL}/sales-rep-month-invoices`, {
+      params: { salesRepId, month, year }
+    });
+    return response.data;
   }
 }; 

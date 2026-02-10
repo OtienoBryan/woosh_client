@@ -210,7 +210,7 @@ const OverallStockPage: React.FC = () => {
                 Store Inventory
               </Link>
 
-              <Link
+              {/* <Link
                 to="/update-stock-quantity"
                 className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
               >
@@ -218,7 +218,7 @@ const OverallStockPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Update Stock
-              </Link>
+              </Link> */}
 
               <Link
                 to="/stock-transfer"

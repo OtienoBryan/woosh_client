@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Search, Download, Eye, Calendar, Building, X, Package, Receipt, ArrowLeft, CheckSquare, Info } from 'lucide-react';
+import { FileText, Search, Download, Eye, Calendar, Building, X, Package, Receipt, ArrowLeft, CheckSquare, Info, Plus } from 'lucide-react';
 import { creditNoteService } from '../services/creditNoteService';
 import { storeService } from '../services/storeService';
 import { Store } from '../types/financial';
@@ -101,7 +101,7 @@ const CreditNoteSummaryPage: React.FC = () => {
 
   // Monitor user role changes and close modal if user doesn't have stock role
   useEffect(() => {
-    if (showReceiveBackModal && user && user.role !== 'stock' && user.role !== 'admin') {
+    if (showReceiveBackModal && user && user.role !== 'stock' && user.role !== 'admin' && user.role !== 'executive') {
       setShowReceiveBackModal(false);
       setSelectedItems(new Set());
       setSelectedStore('');
@@ -419,8 +419,8 @@ const CreditNoteSummaryPage: React.FC = () => {
 
   const handleReceiveBack = () => {
     // Check if user has stock role
-    if (user?.role !== 'stock' && user?.role !== 'admin') {
-      setError('Access denied. Only users with stock role can receive items back to stock.');
+    if (user?.role !== 'stock' && user?.role !== 'admin' && user?.role !== 'executive') {
+      setError('Access denied. Only users with stock or executive role can receive items back to stock.');
       return;
     }
 
@@ -454,8 +454,8 @@ const CreditNoteSummaryPage: React.FC = () => {
 
   const handleReceiveBackSubmit = async () => {
     // Check if user has stock role
-    if (user?.role !== 'stock' && user?.role !== 'admin') {
-      setError('Access denied. Only users with stock role can receive items back to stock.');
+    if (user?.role !== 'stock' && user?.role !== 'admin' && user?.role !== 'executive') {
+      setError('Access denied. Only users with stock or executive role can receive items back to stock.');
       return;
     }
 
@@ -512,20 +512,31 @@ const CreditNoteSummaryPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-4">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-10 hidden">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FileText className="h-8 w-8 text-blue-600" />
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Credit Note Summary</h1>
+                <p className="text-sm text-gray-500">View and manage all credit notes in the system</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Credit Note Summary</h1>
-              <p className="text-sm text-gray-500">View and manage all credit notes in the system</p>
-            </div>
+            {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accountant' || user?.role === 'executive') && (
+              <button
+                onClick={() => navigate('/create-credit-note')}
+                className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Create Credit Note
+              </button>
+            )}
           </div>
         </div>
 
         {/* Role-based Information */}
-        {user?.role === 'stock' || user?.role === 'admin' ? (
+        {user?.role === 'stock' || user?.role === 'admin' || user?.role === 'executive' ? (
           <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 hidden">
             <div className="flex items-center">
               <Info className="h-4 w-4 text-blue-600 mr-2" />
@@ -614,7 +625,7 @@ const CreditNoteSummaryPage: React.FC = () => {
         </div>
 
         {/* Stock User Summary Card */}
-        {(user?.role === 'stock' || user?.role === 'admin') && (
+        {(user?.role === 'stock' || user?.role === 'admin' || user?.role === 'executive') && (
           <div className="mb-8 hidden">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
@@ -932,7 +943,7 @@ const CreditNoteSummaryPage: React.FC = () => {
                             <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getMyStatusColor(note.my_status)}`}>
                               {getMyStatusText(note.my_status)}
                             </span>
-                            {note.my_status !== 1 && user?.role === 'stock' && (
+                            {note.my_status !== 1 && (user?.role === 'stock' || user?.role === 'executive') && (
                               <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
                                 <ArrowLeft className="h-2.5 w-2.5 mr-0.5" />
                                 Can Receive
@@ -1281,7 +1292,7 @@ const CreditNoteSummaryPage: React.FC = () => {
 
                 {/* Footer */}
                 <div className="flex justify-between pt-4 border-t border-gray-200">
-                  {user?.role === 'stock' && selectedCreditNote?.my_status !== 1 && (
+                  {(user?.role === 'stock' || user?.role === 'executive') && selectedCreditNote?.my_status !== 1 && (
                     <button
                       onClick={handleReceiveBack}
                       className="px-2.5 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
@@ -1308,7 +1319,7 @@ const CreditNoteSummaryPage: React.FC = () => {
       )}
 
       {/* Receive Back Modal */}
-      {showReceiveBackModal && selectedCreditNote && (user?.role === 'stock' || user?.role === 'admin') && (
+      {showReceiveBackModal && selectedCreditNote && (user?.role === 'stock' || user?.role === 'admin' || user?.role === 'executive') && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-10 mx-auto p-4 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-4">

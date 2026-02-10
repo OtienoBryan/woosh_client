@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Filter, AlertCircle } from 'lucide-react';
+import { fetchWithAuth } from '../utils/fetchWithAuth';
 
 interface Receipt {
   id: number;
@@ -47,7 +48,7 @@ const UnconfirmedPaymentsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/financial/receipts?status=in pay');
+      const response = await fetchWithAuth('/api/financial/receipts?status=in pay');
       const data = await response.json();
       
       if (data.success) {
@@ -135,7 +136,7 @@ const UnconfirmedPaymentsPage: React.FC = () => {
     if (!selectedReceipt) return;
 
     try {
-      const response = await fetch(`/api/financial/receipts/${selectedReceipt.id}/confirm`, {
+      const response = await fetchWithAuth(`/api/financial/receipts/${selectedReceipt.id}/confirm`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +172,7 @@ const UnconfirmedPaymentsPage: React.FC = () => {
 
   const handleDeclinePayment = async (receiptId: number) => {
     try {
-      const response = await fetch(`/api/financial/receipts/${receiptId}/decline`, {
+      const response = await fetchWithAuth(`/api/financial/receipts/${receiptId}/decline`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -247,7 +248,7 @@ const UnconfirmedPaymentsPage: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading unconfirmed payments...</p>
+          <p className="mt-4 text-sm text-gray-600">Loading unconfirmed payments...</p>
         </div>
       </div>
     );
@@ -257,10 +258,10 @@ const UnconfirmedPaymentsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600">{error}</p>
+          <p className="text-sm text-red-600">{error}</p>
           <button
             onClick={fetchReceipts}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="mt-4 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
           </button>
@@ -281,15 +282,15 @@ const UnconfirmedPaymentsPage: React.FC = () => {
               <AlertCircle className="h-6 w-6 text-orange-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Unconfirmed Payments</h1>
-              <p className="text-gray-600">Payments pending confirmation</p>
+              <h1 className="text-xl font-bold text-gray-900">Unconfirmed Payments</h1>
+              <p className="text-sm text-gray-600">Payments pending confirmation</p>
             </div>
           </div>
           <button
             onClick={exportToCSV}
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+            className="px-3 py-1 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3 h-3" />
             Export CSV
           </button>
         </div>
@@ -300,8 +301,8 @@ const UnconfirmedPaymentsPage: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Pending Amount</p>
-              <p className="text-2xl font-bold text-orange-600">{formatKES(totals.totalAmount)}</p>
+              <p className="text-xs text-gray-600">Pending Amount</p>
+              <p className="text-xl font-bold text-orange-600">{formatKES(totals.totalAmount)}</p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-orange-50 flex items-center justify-center">
               <AlertCircle className="h-6 w-6 text-orange-600" />
@@ -312,8 +313,8 @@ const UnconfirmedPaymentsPage: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Pending Receipts</p>
-              <p className="text-2xl font-bold text-blue-600">{totals.totalReceipts}</p>
+              <p className="text-xs text-gray-600">Pending Receipts</p>
+              <p className="text-xl font-bold text-blue-600">{totals.totalReceipts}</p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
               <FileText className="h-6 w-6 text-blue-600" />
@@ -324,8 +325,8 @@ const UnconfirmedPaymentsPage: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Payment Methods</p>
-              <p className="text-2xl font-bold text-purple-600">{Object.keys(totals.byPaymentMethod).length}</p>
+              <p className="text-xs text-gray-600">Payment Methods</p>
+              <p className="text-xl font-bold text-purple-600">{Object.keys(totals.byPaymentMethod).length}</p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-purple-50 flex items-center justify-center">
               <FileText className="h-6 w-6 text-purple-600" />
@@ -336,8 +337,8 @@ const UnconfirmedPaymentsPage: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Accounts</p>
-              <p className="text-2xl font-bold text-indigo-600">{Object.keys(totals.byAccount).length}</p>
+              <p className="text-xs text-gray-600">Accounts</p>
+              <p className="text-xl font-bold text-indigo-600">{Object.keys(totals.byAccount).length}</p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-indigo-50 flex items-center justify-center">
               <FileText className="h-6 w-6 text-indigo-600" />
@@ -350,53 +351,53 @@ const UnconfirmedPaymentsPage: React.FC = () => {
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+          <h3 className="text-base font-semibold text-gray-900">Filters</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
             <input
               type="date"
               value={filters.endDate}
               onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Payment Method</label>
             <input
               type="text"
               placeholder="e.g., Cash, Bank"
               value={filters.paymentMethod}
               onChange={(e) => setFilters({ ...filters, paymentMethod: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Client Name</label>
             <input
               type="text"
               placeholder="Search client name"
               value={filters.clientName}
               onChange={(e) => setFilters({ ...filters, clientName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Account Name</label>
             <select
               value={filters.accountName}
               onChange={(e) => setFilters({ ...filters, accountName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="">All Accounts</option>
               {Array.from(new Set(receipts
@@ -414,12 +415,12 @@ const UnconfirmedPaymentsPage: React.FC = () => {
 
       {/* Payment Methods Breakdown */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 hidden">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Amounts by Payment Method</h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Pending Amounts by Payment Method</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(totals.byPaymentMethod).map(([method, amount]) => (
             <div key={method} className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">{method}</p>
-              <p className="text-xl font-bold text-orange-600">{formatKES(amount)}</p>
+              <p className="text-xs text-gray-600">{method}</p>
+              <p className="text-lg font-bold text-orange-600">{formatKES(amount)}</p>
             </div>
           ))}
         </div>
@@ -427,12 +428,12 @@ const UnconfirmedPaymentsPage: React.FC = () => {
 
       {/* Accounts Breakdown */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 hidden">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Amounts by Account</h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Pending Amounts by Account</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Object.entries(totals.byAccount).map(([account, amount]) => (
             <div key={account} className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs text-gray-600 truncate">{account}</p>
-              <p className="text-lg font-bold text-indigo-600">{formatKES(amount)}</p>
+              <p className="text-base font-bold text-indigo-600">{formatKES(amount)}</p>
             </div>
           ))}
         </div>
@@ -441,7 +442,7 @@ const UnconfirmedPaymentsPage: React.FC = () => {
       {/* Receipts Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-base font-semibold text-gray-900">
             Unconfirmed Receipts ({filteredReceipts.length})
           </h3>
         </div>
@@ -481,40 +482,40 @@ const UnconfirmedPaymentsPage: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredReceipts.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={9} className="px-6 py-4 text-center text-xs text-gray-500">
                     No unconfirmed receipts found
                   </td>
                 </tr>
               ) : (
                 filteredReceipts.map((receipt) => (
                   <tr key={receipt.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
                       {receipt.receipt_number}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                       {formatDate(receipt.receipt_date)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                       {receipt.client_name || `Client ${receipt.client_id || 'Unknown'}`}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                       {receipt.account_name || `Account ${receipt.account_id || 'Unknown'}`}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                       <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
                         {receipt.payment_method}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-orange-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold text-orange-600">
                       {formatKES(receipt.amount)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">
                       {receipt.reference || '-'}
                     </td>
-                                         <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                       <td className="px-6 py-4 text-xs text-gray-900 max-w-xs truncate">
                        {receipt.notes || '-'}
                      </td>
-                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                     <td className="px-6 py-4 whitespace-nowrap text-center text-xs font-medium">
                        <div className="flex items-center justify-center gap-2">
                          <button
                            onClick={() => handleConfirmPayment(receipt)}
@@ -542,45 +543,45 @@ const UnconfirmedPaymentsPage: React.FC = () => {
       {showConfirmModal && selectedReceipt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">
               Confirm Payment
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Receipt Number
                 </label>
                 <input
                   type="text"
                   value={selectedReceipt.receipt_number}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Client Name
                 </label>
                 <input
                   type="text"
                   value={selectedReceipt.client_name || `Client ${selectedReceipt.client_id}`}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Amount
                 </label>
                 <input
                   type="text"
                   value={formatKES(selectedReceipt.amount)}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Reference *
                 </label>
                 <input
@@ -588,19 +589,19 @@ const UnconfirmedPaymentsPage: React.FC = () => {
                   value={confirmReference}
                   onChange={(e) => setConfirmReference(e.target.value)}
                   placeholder="Enter payment reference"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Receipt Date *
                 </label>
                 <input
                   type="date"
                   value={confirmDate}
                   onChange={(e) => setConfirmDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
               </div>
@@ -613,14 +614,14 @@ const UnconfirmedPaymentsPage: React.FC = () => {
                   setConfirmReference('');
                   setConfirmDate('');
                 }}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                className="px-3 py-1 text-xs text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmPaymentSubmit}
                 disabled={!confirmReference || !confirmDate}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Confirm Payment
               </button>
